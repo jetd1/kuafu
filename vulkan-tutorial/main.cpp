@@ -10,8 +10,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <set>
-
-static const int NVIDIA_VENDOR_ID = 0x10DE;
+#include <fstream>
 
 #ifdef DEBUG
 const bool enableValidation = true;
@@ -22,6 +21,12 @@ const bool enableValidation = false;
 
 static const std::vector<const char*> requiredDeviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+        VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
+        VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
         VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME
 };
 
@@ -31,7 +36,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageTypeFlagsEXT messageType,
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
         void* pUserData) {
-    std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    if (messageSeverity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
     return VK_FALSE;
 }
 
@@ -61,6 +67,23 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
     createInfo.pfnUserCallback = debugCallback;
 }
 
+
+static std::vector<char> readFile(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open())
+        throw std::runtime_error("failed to open file!");
+
+    size_t fileSize = (size_t) file.tellg();
+    std::vector<char> buffer(fileSize);
+    file.seekg(0);
+    file.read(buffer.data(), fileSize);
+    file.close();
+
+    return buffer;
+}
+
+
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -89,13 +112,32 @@ public:
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createRenderPass();
         createGraphicsPipeline();
+        createFramebuffers();
+        createCommandBuffers();
+        createSemaphores();
 
         std::cout << "App Initialized" << std::endl;
     }
 
     ~HelloTriangleApplication() {
         std::cout << "App Destroying" << std::endl;
+
+        mDevice.waitIdle();
+
+        mDevice.destroySemaphore(mSemaphoreImageReady);
+        mDevice.destroySemaphore(mSemaphoreRenderFinished);
+
+        mDevice.destroyCommandPool(mCommandPool);
+        for (auto framebuffer: mFramebuffers)
+            mDevice.destroyFramebuffer(framebuffer);
+
+        mDevice.destroyPipeline(mGraphicsPipeline);
+        mDevice.destroyPipelineLayout(mPipelineLayout);
+        mDevice.destroyRenderPass(mRenderPass);
+        mDevice.destroyShaderModule(mVertShaderModule);
+        mDevice.destroyShaderModule(mFragShaderModule);
 
         for (auto imageView: mSwapchainImageViews)
             mDevice.destroyImageView(imageView);
@@ -115,6 +157,7 @@ public:
     void run() {
         while (!glfwWindowShouldClose(mWindow)) {
             glfwPollEvents();
+            drawFrame();
         }
     }
 
@@ -134,6 +177,20 @@ private:
     vk::Extent2D mSwapchainExtent;
     std::vector<vk::Image> mSwapchainImages;
     std::vector<vk::ImageView> mSwapchainImageViews;
+    std::vector<vk::Framebuffer> mFramebuffers;
+
+    vk::ShaderModule mVertShaderModule;
+    vk::ShaderModule mFragShaderModule;
+
+    vk::PipelineLayout mPipelineLayout;
+    vk::RenderPass mRenderPass;
+    vk::Pipeline mGraphicsPipeline;
+
+    vk::CommandPool mCommandPool;
+    std::vector<vk::CommandBuffer> mCommandBuffers;
+
+    vk::Semaphore mSemaphoreImageReady;
+    vk::Semaphore mSemaphoreRenderFinished;
 
     VkDebugUtilsMessengerEXT mMessengerEXT;
 
@@ -162,7 +219,7 @@ private:
                 VK_MAKE_VERSION(1, 0, 0),
                 "No Engine",
                 VK_MAKE_VERSION(1, 0, 0),
-                VK_API_VERSION_1_0
+                VK_API_VERSION_1_1
         );
         uint32_t glfwExtensionCount = 0;
         auto glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -244,9 +301,10 @@ private:
                 indices.presentFamily.value()
         };
         std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+        const float queuePriority = 1.0;
 
         for (auto queueFamily : uniqueQueueFamilies)
-            queueCreateInfos.push_back(vk::DeviceQueueCreateInfo({}, queueFamily, 1));
+            queueCreateInfos.push_back(vk::DeviceQueueCreateInfo({}, queueFamily, 1, &queuePriority));
 
         auto deviceCreateInfo = vk::DeviceCreateInfo({}, queueCreateInfos, {}, requiredDeviceExtensions, {});
         mDevice = mPhysicalDevice.createDevice(deviceCreateInfo);
@@ -285,9 +343,9 @@ private:
     }
 
     vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
-        if (!std::count(availablePresentModes.begin(), availablePresentModes.end(), vk::PresentModeKHR::eMailbox))
-            return vk::PresentModeKHR::eFifo;
-        return vk::PresentModeKHR::eMailbox;
+        if (std::count(availablePresentModes.begin(), availablePresentModes.end(), vk::PresentModeKHR::eMailbox))
+            return vk::PresentModeKHR::eMailbox;
+        return vk::PresentModeKHR::eFifo;
     }
 
     vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
@@ -347,8 +405,178 @@ private:
         }
     }
 
-    void createGraphicsPipeline() {
+    void createRenderPass() {
+        vk::AttachmentDescription colorAttachment(
+                {}, mSwapchainFormat, vk::SampleCountFlagBits::e1,
+                vk::AttachmentLoadOp::eClear, vk::AttachmentStoreOp::eStore,
+                vk::AttachmentLoadOp::eDontCare, vk::AttachmentStoreOp::eDontCare,
+                vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
+        vk::AttachmentReference colorAttachmentRef(0, vk::ImageLayout::eColorAttachmentOptimal);
 
+        vk::SubpassDescription subpass({},vk::PipelineBindPoint::eGraphics, 0, nullptr, 1, &colorAttachmentRef);
+        vk::SubpassDependency dependency(
+                VK_SUBPASS_EXTERNAL, 0, vk::PipelineStageFlagBits::eColorAttachmentOutput,
+                vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::AccessFlagBits(0), vk::AccessFlagBits::eColorAttachmentWrite);
+        mRenderPass = mDevice.createRenderPass(vk::RenderPassCreateInfo(
+                {}, 1, &colorAttachment, 1, &subpass, 1, &dependency));
+    }
+
+    void createGraphicsPipeline() {
+        auto vertShaderCode = readFile("../vulkan-tutorial/shaders/vert.spv");
+        auto fragShaderCode = readFile("../vulkan-tutorial/shaders/frag.spv");
+
+        mVertShaderModule = createShaderModule(vertShaderCode);
+        mFragShaderModule = createShaderModule(fragShaderCode);
+
+        auto vertShaderStageInfo = vk::PipelineShaderStageCreateInfo(
+                {}, vk::ShaderStageFlagBits::eVertex, mVertShaderModule, "main");
+        auto fragShaderStageInfo = vk::PipelineShaderStageCreateInfo(
+                {}, vk::ShaderStageFlagBits::eFragment, mFragShaderModule, "main");
+
+        std::vector<vk::PipelineShaderStageCreateInfo> shaderStages{vertShaderStageInfo, fragShaderStageInfo};
+
+        vk::PipelineVertexInputStateCreateInfo vertexInputInfo({}, 0, nullptr, 0, nullptr);
+        vk::PipelineInputAssemblyStateCreateInfo  inputAssembly({}, vk::PrimitiveTopology::eTriangleList, VK_FALSE);
+
+        vk::Viewport viewport(0.f, 0.f, mSwapchainExtent.width, mSwapchainExtent.height, 0.f, 1.f);
+        vk::Rect2D scissor({0, 0}, mSwapchainExtent);
+        vk::PipelineViewportStateCreateInfo viewportState({}, 1, &viewport, 1, &scissor);
+
+        vk::PipelineRasterizationStateCreateInfo rasterizer({
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+                .depthClampEnable = VK_FALSE,
+                .rasterizerDiscardEnable = VK_FALSE,
+                .polygonMode = VK_POLYGON_MODE_FILL,
+                .cullMode = VK_CULL_MODE_BACK_BIT,
+                .frontFace = VK_FRONT_FACE_CLOCKWISE,
+                .depthBiasEnable = VK_FALSE,
+                .depthBiasConstantFactor = 0.0f, // Optional
+                .depthBiasClamp = 0.0f, // Optional
+                .depthBiasSlopeFactor = 0.0f, // Optional
+                .lineWidth = 1.0f,
+        });
+
+        vk::PipelineMultisampleStateCreateInfo multisampling({
+                 .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                 .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+                 .sampleShadingEnable = VK_FALSE,
+                 .minSampleShading = 1.0f, // Optional
+                 .pSampleMask = nullptr, // Optional
+                 .alphaToCoverageEnable = VK_FALSE, // Optional
+                 .alphaToOneEnable = VK_FALSE, // Optional
+        });
+
+        vk::PipelineColorBlendAttachmentState colorBlendAttachment({
+            .blendEnable = VK_FALSE,
+            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+//            .srcColorBlendFactor = VK_BLEND_FACTOR_ONE, // Optional
+//            .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO, // Optional
+//            .colorBlendOp = VK_BLEND_OP_ADD, // Optional
+//            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE, // Optional
+//            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO, // Optional
+//            .alphaBlendOp = VK_BLEND_OP_ADD, // Optional
+        });
+
+        vk::PipelineColorBlendStateCreateInfo colorBlending({
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            .logicOpEnable = VK_FALSE,
+//            .logicOp = VK_LOGIC_OP_COPY, // Optional
+            .attachmentCount = 1,
+            .pAttachments = (VkPipelineColorBlendAttachmentState*)(&colorBlendAttachment),
+//            .blendConstants = {0.f, 0.f, 0.f, 0.f}, // Optional
+        });
+
+        mPipelineLayout = mDevice.createPipelineLayout(vk::PipelineLayoutCreateInfo(
+                {}, 0, nullptr, 0, nullptr));
+
+
+        vk::GraphicsPipelineCreateInfo pipelineInfo(
+                {}, shaderStages, &vertexInputInfo, &inputAssembly, nullptr,
+                &viewportState, &rasterizer, &multisampling, nullptr, &colorBlending,
+                nullptr, mPipelineLayout,mRenderPass, 0,
+                nullptr, -1);
+
+        auto graphicsPipeline = mDevice.createGraphicsPipeline(nullptr, pipelineInfo);
+        switch (graphicsPipeline.result) {
+            case vk::Result::eSuccess:
+                mGraphicsPipeline = graphicsPipeline.value;
+                break;
+            default:
+                throw std::runtime_error("fail to create graphics pipeline");
+        }
+    }
+
+    void createFramebuffers() {
+        mFramebuffers.resize(mSwapchainImageViews.size());
+        for (size_t i = 0; i < mSwapchainImageViews.size(); i++) {
+            std::vector<vk::ImageView> attachments = { mSwapchainImageViews[i] };
+            vk::FramebufferCreateInfo framebufferInfo(
+                    {}, mRenderPass, attachments, mSwapchainExtent.width, mSwapchainExtent.height, 1);
+
+            mFramebuffers[i] = mDevice.createFramebuffer(framebufferInfo);
+        }
+    }
+
+    vk::ShaderModule createShaderModule(const std::vector<char>& code) {
+        return mDevice.createShaderModule({{}, code.size(), reinterpret_cast<const uint32_t*>(code.data())});
+    }
+
+    void createCommandBuffers() {
+        auto queueFamilyIndices = findQueueFamilyIndices(mPhysicalDevice);
+        mCommandPool = mDevice.createCommandPool({{}, queueFamilyIndices.graphicsFamily.value()});
+        mCommandBuffers = mDevice.allocateCommandBuffers({
+            mCommandPool, vk::CommandBufferLevel::ePrimary,
+            static_cast<uint32_t>(mFramebuffers.size())});
+
+        for (size_t i = 0; i < mCommandBuffers.size(); i++) {
+            auto& commandBuffer = mCommandBuffers[i];
+            commandBuffer.begin({{}, nullptr});
+
+            vk::ClearValue clearColor(std::array<float, 4>({0.f, 0.f, 0.f, 1.f}));
+            commandBuffer.beginRenderPass({
+                mRenderPass, mFramebuffers[i],{{0, 0}, mSwapchainExtent},
+                1, &clearColor}, vk::SubpassContents::eInline);
+
+            commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mGraphicsPipeline);
+            commandBuffer.draw(3, 1, 0, 0);
+            commandBuffer.endRenderPass();
+            commandBuffer.end();
+        }
+    }
+
+    void createSemaphores() {
+        mSemaphoreImageReady = mDevice.createSemaphore({});
+        mSemaphoreRenderFinished = mDevice.createSemaphore({});
+    }
+
+    void drawFrame() {
+        uint32_t imageIdx;
+        auto imageIdx_ = mDevice.acquireNextImageKHR(mSwapchain, UINT64_MAX, mSemaphoreImageReady, {});
+        switch (imageIdx_.result) {
+            case vk::Result::eSuccess:
+                imageIdx = imageIdx_.value;
+                break;
+            default:
+                throw std::runtime_error("fail to acquire next image");
+        }
+
+        vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+        vk::SubmitInfo submitInfo(
+                1, &mSemaphoreImageReady, waitStages,
+                1, &mCommandBuffers[imageIdx],
+                1, &mSemaphoreRenderFinished);
+        mGraphicsQueue.submit({submitInfo});
+
+        vk::PresentInfoKHR presentInfo(
+                1, &mSemaphoreRenderFinished, 1, &mSwapchain, &imageIdx, nullptr);
+        auto result = mPresentQueue.presentKHR(presentInfo);
+        switch (result) {
+            case vk::Result::eSuccess:
+                break;
+            default:
+                throw std::runtime_error("fail to present");
+        }
+        mPresentQueue.waitIdle();
     }
 };
 
