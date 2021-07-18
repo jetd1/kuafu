@@ -1,0 +1,154 @@
+//
+// Created by jet on 4/9/21.
+//
+
+#pragma once
+
+#include "core/rt/as.hpp"
+#include "core/geometry.hpp"
+#include "core/config.hpp"
+
+namespace kuafu {
+    struct RtPushConstants {
+        glm::vec4 clearColor = glm::vec4(1.0F);
+        int frameCount = 0;
+        uint32_t sampleRatePerPixel = 4;
+        uint32_t recursionDepth = 4;
+        uint32_t useEnvironmentMap = 0;
+
+        uint32_t russianRoulette = 0;
+        uint32_t russianRouletteMinBounces = 0;
+        uint32_t nextEventEstimation = 0;
+        uint32_t nextEventEstimationMinBounces = 0;
+    };
+
+    struct PathTracingCapabilities {
+        vk::PhysicalDeviceRayTracingPipelinePropertiesKHR pipelineProperties; ///< The physical device's path tracing capabilities.
+        vk::PhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProperties;
+        /*
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR pipelineFeatures;
+        vk::PhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
+        vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
+        */
+    };
+
+    /// Manages the building process of the acceleration structures.
+    /// @ingroup API
+    class RayTracer {
+    public:
+        RayTracer() = default;
+        ~RayTracer();
+
+        RayTracer(const RayTracer &) = delete;
+        RayTracer(const RayTracer &&) = delete;
+        auto operator=(const RayTracer &) -> RayTracer & = delete;
+        auto operator=(const RayTracer &&) -> RayTracer & = delete;
+
+        /// Retrieves the physical device's path tracing capabilities.
+        void init();
+
+        /// Destroys all bottom and top level acceleration structures.
+        void destroy();
+
+        /// @return Returns the top level acceleration structure.
+        auto getTlas() const -> const Tlas & { return mTlas; }
+
+        auto getStorageImageInfo() const -> const vk::DescriptorImageInfo & { return mStorageImageInfo; }
+
+        auto getCapabilities() const -> const PathTracingCapabilities & { return mCapabilities; }
+
+        auto getStorageImageView() const -> vk::ImageView { return mStorageImageView.get(); }
+
+        auto getPipeline() const -> vk::Pipeline { return _pipeline.get(); }
+
+        auto getPipelineLayout() const -> vk::PipelineLayout { return _layout.get(); };
+
+        auto getDescriptorSetLayout() -> vk::DescriptorSetLayout { return mDescriptors.layout.get(); }
+
+        auto getDescriptorSet(size_t index) -> vk::DescriptorSet { return _descriptorSets[index]; }
+
+        /// Used to convert wavefront models to a bottom level acceleration structure.
+        /// @param vertexBuffer A vertex buffer of some geometry.
+        /// @param indexBuffer An index buffer of some geometry.
+        /// @return Returns the bottom level acceleration structure.
+        auto modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
+                         const vkCore::StorageBuffer<uint32_t> &indexBuffer, bool opaque) const -> Blas;
+
+        /// Used to convert a bottom level acceleration structure instance to a Vulkan geometry instance.
+        /// @param instance A bottom level acceleration structure instance.
+        /// @return Returns the Vulkan geometry instance.
+        auto geometryInstanceToAccelerationStructureInstance(
+                std::shared_ptr<GeometryInstance> &geometryInstance) -> vk::AccelerationStructureInstanceKHR;
+
+        /// Used to prepare building the bottom level acceleration structures.
+        /// @param vertexBuffers Vertex buffers of all geometry in the scene.
+        /// @param indexBuffers Index buffers of all geometry in the scene.
+        void createBottomLevelAS(std::vector<vkCore::StorageBuffer<Vertex>> &vertexBuffers,
+                                 const std::vector<vkCore::StorageBuffer<uint32_t>> &indexBuffers,
+                                 const std::vector<std::shared_ptr<Geometry>> &geometries);
+
+        /// Builds all bottom level acceleration structures.
+        /// @param blas_ A vector of kuafu::Blas objects containing all bottom level acceleration structures prepared in createBottomLevelAS().
+        /// @param flags The build flags.
+        void buildBlas(
+                vk::BuildAccelerationStructureFlagsKHR flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
+
+        /// Build the top level acceleration structure.
+        /// @param instances A vector of bottom level acceleration structure instances.
+        /// @param flags The build flags.
+        void buildTlas(const std::vector<std::shared_ptr<GeometryInstance>> &geometryInstances,
+                       vk::BuildAccelerationStructureFlagsKHR flags = vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace,
+                       bool reuse = false);
+
+        void updateTlas(const std::vector<std::shared_ptr<GeometryInstance>> &geometryInstances,
+                        vk::BuildAccelerationStructureFlagsKHR flags =
+                        vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
+                        vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate);
+
+        /// Creates the storage image which the path tracing shaders will write to.
+        /// @param swapchainExtent The swapchain images' extent.
+        void createStorageImage(vk::Extent2D swapchainExtent);
+
+        /// Creates the shader binding tables.
+        void createShaderBindingTable();
+
+        /// Used to create a path tracing pipeline.
+        /// @param descriptorSetLayouts The descriptor set layouts for the shaders.
+        /// @param settings The renderer settings.
+        void createPipeline(const std::vector<vk::DescriptorSetLayout> &descriptorSetLayouts);
+
+        /// Used to record the actual path tracing commands to a given command buffer.
+        /// @param swapchainCommandBuffer The command buffer to record to.
+        /// @param swapchainImage The current image in the swapchain.
+        /// @param extent The swapchain images' extent.
+        void trace(vk::CommandBuffer swapchainCommandBuffer, vk::Image swapchainImage, vk::Extent2D extent);
+
+        void initDescriptorSet();
+
+        void updateDescriptors();
+
+        void initVarianceBuffer(float width, float height);
+
+        float getPixelVariance(uint32_t index);
+
+    private:
+        vk::UniquePipeline _pipeline;
+        vk::UniquePipelineLayout _layout;
+        uint32_t _shaderGroups;
+        PathTracingCapabilities mCapabilities;
+        std::vector<Blas> mBlas;
+        Tlas mTlas; ///< The top level acceleration structure.
+        vkCore::Buffer _instanceBuffer;
+        vkCore::Buffer _sbtBuffer; ///< The shader binding table buffer.
+
+        vkCore::Image mStorageImage;
+        vk::UniqueImageView mStorageImageView;
+        vk::UniqueSampler mStorageImageSampler;
+        vk::DescriptorImageInfo mStorageImageInfo;
+
+        vkCore::Descriptors mDescriptors;
+        std::vector<vk::DescriptorSet> _descriptorSets;
+
+        vkCore::Buffer _varianceBuffer;
+    };
+}

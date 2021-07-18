@@ -1,0 +1,5 @@
+.vs
+.vscode
+build
+CMakeLists.txt
+main.cpp

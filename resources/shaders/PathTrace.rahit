@@ -1,0 +1,48 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+#extension GL_EXT_scalar_block_layout : enable
+#extension GL_EXT_nonuniform_qualifier : enable
+
+#include "base/Geometry.glsl"
+#include "base/Random.glsl"
+#include "base/Ray.glsl"
+
+layout( location = 1 ) rayPayloadInEXT RayPayLoad ray;
+
+layout( binding = 1, set = 1 ) readonly buffer GeometryInstances
+{
+  GeometryInstance i[];
+}
+geometryInstances;
+
+layout( binding = 2, set = 2 ) readonly buffer MatIndices
+{
+  uint i[];
+}
+matIndices[];
+
+layout( binding = 4, set = 2 ) readonly buffer Materials
+{
+  Material m[];
+}
+materials;
+
+void main( )
+{
+  // @todo Consider moving material index to ray payload once it is removed from being part of the mesh object
+
+  uint geometryIndex = geometryInstances.i[gl_InstanceID].geometryIndex;
+
+  uint matIndex = matIndices[nonuniformEXT( geometryIndex )].i[gl_PrimitiveID];
+  Material mat  = materials.m[matIndex];
+
+  // Transparency
+  if ( mat.d == 0.0 )
+  {
+    ignoreIntersectionEXT;
+  }
+  else if ( rnd( ray.seed ) > mat.d )
+  {
+    ignoreIntersectionEXT;
+  }
+}
