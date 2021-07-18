@@ -1,5 +1,6 @@
 //
 // Created by jet on 4/9/21.
+// This is currently a dummy class due to ImGui conflict with svulkan2
 //
 
 #pragma once

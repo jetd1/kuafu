@@ -6,7 +6,7 @@
 
 #include <string>
 #include <vulkan/vulkan.hpp>
-#include "SDL.h"
+#include "sdl2/SDL.h"
 #include "gsl/gsl"
 
 namespace kuafu {

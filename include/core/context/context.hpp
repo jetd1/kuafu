@@ -6,7 +6,7 @@
 
 #include <memory>
 #include <vulkan/vulkan.hpp>
-#include "vkCore/vkCore.hpp"
+#include <vkCore/vkCore.hpp>
 #include "core/window.hpp"
 #include "core/camera.hpp"
 #include "core/gui.hpp"

@@ -1,5 +1,5 @@
 #include "CustomCamera.hpp"
-#include "CustomGui.hpp"
+#include "Example.hpp"
 #include "CustomWindow.hpp"
 #include "core/context/global.hpp"
 
@@ -15,7 +15,7 @@ int main() {
             width, height, glm::vec3(0.f, 0.f, 3.f)));
     renderer.setWindow(std::make_shared<CustomWindow>(
             width, height, "Test", SDL_WINDOW_RESIZABLE, &scene));
-    renderer.setGui(std::make_shared<CustomGui>(&renderer));
+//    renderer.setGui(std::make_shared<CustomGui>(&renderer));
     renderer.init();
 
     loadScene(&renderer, Level::eCornell);
