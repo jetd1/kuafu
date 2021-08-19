@@ -18,9 +18,10 @@ int main() {
 //    renderer.setGui(std::make_shared<CustomGui>(&renderer));
     renderer.init();
 
-    loadScene(&renderer, Level::eCornell);
+//    loadScene(&renderer, Level::eAnimations);
+    loadScene(&renderer, Level::eSpheres);
 
-    renderer.getConfig().setPerPixelSampleRate(32);
+    renderer.getConfig().setPerPixelSampleRate(256);
     renderer.getConfig().setUseDenoiser(false);
 
     while (renderer.isRunning()) {

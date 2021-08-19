@@ -16,9 +16,8 @@
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace kuafu {
-    const std::vector<const char *> layers = {"VK_LAYER_KHRONOS_validation"};
-
     /// @todo Currently always build with debug utils because an error might cause instant
+    const std::vector<const char *> layers = {"VK_LAYER_KHRONOS_validation"};
     std::vector<const char *> extensions = {"VK_EXT_debug_utils"};
 
     //#ifdef KF_DEBUG

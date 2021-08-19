@@ -27,7 +27,7 @@ namespace kuafu {
         if (index < mGeometryInstances.size())
             return mGeometryInstances[index];
         else
-//            throw std::runtime_error("Geometry Instances out of bound.");
+            throw std::runtime_error("Geometry Instances out of bound.");
             return nullptr;
     }
 

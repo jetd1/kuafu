@@ -95,6 +95,8 @@ namespace kuafu {
         /// @return Returns a pointer to the renderer's camera.
         auto getCamera() const -> std::shared_ptr<Camera> { return mCurrentCamera; }
 
+        inline auto getGeometryInstanceCount() { return mGeometries.size(); }
+
     private:
         void initSceneDescriptorSets();
 

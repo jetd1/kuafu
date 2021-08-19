@@ -138,9 +138,11 @@ namespace kuafu {
         float _focalDistance = 5.0F;
     };
 
+    /*
     /// A memory aligned uniform buffer object for camera data.\
-  /// @todo poorly aligned
+    /// @todo poorly aligned
     /// @ingroup API
+     */
     struct CameraUBO {
         glm::mat4 view = glm::mat4(1.0F);
         glm::mat4 projection = glm::mat4(1.0F);
