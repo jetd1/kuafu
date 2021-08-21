@@ -4,7 +4,7 @@
 
 #include "core/window.hpp"
 #include "core/context/global.hpp"
-#include "sdl2/SDL_vulkan.h"
+#include "SDL_vulkan.h"
 
 namespace kuafu {
 

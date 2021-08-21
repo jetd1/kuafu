@@ -184,9 +184,8 @@ namespace kuafu {
                                                   nullptr,                                       // basePipelineHandle
                                                   0);                                           // basePipelineIndex
 
-        _pipeline = static_cast<vk::UniquePipeline>( vkCore::global::device.createGraphicsPipelineUnique(nullptr,
-                                                                                                         createInfo,
-                                                                                                         nullptr));
+        _pipeline = static_cast<vk::UniquePipeline>(
+                vkCore::global::device.createGraphicsPipelineUnique(nullptr, createInfo, nullptr).value);
         assert( _pipeline.get( )); // "Failed to create rasterization pipeline."
     }
 

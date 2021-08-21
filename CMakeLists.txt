@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(kuafu VERSION 0.1)
-
 set(CMAKE_CXX_STANDARD 20)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -11,23 +10,23 @@ endif(NOT CMAKE_BUILD_TYPE)
 find_package(Vulkan REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
 
-find_package(SDL2 REQUIRED)
-include_directories(${SDL2_INCLUDE_DIRS})
-set(WINDOW_LIBS ${WINDOW_LIBS} "${SDL2_LIBRARIES}")
+set(KTX_FEATURE_TESTS OFF)
+set(KTX_FEATURE_TOOLS OFF)
+set(KTX_FEATURE_LOADTEST_APPS OFF)
 
-link_directories(${PROJECT_SOURCE_DIR}/external_libs/KTX)
-set(KTX ${KTX} "libktx.so" "libktx_read.so")
+add_subdirectory(3rd_party/KTX-Software)
+add_subdirectory(3rd_party/SDL)
+
+
+include_directories(3rd_party/SDL/include)
+include_directories(3rd_party/KTX-Software/include)
 
 file(GLOB_RECURSE RENDERER_SRC "src/*")
 
 include_directories("include")
 include_directories("include/external")
 add_library(kuafu SHARED ${RENDERER_SRC})
-target_link_libraries(kuafu
-        ${Vulkan_LIBRARY}
-        ${WINDOW_LIBS}
-        ${KTX}
-)
+target_link_libraries(kuafu ${Vulkan_LIBRARY} ktx SDL2)
 target_precompile_headers(kuafu
         PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp"
 )

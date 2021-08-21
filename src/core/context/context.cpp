@@ -11,9 +11,11 @@
 #error "The local Vulkan SDK does not support VK_KHR_acceleration_structure."
 #endif
 
-#define VULKAN_HPP_STORAGE_SHARED
-#define VULKAN_HPP_STORAGE_SHARED_EXPORT
-VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+#if !defined( VULKAN_HPP_STORAGE_SHARED )
+  #define VULKAN_HPP_STORAGE_SHARED
+  #define VULKAN_HPP_STORAGE_SHARED_EXPORT
+  VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+#endif
 
 namespace kuafu {
     /// @todo Currently always build with debug utils because an error might cause instant
@@ -340,7 +342,8 @@ namespace kuafu {
 
         // Reset the signaled state of the current frame's fence to the unsignaled one.
         auto currentInFlightFence_t = mSync.getInFlightFence(currentFrame);
-        vkCore::global::device.resetFences(1, &currentInFlightFence_t);
+        auto result = vkCore::global::device.resetFences(1, &currentInFlightFence_t);
+        assert(result ==  vk::Result::eSuccess);
 
         // Submits / executes the current image's / framebuffer's command buffer.
         vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;

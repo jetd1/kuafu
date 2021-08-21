@@ -578,9 +578,8 @@ namespace kuafu {
                                                        {},                                           // basePipelineHandle
                                                        0);                                           // basePipelineIndex
 
-        _pipeline = static_cast<vk::UniquePipeline>(vkCore::global::device.createRayTracingPipelineKHRUnique({},
-                                                                                                             nullptr,
-                                                                                                             createInfo));
+        _pipeline = static_cast<vk::UniquePipeline>(
+                vkCore::global::device.createRayTracingPipelineKHRUnique({}, nullptr, createInfo).value);
 //        KF_ASSERT(_pipeline.get(), "Failed to create path tracing pipeline.");
     }
 

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <ktx/ktx.h>
+#include <ktx.h>
 #include <map>
 #include <optional>
 #include <tuple>
