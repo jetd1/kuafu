@@ -50,7 +50,7 @@ namespace kuafu {
 
         std::unordered_map<Vertex, uint32_t> uniqueVertices;
 
-        bool firstRun = true;
+//        bool firstRun = true;
 
         // Size of matIndex should equal the amount of triangles of the entire object (all sub-meshes)
         size_t totalAmountOfTriangles = 0;
@@ -66,7 +66,6 @@ namespace kuafu {
         global::materials.reserve(shapes.size());
 
         // Loop over shapes.
-        int i = 0;
         for (const auto &shape : shapes) {
             // Set up the material.
             Material mat;
@@ -126,24 +125,24 @@ namespace kuafu {
 
             for (const auto &index : shape.mesh.indices) {
                 Vertex vertex = {};
-                if (attrib.vertices.size() > 3 * index.vertex_index + 0) {
+                if (static_cast<int>(attrib.vertices.size()) > 3 * index.vertex_index + 0) {
                     vertex.pos.x = attrib.vertices[3 * index.vertex_index + 0];
                     vertex.pos.y = attrib.vertices[3 * index.vertex_index + 1];
                     vertex.pos.z = attrib.vertices[3 * index.vertex_index + 2];
                 }
 
-                if (attrib.normals.size() > 3 * index.normal_index + 0) {
+                if (static_cast<int>(attrib.normals.size()) > 3 * index.normal_index + 0) {
                     vertex.normal.x = attrib.normals[3 * index.normal_index + 0];
                     vertex.normal.y = attrib.normals[3 * index.normal_index + 1];
                     vertex.normal.z = attrib.normals[3 * index.normal_index + 2];
                 }
 
-                if (attrib.texcoords.size() > 2 * index.texcoord_index + 1) {
+                if (static_cast<int>(attrib.texcoords.size()) > 2 * index.texcoord_index + 1) {
                     vertex.texCoord.x = attrib.texcoords[2 * index.texcoord_index + 0];
                     vertex.texCoord.y = 1.0F - attrib.texcoords[2 * index.texcoord_index + 1];
                 }
 
-                if (attrib.colors.size() > 3 * index.vertex_index + 2) {
+                if (static_cast<int>(attrib.colors.size()) > 3 * index.vertex_index + 2) {
                     vertex.color.x = attrib.colors[3 * index.vertex_index + 0];
                     vertex.color.y = attrib.colors[3 * index.vertex_index + 1];
                     vertex.color.z = attrib.colors[3 * index.vertex_index + 2];
@@ -158,7 +157,7 @@ namespace kuafu {
             }
         }
 
-        return std::move(geometry);
+        return geometry;
     }
 
     void Geometry::setMaterial(const Material &material) {
@@ -184,7 +183,7 @@ namespace kuafu {
         result->transform = transform;
         // result->transformIT                      = glm::transpose( glm::inverse( transform ) );
 
-        return std::move(result);
+        return result;
     }
 
     void GeometryInstance::setTransform(const glm::mat4 &transform) {

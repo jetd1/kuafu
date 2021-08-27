@@ -83,7 +83,7 @@ namespace kuafu {
                 vk::GeometryInstanceFlagBitsKHR::eTriangleFacingCullDisable, // flags
                 blasAddress);                                               // accelerationStructureReference
 
-        memcpy(&gInst.transform, &transpose, sizeof(gInst.transform));
+        memcpy(reinterpret_cast<glm::mat4*>(&gInst.transform), &transpose, sizeof(gInst.transform));
 
         return gInst;
     }
@@ -274,7 +274,7 @@ namespace kuafu {
                     sizeof(vk::DeviceSize),                        // stride
                     vk::QueryResultFlagBits::eWait);                // flags
 
-//            KF_ASSERT(result == vk::Result::eSuccess, "Failed to get query pool results.");
+            KF_ASSERT(result == vk::Result::eSuccess, "Failed to get query pool results.");
 
             std::vector<AccelerationStructure> cleanupAS(mBlas.size());
 
@@ -283,7 +283,7 @@ namespace kuafu {
 
             compactionCmdBuf.begin(0);
 
-            for (int i = 0; i < mBlas.size(); ++i) {
+            for (size_t i = 0; i < mBlas.size(); ++i) {
                 totalOriginalSize += static_cast<uint32_t>(originalSizes[i]);
                 totalCompactSize += static_cast<uint32_t>(compactSizes[i]);
 
@@ -486,7 +486,7 @@ namespace kuafu {
                                                                                 sbtSize,
                                                                                 shaderHandleStorage.data());
 
-//        KF_ASSERT(result == vk::Result::eSuccess, "Failed to get ray tracing shader group handles.");
+        KF_ASSERT(result == vk::Result::eSuccess, "Failed to get ray tracing shader group handles.");
 
         void *mapped = NULL;
         result = vkCore::global::device.mapMemory(_sbtBuffer.getMemory(), 0, _sbtBuffer.getSize(), {}, &mapped);
@@ -589,7 +589,7 @@ namespace kuafu {
 
     void RayTracer::trace(vk::CommandBuffer swapchainCommandBuffer, vk::Image swapchainImage, vk::Extent2D extent) {
         vk::DeviceSize progSize = mCapabilities.pipelineProperties.shaderGroupBaseAlignment;
-        vk::DeviceSize sbtSize = progSize * static_cast<vk::DeviceSize>(_shaderGroups);
+//        vk::DeviceSize sbtSize = progSize * static_cast<vk::DeviceSize>(_shaderGroups);
 
         vk::DeviceAddress sbtAddress = vkCore::global::device.getBufferAddress(_sbtBuffer.get());
 
@@ -676,7 +676,7 @@ namespace kuafu {
             alreadyMapped = true;
             vk::Result result = vkCore::global::device.mapMemory(_varianceBuffer.getMemory(), 0,
                                                                  _varianceBuffer.getSize(), {}, &mapped);
-//            KF_ASSERT(result == vk::Result::eSuccess, "Failed to map memory of variance buffer.");
+            KF_ASSERT(result == vk::Result::eSuccess, "Failed to map memory of variance buffer.");
         }
 
         auto *pData = reinterpret_cast<float *>(mapped);

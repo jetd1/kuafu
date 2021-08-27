@@ -19,14 +19,13 @@
 
 namespace kuafu {
     /// @todo Currently always build with debug utils because an error might cause instant
+#ifdef VK_VALIDATION
     const std::vector<const char *> layers = {"VK_LAYER_KHRONOS_validation"};
     std::vector<const char *> extensions = {"VK_EXT_debug_utils"};
-
-    //#ifdef KF_DEBUG
-    //  std::vector<const char*> extensions = { "VK_EXT_debug_utils" };
-    //#else
-    //  std::vector<const char*> extensions;
-    //#endif
+#else
+    const std::vector<const char *> layers = {};
+    std::vector<const char *> extensions = {};
+#endif
 
     std::vector<const char *> deviceExtensions = {VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
                                                   VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
@@ -73,8 +72,10 @@ namespace kuafu {
         // Instance
         mInstance = vkCore::initInstanceUnique(layers, extensions, VK_API_VERSION_1_2);
 
+#ifdef VK_VALIDATION
         // Debug messenger
         mDebugMessenger.init();
+#endif
 
         // Surface
         VkSurfaceKHR surface;
@@ -347,7 +348,7 @@ namespace kuafu {
         // Reset the signaled state of the current frame's fence to the unsignaled one.
         auto currentInFlightFence_t = mSync.getInFlightFence(currentFrame);
         auto result = vkCore::global::device.resetFences(1, &currentInFlightFence_t);
-        assert(result ==  vk::Result::eSuccess);
+        KF_ASSERT(result == vk::Result::eSuccess, "KF: failed to reset fences");
 
         // Submits / executes the current image's / framebuffer's command buffer.
         vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;

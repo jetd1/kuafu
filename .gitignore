@@ -15,6 +15,7 @@ _deps
 *.out
 
 /.idea/
+/cmake-build-release/
 /cmake-build-debug/
 /build/
 /resources/all_models/

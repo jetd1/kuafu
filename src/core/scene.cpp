@@ -41,7 +41,7 @@ namespace kuafu {
             return mGeometryInstances[index];
         else
             throw std::runtime_error("Geometry Instances out of bound.");
-            return nullptr;
+        return nullptr;
     }
 
     void Scene::submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryInstance) {
@@ -340,7 +340,7 @@ namespace kuafu {
                 mat2.diffuse.w = static_cast<float>( global::textureIndex );
 
                 auto texture = std::make_shared<vkCore::Texture>();
-                texture->init(global::assetsPath + global::materials[i].diffuseTexPath);
+                texture->init(global::materials[i].diffuseTexPath);
                 _textures[global::textureIndex++] = texture;
             }
 
@@ -426,8 +426,8 @@ namespace kuafu {
         triangle->setMaterial(mat);
 
         auto camPos = mCurrentCamera->getPosition();
-        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(camPos.x, camPos.y, camPos.z + 2.0F));
-        triangleInstance = instance(triangle);
+        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(camPos.x + 2.0F, camPos.y, camPos.z));
+        triangleInstance = instance(triangle, transform);
 
         submitGeometry(triangle);
         submitGeometryInstance(triangleInstance);

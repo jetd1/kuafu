@@ -21,7 +21,7 @@ namespace kuafu {
         std::string mTitle = "App";
 
     public:
-        Window(int width = 800, int height = 600, std::string title = "App", uint32_t flags = 0);
+        explicit Window(int width = 800, int height = 600, const std::string& title = "App", uint32_t flags = 0);
 
         virtual ~Window();
 

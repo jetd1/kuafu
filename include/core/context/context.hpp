@@ -22,7 +22,11 @@ namespace kuafu {
         std::shared_ptr<Window> mWindow = nullptr;
         std::shared_ptr<Camera> mCamera = nullptr;
         vk::UniqueInstance mInstance;
+
+#ifdef VK_VALIDATION
         vkCore::DebugMessenger mDebugMessenger;
+#endif
+
         vkCore::Surface mSurface;
         vk::UniqueDevice mDevice;
         vk::UniqueCommandPool mGraphicsCmdPool;

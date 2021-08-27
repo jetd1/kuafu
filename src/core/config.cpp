@@ -113,8 +113,8 @@ namespace kuafu {
 
     void Config::setTextureLimit(size_t amount) {
         if (amount == 0) {
-            amount;
-//            KF_WARN( "Can not use value 0 for the maximum amount of textures. Using 1 instead." );
+//            amount;
+            KF_WARN( "Can not use value 0 for the maximum amount of textures. Using 1 instead." );
         }
 
         _maxTextures = ++amount;

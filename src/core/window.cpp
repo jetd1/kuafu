@@ -8,11 +8,11 @@
 
 namespace kuafu {
 
-    Window::Window(int width, int height, std::string title, uint32_t flags) :
+    Window::Window(int width, int height, const std::string& title, uint32_t flags) :
+            mFlags(flags),
             mWidth(width),
             mHeight(height),
-            mTitle(title),
-            mFlags(flags) {
+            mTitle(title) {
         mFlags |= SDL_WINDOW_VULKAN;
     }
 

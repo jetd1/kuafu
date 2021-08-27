@@ -35,19 +35,19 @@ namespace kuafu {
     }
 
     void Time::printBenchmarkResults() {
-        if (allFrames.size() == 0) {
-            return;
-        }
+//        if (allFrames.size() == 0) {
+//            return;
+//        }
+//
+//        uint32_t sum = 0.0F;
+//        for (int value : allFrames) {
+//            sum += value;
+//        }
 
-        uint32_t sum = 0.0F;
-        for (int value : allFrames) {
-            sum += value;
-        }
+//        float average = static_cast<float>( sum ) / static_cast<float>( allFrames.size());
 
-        float average = static_cast<float>( sum ) / static_cast<float>( allFrames.size());
-
-        std::sort(frameTimes.begin(), frameTimes.end(), std::greater<float>());
-        std::sort(allFrames.begin(), allFrames.end(), std::greater<uint32_t>());
+//        std::sort(frameTimes.begin(), frameTimes.end(), std::greater<float>());
+//        std::sort(allFrames.begin(), allFrames.end(), std::greater<uint32_t>());
 
 //        KF_INFO( "Benchmark Results ( Length: ", benchmarkLength, " s.)" );
 //        KF_INFO( "Average FPS          : ", average );

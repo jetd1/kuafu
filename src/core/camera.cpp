@@ -95,7 +95,7 @@ namespace kuafu {
     void Camera::updateProjectionMatrix() {
         _projection = glm::perspective(glm::radians(_fov), static_cast<float>( _width ) / static_cast<float>( _height ),
                                        0.1F, 100.0F);
-        _projection[1, 1] *= -1;
+        _projection[1][1] *= -1;
 
         _projectionInverse = glm::inverse(_projection);
 
