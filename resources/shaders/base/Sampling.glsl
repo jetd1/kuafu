@@ -108,9 +108,9 @@ vec3 uniformHemisphereSampling( inout uint seed, inout float pdf, in vec3 normal
 
 // Not working
 // from RayTracingGems p. 241
-vec3 coneSampling( inout uint seed, inout float pdf, in vec3 normal, float fuzziness )
+vec3 coneSampling( inout uint seed, inout float pdf, in vec3 normal, float roughness )
 {
-  float cosThetaMax = fuzziness;
+  float cosThetaMax = roughness;
 
   pdf = 1.0 / ( 2.0 * M_PI * ( 1.0 - cos( cosThetaMax ) ) );
 

@@ -17,8 +17,8 @@ namespace kuafu {
                (m1.illum == m2.illum) &&
                (m1.d == m2.d) &&
                (m1.ns == m2.ns) &&
-               (m1.ni == m2.ni) &&
-               (m1.fuzziness == m2.fuzziness);
+               (m1.ior == m2.ior) &&
+               (m1.roughness == m2.roughness);
     }
 
     std::shared_ptr<Geometry> loadObj(std::string_view path, bool dynamic) {
@@ -37,7 +37,7 @@ namespace kuafu {
         bool res = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, std::string(path).c_str());
 
         if (!warn.empty()) {
-//            KF_WARN( warn );
+            KF_WARN( warn );
         }
 
         if (!err.empty()) {
@@ -63,7 +63,7 @@ namespace kuafu {
         geometry->matIndex.reserve(totalAmountOfTriangles);
 
         // Assuming that any given model does assign a material per sub-mesh
-        global::materials.reserve(shapes.size());
+        global::materials.reserve(global::materials.size() + shapes.size());
 
         // Loop over shapes.
         for (const auto &shape : shapes) {
@@ -83,8 +83,8 @@ namespace kuafu {
                     geometry->isOpaque = false;
                 }
                 mat.ns = materials[materialIndex].shininess;
-                mat.ni = materials[materialIndex].ior;
-                mat.fuzziness = materials[materialIndex].roughness;
+                mat.ior = materials[materialIndex].ior;
+                mat.roughness = materials[materialIndex].roughness;
                 // @todo Add relative path here instead of inside the .mtl file.
                 mat.diffuseTexPath = materials[materialIndex].diffuse_texname;
 

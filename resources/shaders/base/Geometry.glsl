@@ -4,8 +4,8 @@ struct Material
   vec4 emission; // vec3 emission  + vec1 shininess
   uint illum;
   float d;
-  float fuzziness;
-  float ni;
+  float roughness;
+  float ior;
 };
 
 struct Vertex

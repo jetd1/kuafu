@@ -27,10 +27,10 @@ namespace kuafu {
         /// Focus of the specular light (aka shininess). Ranges from 0 to 1000, with a high value resulting in a tight, concentrated highlight.
         float ns = 0.0F;
 
-        float fuzziness = 1000.0F;
+        float roughness = 1000.0F;
 
         /// Optical density (aka index of refraction). Ranges from 0.001 to 10. A value of 1.0 means that light does not bend as it passes through an object.
-        float ni = 1.4F;
+        float ior = 1.4F;
 
         friend bool operator==(const Material &m1, const Material &m2);
     };
@@ -93,7 +93,7 @@ namespace kuafu {
 
         uint32_t illum = 0;
         float dissolve = 1.0F;
-        float fuzziness = 0.0F;
+        float roughness = 0.0F;
         float ior = 1.0F;
     };
 

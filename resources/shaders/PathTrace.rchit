@@ -209,7 +209,7 @@ void main( )
   if ( mat.illum == 2 )
   {
     vec3 reflectDir = reflect( ray.direction, normal );
-    nextDirection   = reflectDir + mat.fuzziness * cosineHemisphereSampling( ray.seed, pdf, normal );
+    nextDirection   = reflectDir + mat.roughness * cosineHemisphereSampling( ray.seed, pdf, normal );
     ray.reflective  = true;
   }
   // @todo Resulting background color is inverted for any 2D surface
@@ -220,15 +220,15 @@ void main( )
     vec3 temp = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT ? -normal : normal;
 
     float dot_   = dot( ray.direction, normal );
-    float cosine = dot_ > 0 ? mat.ni * dot_ : -dot_;
-    float ior    = dot_ > 0 ? mat.ni : 1 / mat.ni;
+    float cosine = dot_ > 0 ? mat.ior * dot_ : -dot_;
+    float ior    = dot_ > 0 ? mat.ior : 1 / mat.ior;
 
     vec3 refracted    = refract( ray.direction, temp, ior );
-    float reflectProb = refracted != vec3( 0.0 ) ? Schlick( cosine, mat.ni ) : 1.0;
+    float reflectProb = refracted != vec3( 0.0 ) ? Schlick( cosine, mat.ior ) : 1.0;
 
     if ( rnd( ray.seed ) < reflectProb )
     {
-      nextDirection = reflect( ray.direction, normal ) + mat.fuzziness * cosineHemisphereSampling( ray.seed, pdf, normal );
+      nextDirection = reflect( ray.direction, normal ) + mat.roughness * cosineHemisphereSampling( ray.seed, pdf, normal );
     }
     else
     {

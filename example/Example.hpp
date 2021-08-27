@@ -188,71 +188,71 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         mat.illum = 2;
         mat.kd = glm::vec3(0.2F, 0.4F, 1.0F);
         mat.ns = 0.0F;
-        mat.fuzziness = 1000.;
-        mat.ni = 0.0F;
+        mat.roughness = 1000.;
+        mat.ior = 0.0F;
         mat.d = 1.0;
         sphere->setMaterial(mat);
 
 //        auto sphere1 = kuafu::loadObj("models/sphere.obj");
 //        mat.kd = glm::vec3(1.0F, 0.8F, 0.0F);
 //        mat.ns = 0.0F;
-//        mat.ni = 1;
+//        mat.ior = 1;
 //        mat.illum = 0;
 //        mat.d = 0.5;
-//        mat.ni = 1.0F;
+//        mat.ior = 1.0F;
 //        sphere1->setMaterial(mat);
 
         auto sphere1 = kuafu::loadObj("models/sphere.obj");
         mat.illum = 1;
         mat.kd = glm::vec3(0.2F, 0.4F, 1.0F);
         mat.ns = 128.0F;
-        mat.fuzziness = 0.;
-        mat.ni = 1.4F;
+        mat.roughness = 0.;
+        mat.ior = 1.4F;
         sphere1->setMaterial(mat);
 
         auto sphere2 = kuafu::loadObj("models/sphere.obj");
         mat.illum = 1;
         mat.kd = glm::vec3(1.0F, 1.0F, 1.0F);
         mat.ns = 128.0F;
-        mat.fuzziness = 0.;
-        mat.ni = 1.4F;
+        mat.roughness = 0.;
+        mat.ior = 1.4F;
         sphere2->setMaterial(mat);
 
         auto sphere3 = kuafu::loadObj("models/sphere.obj");
         mat.illum = 2;
         mat.kd = glm::vec3(0.2F, 0.4F, 1.0F);
-        mat.fuzziness = 0.02F;
-        mat.ni = 1.0F;
+        mat.roughness = 0.02F;
+        mat.ior = 1.0F;
         sphere3->setMaterial(mat);
 
         auto sphere4 = kuafu::loadObj("models/sphere.obj");
         mat.illum = 2;
-        mat.fuzziness = 0.2F;
-        mat.ni = 1.0F;
+        mat.roughness = 0.2F;
+        mat.ior = 1.0F;
         sphere4->setMaterial(mat);
 
 //        auto sphere5 = kuafu::loadObj("models/sphere.obj");
 //        mat.illum = 2;
-//        mat.fuzziness = 0.6F;
+//        mat.roughness = 0.6F;
 //        sphere5->setMaterial(mat);
 //
 //        auto sphere6 = kuafu::loadObj("models/sphere.obj");
 //        mat.illum = 2;
-//        mat.fuzziness = 0.8F;
+//        mat.roughness = 0.8F;
 //        sphere6->setMaterial(mat);
 //
 //        auto sphere7 = kuafu::loadObj("models/sphere.obj");
 //        mat.illum = 2;
-//        mat.fuzziness = 1.0F;
+//        mat.roughness = 1.0F;
 //        sphere7->setMaterial(mat);
 
         auto glass = kuafu::loadObj("models/plane.obj");
         kuafu::Material glassMaterial;
         glassMaterial.kd = glm::vec3(1.0F);
-        glassMaterial.ni = 1.0F;
+        glassMaterial.ior = 1.0F;
         glassMaterial.illum = 1;
-        glassMaterial.ni = 2.6F;
-        glassMaterial.fuzziness = 1.0F;
+        glassMaterial.ior = 2.6F;
+        glassMaterial.roughness = 1.0F;
         glass->setMaterial(glassMaterial);
 
         renderer->getScene().setGeometries(
@@ -331,7 +331,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto mirrorPlane = kuafu::loadObj("models/plane.obj");
         kuafu::Material mirrorMaterial;
         mirrorMaterial.illum = 2;
-        mirrorMaterial.fuzziness = 0.0F;
+        mirrorMaterial.roughness = 0.0F;
         mirrorMaterial.kd = glm::vec3(0.95F);
         mirrorPlane->setMaterial(mirrorMaterial);
 

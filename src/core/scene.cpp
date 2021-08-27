@@ -235,7 +235,7 @@ namespace kuafu {
             }
         }
 
-//        KF_INFO( "Could not find geometry in scene." );
+        KF_INFO( "Could not find geometry in scene." );
         return nullptr;
     }
 
@@ -331,9 +331,9 @@ namespace kuafu {
             mat2.diffuse = glm::vec4(global::materials[i].kd, -1.0F);
             mat2.emission = glm::vec4(global::materials[i].emission, global::materials[i].ns);
             mat2.dissolve = global::materials[i].d;
-            mat2.ior = global::materials[i].ni;
+            mat2.ior = global::materials[i].ior;
             mat2.illum = global::materials[i].illum;
-            mat2.fuzziness = global::materials[i].fuzziness;
+            mat2.roughness = global::materials[i].roughness;
 
             // Set up texture
             if (!global::materials[i].diffuseTexPath.empty()) {
