@@ -23,6 +23,10 @@ namespace kuafu {
         friend Context;
         friend Kuafu;
 
+        auto getGeometries() const -> const std::vector<std::shared_ptr<Geometry>> &;
+
+        auto getGeometryByGlobalIndex(size_t index) const -> std::shared_ptr<Geometry>;
+
         /// @return Returns all geometry instances in the scene.
         auto getGeometryInstances() const -> const std::vector<std::shared_ptr<GeometryInstance>> &;
 
@@ -96,6 +100,8 @@ namespace kuafu {
         auto getCamera() const -> std::shared_ptr<Camera> { return mCurrentCamera; }
 
         inline auto getGeometryInstanceCount() { return mGeometries.size(); }
+        inline void markGeometriesChanged() { _uploadGeometries = true; }
+        inline void markGeometryInstancesChanged() { _uploadGeometryInstancesToBuffer = true; }
 
     private:
         void initSceneDescriptorSets();
@@ -157,7 +163,7 @@ namespace kuafu {
         bool _uploadGeometries = false;
         bool mDummy = false;
 
-        std::unordered_set<std::shared_ptr<Camera>> mCameras; ///< The cameras that can be used for rendering.
+//        std::unordered_set<std::shared_ptr<Camera>> mCameras; ///< The cameras that can be used for rendering.
         std::shared_ptr<Camera> mCurrentCamera;               ///< The camera that is currently being used for rendering.
 
         Config *_settings = nullptr;

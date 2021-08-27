@@ -16,4 +16,5 @@ _deps
 
 /.idea/
 /cmake-build-debug/
-
+/build/
+/resources/all_models/

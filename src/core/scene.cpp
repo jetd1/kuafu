@@ -19,6 +19,19 @@ namespace kuafu {
     std::vector<GeometryInstanceSSBO> memAlignedGeometryInstances;
     std::vector<MaterialSSBO> memAlignedMaterials;
 
+    auto Scene::getGeometries() const -> const std::vector<std::shared_ptr<Geometry>> & {
+        return mGeometries;
+    }
+
+    auto Scene::getGeometryByGlobalIndex(size_t index) const -> std::shared_ptr<Geometry> {
+        for (auto p: mGeometries)
+            if (index == p ->geometryIndex)
+                return p;
+
+        KF_WARN("Geometry not found");
+        return nullptr;
+    }
+
     auto Scene::getGeometryInstances() const -> const std::vector<std::shared_ptr<GeometryInstance>> & {
         return mGeometryInstances;
     }
@@ -237,13 +250,13 @@ namespace kuafu {
     }
 
     void Scene::setCamera(std::shared_ptr<Camera> camera) {
-        mCameras.insert(camera);
+//        mCameras.insert(camera);
         mCurrentCamera = camera;
     }
 
     void Scene::setCamera(int width, int height, const glm::vec3 &position) {
         auto cam = std::make_shared<Camera>(width, height, position);
-        mCameras.insert(cam);
+//        mCameras.insert(cam);
         mCurrentCamera = cam;
     }
 

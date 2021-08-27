@@ -96,8 +96,12 @@ namespace kuafu {
         vkCore::initQueueFamilyIndices();
 
         // Logical device
+        vk::PhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures;
+        shaderClockFeatures.shaderSubgroupClock = VK_TRUE;
+
         vk::PhysicalDeviceAccelerationStructureFeaturesKHR asFeatures;
         asFeatures.accelerationStructure = VK_TRUE;
+        asFeatures.pNext = &shaderClockFeatures;
 
         vk::PhysicalDeviceRayTracingPipelineFeaturesKHR rtPipelineFeatures;
         rtPipelineFeatures.rayTracingPipeline = VK_TRUE;
@@ -374,7 +378,7 @@ namespace kuafu {
             vk::Result result = vkCore::global::graphicsQueue.presentKHR(presentInfo);
             if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
                 mConfig.triggerSwapchainRefresh();
-//                KF_WARN("Swapchain out of data or suboptimal.");
+                KF_WARN("Swapchain out of data or suboptimal.");
             }
         }
         catch (...) {
@@ -424,11 +428,15 @@ namespace kuafu {
     void Context::render() {
         update();
 
-        if (mWindow->minimized())
+        if (mWindow->minimized()) {
+            KF_WARN("mWindow->minimized()");
             return;
+        }
 
         if (mWindow->changed()) {
-            mCamera->mProjNeedsUpdate = true;
+            KF_WARN("mWindow->changed()");
+            mScene.mCurrentCamera->mProjNeedsUpdate = true;
+//            mCamera->mProjNeedsUpdate = true;
             return;
         }
 
@@ -463,7 +471,8 @@ namespace kuafu {
 
         // Update the camera screen size to avoid image stretching.
         auto screenSize = mSwapchain.getExtent();
-        mCamera->setSize(screenSize.width, screenSize.height);
+        mScene.mCurrentCamera->setSize(screenSize.width, screenSize.height);
+//        mCamera->setSize(screenSize.width, screenSize.height);
 
         mConfig.mSwapchainNeedsRefresh = false;
 

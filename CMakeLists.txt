@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 project(kuafu VERSION 0.1)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_FLAGS_DEBUG "-o0 -g3 -Wall -Wnon-virtual-dtor -fsized-deallocation -Wno-deprecated-declarations")
+set(CMAKE_CXX_FLAGS_RELEASE "-o3 -g0 -Wall -Wnon-virtual-dtor  -fsized-deallocation -Wno-deprecated-declarations")
 
 if(NOT CMAKE_BUILD_TYPE)
     message("MX: Build type not set. Continuing with: Debug")

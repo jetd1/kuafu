@@ -12,14 +12,14 @@ namespace kuafu {
     /// Property descriptions copied from https://www.loc.gov/preservation/digital/formats/fdd/fdd000508.shtml.
     /// @ingroup BASE
     struct Material {
-        glm::vec3 kd = glm::vec3(0.0F, 0.0F, 0.0F); /// Diffuse color
+        glm::vec3 kd = glm::vec3(0.0F); /// Diffuse color
         std::string diffuseTexPath = "";
 
         glm::vec3 emission = glm::vec3(0.0F);
 
         /// Illumination model.
         /// @todo documentation
-        uint32_t illum = 0;
+        uint32_t illum = 2;
 
         /// Specifies a factor for dissolve, how much this material dissolves into the background. A factor of 1.0 is fully opaque. A factor of 0.0 is completely transparent.
         float d = 1.0F;
@@ -27,10 +27,10 @@ namespace kuafu {
         /// Focus of the specular light (aka shininess). Ranges from 0 to 1000, with a high value resulting in a tight, concentrated highlight.
         float ns = 0.0F;
 
-        float fuzziness = 0.0F;
+        float fuzziness = 1000.0F;
 
         /// Optical density (aka index of refraction). Ranges from 0.001 to 10. A value of 1.0 means that light does not bend as it passes through an object.
-        float ni = 1.0F;
+        float ni = 1.4F;
 
         friend bool operator==(const Material &m1, const Material &m2);
     };

@@ -20,11 +20,11 @@ namespace kuafu {
         if (mContext.mScene.mCurrentCamera == nullptr) {
 //            KF_VERBOSE( "No custom camera implementation was provided. Using default implementation instead." );
             mContext.mScene.mCurrentCamera = std::make_shared<Camera>(mWindow->getWidth(), mWindow->getHeight());
-            mContext.mScene.mCameras.insert(mContext.mScene.mCurrentCamera);
+//            mContext.mScene.mCameras.insert(mContext.mScene.mCurrentCamera);
         }
 
         mContext.mWindow = mWindow;
-        mContext.mCamera = mContext.mScene.mCurrentCamera;
+//        mContext.mCamera = mContext.mScene.mCurrentCamera;
         mContext.mScene._settings = &mContext.mConfig;
 
         if (mContext.mConfig.getAssetsPath().empty()) {
@@ -57,10 +57,14 @@ namespace kuafu {
     }
 
     void Kuafu::run() {
-        if (!mRunning || !mInitialized)
+        if (!mRunning || !mInitialized) {
+            KF_WARN("!mRunning || !mInitialized");
             return;
+        }
 
         mRunning = mWindow->update();
+
+//        mContext.mCamera = mContext.mScene.mCurrentCamera;
         mContext.mScene.mCurrentCamera->update();
 
         mContext.render();

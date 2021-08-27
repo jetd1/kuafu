@@ -72,7 +72,9 @@ namespace kuafu {
         /// @param fov The new field of view.
         void setFov(float fov);
 
-        float getFov() { return _fov; }
+        [[nodiscard]] auto getWidth() const { return _width; }
+        [[nodiscard]] auto getHeight() const { return _height; }
+        [[nodiscard]] auto getFov() const { return _fov; }
 
         /// Is used to set the mouse sensitivity.
         /// @param sensitivity The new mouse sensitivity.
@@ -125,7 +127,7 @@ namespace kuafu {
         glm::mat4 _viewInverse = glm::mat4(1.0F); ///< The view matrix inversed.
         glm::mat4 _projectionInverse = glm::mat4(1.0F); ///< The projection matrix inversed.
 
-        glm::vec3 _worldUp = {0.0F, 1.0F, 0.0F}; ///< The world up vector.
+        glm::vec3 _worldUp = {0.0F, 0.0F, 1.0F}; ///< The world up vector.
         glm::vec3 _up = {};                  ///< The local up vector.
         glm::vec3 mDirRight = {};                  ///< The local right vector.
         glm::vec3 mDirFront = {};                  ///< The viewing direction.

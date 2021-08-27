@@ -49,3 +49,12 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
+#include <tinyLogger/TinyLogger.hpp>
+#define KF_VERBOSE( ... )           TINY_LOGGER_NAME::verbose("KF: ", __VA_ARGS__ )
+#define KF_INFO( ... )              TINY_LOGGER_NAME::info("KF: ", __VA_ARGS__ )
+#define KF_SUCCESS( ... )           TINY_LOGGER_NAME::success("KF: ", __VA_ARGS__ )
+#define KF_WARN( ... )              TINY_LOGGER_NAME::warning("KF: ", __VA_ARGS__ )
+#define KF_ERROR( ... )             TINY_LOGGER_NAME::error("KF: ", __VA_ARGS__ )
+#define KF_FATAL( ... )             TINY_LOGGER_NAME::fatal("KF: ", __VA_ARGS__ )
+#define KF_ASSERT( statement, ... ) TINY_LOGGER_NAME::assert2( statement, "KF: ", __VA_ARGS__ )

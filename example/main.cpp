@@ -11,21 +11,33 @@ int main() {
     renderer.getConfig().setAssetsPath("../resources");
 
     auto &scene = renderer.getScene();
-    scene.setCamera(std::make_shared<CustomCamera>(
-            width, height, glm::vec3(0.f, 0.f, 3.f)));
+//    scene.setCamera(std::make_shared<CustomCamera>(
+//            width, height, glm::vec3(0.f, 0.f, 3.f)));
     renderer.setWindow(std::make_shared<CustomWindow>(
             width, height, "Test", SDL_WINDOW_RESIZABLE, &scene));
 //    renderer.setGui(std::make_shared<CustomGui>(&renderer));
     renderer.init();
 
-//    loadScene(&renderer, Level::eAnimations);
+    scene.setCamera(std::make_shared<CustomCamera>(
+            width, height, glm::vec3(0.f, 0.f, 3.f)));
+
     loadScene(&renderer, Level::eSpheres);
 
-    renderer.getConfig().setPerPixelSampleRate(256);
-    renderer.getConfig().setUseDenoiser(false);
+//    renderer.getConfig().setPerPixelSampleRate(256);
+//    renderer.getConfig().setUseDenoiser(false);
+
+    for (int i = 0; i < 100; i++)
+        renderer.run();
+
+    auto geometries = renderer.getScene().getGeometries();
+    kuafu::global::materials[geometries[3]->matIndex.front()].d = 0.f;
+//    geometries[3]->setMaterial(mat);
+//    geometries[3]->initialized = false;
+    renderer.getScene().markGeometriesChanged();
+    renderer.getScene().markGeometryInstancesChanged();
 
     while (renderer.isRunning()) {
-        updateScene(&renderer);
+//        updateScene(&renderer);
         renderer.run();
     }
 
