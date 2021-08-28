@@ -10,24 +10,24 @@
 
 namespace kuafu {
     void Kuafu::init() {
+      KF_WARN((size_t)&getConfig());
+      KF_WARN((size_t)&mContext.mConfig);
+
 //        KF_INFO( "Starting Kuafu." );
 
         if (mWindow == nullptr) {
-//            KF_VERBOSE( "No custom window implementation was provided. Using default implementation instead." );
             mWindow = std::make_shared<Window>();
         }
 
-        if (mContext.mScene.mCurrentCamera == nullptr) {
-//            KF_VERBOSE( "No custom camera implementation was provided. Using default implementation instead." );
+        if (mContext.mScene.mCurrentCamera == nullptr)
             mContext.mScene.mCurrentCamera = std::make_shared<Camera>(mWindow->getWidth(), mWindow->getHeight());
-//            mContext.mScene.mCameras.insert(mContext.mScene.mCurrentCamera);
-        }
 
         mContext.mWindow = mWindow;
-//        mContext.mCamera = mContext.mScene.mCurrentCamera;
+
         mContext.mScene._settings = &mContext.mConfig;
 
-        if (mContext.mConfig.getAssetsPath().empty()) {
+
+      if (mContext.mConfig.getAssetsPath().empty()) {
             //mContext.mConfig.setDefaultAssetsPath();
         }
 
