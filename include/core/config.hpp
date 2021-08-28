@@ -119,17 +119,17 @@ namespace kuafu {
         bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
         bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
 
-        size_t _maxGeometryInstances = 32; ///< Can be set to avoid pipeline recreation everytime a geometry instance is added.
+        size_t _maxGeometryInstances = 256; ///< Can be set to avoid pipeline recreation everytime a geometry instance is added.
         bool _maxGeometryInstancesChanged = false;
-        size_t _maxGeometry = 32; ///< The maximum amount of geometry (Must be a multiple of minimum storage buffer alignment).
+        size_t _maxGeometry = 128; ///< The maximum amount of geometry (Must be a multiple of minimum storage buffer alignment).
         bool _maxGeometryChanged = false;
-        size_t _maxTextures = 32; ///< The maximum amount of textures.
+        size_t _maxTextures = 128; ///< The maximum amount of textures.
         bool _maxTexturesChanged = false;
-        size_t _maxMaterials = 1024;
+        size_t _maxMaterials = 256;
 
         std::string _assetsPath; ///< Where all assets like models, textures and shaders are stored.
 
-        glm::vec4 _clearColor = glm::vec4(0.45F, 0.45F, 0.45F, 0.8F); ///< Stores the clear color.
+        glm::vec4 _clearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
         uint32_t mMaxPathDepth = 10;                                     ///< The maximum path depth.
         uint32_t mPathDepth = 5;                                         ///< The current path depth.
         uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.

@@ -81,7 +81,7 @@ namespace kuafu {
     void Config::setGeometryInstanceLimit(uint32_t amount) {
         if (amount == 0) {
             ++amount;
-//            KF_WARN( "Can not use value 0 for the maximum amount of geometry instances. Using 1 instead." );
+            KF_WARN( "Can not use value 0 for the maximum amount of geometry instances. Using 1 instead." );
         }
 
         // Increment by one to accommodate the triangle dummy for emtpy scenes.

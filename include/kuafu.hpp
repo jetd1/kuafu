@@ -32,9 +32,9 @@ namespace kuafu {
 
         void setGui(std::shared_ptr<Gui> gui);
 
-        kuafu::Config &getConfig() { return mContext.mConfig; }
+        inline kuafu::Config &getConfig() { return mContext.mConfig; }
 
-        kuafu::Scene &getScene() { return mContext.mScene; }
+        inline kuafu::Scene &getScene() { return mContext.mScene; }
 
         void reset();
     };
