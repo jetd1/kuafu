@@ -16,7 +16,7 @@ namespace kuafu {
                (m1.diffuseTexPath == m2.diffuseTexPath) &&
                (m1.illum == m2.illum) &&
                (m1.d == m2.d) &&
-               (m1.ns == m2.ns) &&
+               (m1.shininess == m2.shininess) &&
                (m1.ior == m2.ior) &&
                (m1.roughness == m2.roughness);
     }
@@ -37,7 +37,7 @@ namespace kuafu {
         bool res = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, std::string(path).c_str());
 
         if (!warn.empty()) {
-            KF_WARN( warn );
+            KF_WARN(warn);
         }
 
         if (!err.empty()) {
@@ -82,7 +82,7 @@ namespace kuafu {
                 if (mat.d < 1.0F) {
                     geometry->isOpaque = false;
                 }
-                mat.ns = materials[materialIndex].shininess;
+                mat.shininess = materials[materialIndex].shininess;
                 mat.ior = materials[materialIndex].ior;
                 mat.roughness = materials[materialIndex].roughness;
                 // @todo Add relative path here instead of inside the .mtl file.
@@ -189,5 +189,284 @@ namespace kuafu {
     void GeometryInstance::setTransform(const glm::mat4 &transform) {
         this->transform = transform;
         //transformIT     = glm::transpose( glm::inverse( transform ) );
+    }
+
+    // From optifuser by Fanbo
+    void Geometry::recalculateNormals() {
+        for (auto &v : vertices) {
+            v.normal = glm::vec3(0);
+        }
+        for (size_t i = 0; i < indices.size(); i += 3) {
+            unsigned int i1 = indices[i];
+            unsigned int i2 = indices[i + 1];
+            unsigned int i3 = indices[i + 2];
+            Vertex &v1 = vertices[i1];
+            Vertex &v2 = vertices[i2];
+            Vertex &v3 = vertices[i3];
+
+            glm::vec3 normal = glm::normalize(
+                    glm::cross(v2.pos - v1.pos, v3.pos - v1.pos));
+            if (std::isnan(normal.x)) {
+                continue;
+            }
+            v1.normal += normal;
+            v2.normal += normal;
+            v3.normal += normal;
+        }
+
+        for (auto& v: vertices) {
+            if (v.normal == glm::vec3(0))
+                continue;
+            v.normal = glm::normalize(v.normal);
+        }
+    }
+
+    std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<Material> mat) {
+        auto ret = std::make_shared<Geometry>();
+        ret->vertices = {
+                {.pos = {0, 1, 1}, .normal = {1, 0, 0}, .texCoord = {1, 0}},
+                {.pos = {0, -1, 1}, .normal = {1, 0, 0}, .texCoord = {0, 0}},
+                {.pos = {0, -1, -1}, .normal = {1, 0, 0}, .texCoord = {1, 1}},
+                {.pos = {0, 1, -1}, .normal = {1, 0, 0}, .texCoord = {0, 1}}
+        };
+        ret->indices = {
+                0, 1, 2,
+                0, 2, 3
+        };
+        ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
+
+        kuafu::global::materials.push_back(*mat);  // copy
+        ++kuafu::global::materialIndex;            // TODO: check existing dup mat
+
+        ret->geometryIndex = kuafu::global::geometryIndex++;
+        ret->subMeshCount = 1;
+        ret->path = "";
+        ret->initialized = false;
+        ret->dynamic = dynamic;
+        ret->isOpaque = (mat->d >= 1.0F);
+        return ret;
+    }
+
+    std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<Material> mat) {
+        auto ret = std::make_shared<Geometry>();
+
+        ret->vertices = {
+                {.pos = {-1, 1, -1}, .normal = {0, 1, 0}, .texCoord = {0.875, 0.5}},
+                {.pos = {1, 1, 1}, .normal = {0, 1, 0}, .texCoord = {0.625, 0.25}},
+                {.pos = {1, 1, -1}, .normal = {0, 1, 0}, .texCoord = {0.625, 0.5}},
+                {.pos = {1, 1, 1}, .normal = {0, 0, 1}, .texCoord = {0.625, 0.25}},
+                {.pos = {-1, -1, 1}, .normal = {0, 0, 1}, .texCoord = {0.375, 0}},
+                {.pos = {1, -1, 1}, .normal = {0, 0, 1}, .texCoord = {0.375, 0.25}},
+                {.pos = {-1, 1, 1}, .normal = {-1, 0, 0}, .texCoord = {0.625, 1}},
+                {.pos = {-1, -1, -1}, .normal = {-1, 0, 0}, .texCoord = {0.375, 0.75}},
+                {.pos = {-1, -1, 1}, .normal = {-1, 0, 0}, .texCoord = {0.375, 1}},
+                {.pos = {1, -1, -1}, .normal = {0, -1, 0}, .texCoord = {0.375, 0.5}},
+                {.pos = {-1, -1, 1}, .normal = {0, -1, 0}, .texCoord = {0.125, 0.25}},
+                {.pos = {-1, -1, -1}, .normal = {0, -1, 0}, .texCoord = {0.125, 0.5}},
+                {.pos = {1, 1, -1}, .normal = {1, 0, 0}, .texCoord = {0.625, 0.5}},
+                {.pos = {1, -1, 1}, .normal = {1, 0, 0}, .texCoord = {0.375, 0.25}},
+                {.pos = {1, -1, -1}, .normal = {1, 0, 0}, .texCoord = {0.375, 0.5}},
+                {.pos = {-1, 1, -1}, .normal = {0, 0, -1}, .texCoord = {0.625, 0.75}},
+                {.pos = {1, -1, -1}, .normal = {0, 0, -1}, .texCoord = {0.375, 0.5}},
+                {.pos = {-1, -1, -1}, .normal = {0, 0, -1}, .texCoord = {0.375, 0.75}},
+                {.pos = {-1, 1, 1}, .normal = {0, 1, 0}, .texCoord = {0.875, 0.25}},
+                {.pos = {-1, 1, 1}, .normal = {0, 0, 1}, .texCoord = {0.625, 0}},
+                {.pos = {-1, 1, -1}, .normal = {-1, 0, 0}, .texCoord = {0.625, 0.75}},
+                {.pos = {1, -1, 1}, .normal = {0, -1, 0}, .texCoord = {0.375, 0.25}},
+                {.pos = {1, 1, 1}, .normal = {1, 0, 0}, .texCoord = {0.625, 0.25}},
+                {.pos = {1, 1, -1}, .normal = {0, 0, -1}, .texCoord = {0.625, 0.5}},
+        };
+        ret->indices = {
+                0, 1, 2,
+                3, 4, 5,
+                6, 7, 8,
+                9, 10, 11,
+                12, 13, 14,
+                15, 16, 17,
+                0, 18, 1,
+                3, 19, 4,
+                6, 20, 7,
+                9, 21 ,10,
+                12, 22, 13,
+                15, 23, 16
+        };
+        ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
+
+        kuafu::global::materials.push_back(*mat);  // copy
+        ++kuafu::global::materialIndex;            // TODO: check existing dup mat
+
+        ret->geometryIndex = kuafu::global::geometryIndex++;
+        ret->subMeshCount = 1;
+        ret->path = "";
+        ret->initialized = false;
+        ret->dynamic = dynamic;
+        ret->isOpaque = (mat->d >= 1.0F);
+        return ret;
+    }
+
+    // Modified from optifuser by Fanbo
+    std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<Material> mat) {
+        auto ret = std::make_shared<Geometry>();
+
+        uint32_t stacks = 50;
+        uint32_t slices = 50;
+        float radius = 1.f;
+
+        for (uint32_t i = 1; i < stacks; ++i) {
+            float phi = glm::pi<float>() / stacks * i - glm::pi<float>() / 2;
+            for (uint32_t j = 0; j < slices; ++j) {
+                float theta = glm::pi<float>() * 2 / slices * j;
+                float x = sinf(phi) * radius;
+                float y = cosf(theta) * cosf(phi) * radius;
+                float z = sinf(theta) * cosf(phi) * radius;
+                ret->vertices.push_back({.pos = {x, y, z}});
+            }
+        }
+
+        for (uint32_t i = 0; i < (stacks - 2) * slices; ++i) {
+            uint32_t right = (i + 1) % slices + i / slices * slices;
+            uint32_t up = i + slices;
+            uint32_t rightUp = right + slices;
+
+            ret->indices.push_back(i);
+            ret->indices.push_back(rightUp);
+            ret->indices.push_back(up);
+
+            ret->indices.push_back(i);
+            ret->indices.push_back(right);
+            ret->indices.push_back(rightUp);
+        }
+
+        ret->vertices.push_back({.pos = {-radius, 0, 0}});
+        ret->vertices.push_back({.pos = {radius, 0, 0}});
+
+        for (uint32_t i = 0; i < slices; ++i) {
+            uint32_t right = (i + 1) % slices + i / slices * slices;
+            ret->indices.push_back(ret->vertices.size() - 2);
+            ret->indices.push_back(right);
+            ret->indices.push_back(i);
+        }
+        for (uint32_t i = (stacks - 2) * slices; i < (stacks - 1) * slices; ++i) {
+            uint32_t right = (i + 1) % slices + i / slices * slices;
+            ret->indices.push_back(ret->vertices.size() - 1);
+            ret->indices.push_back(i);
+            ret->indices.push_back(right);
+        }
+
+        ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
+        kuafu::global::materials.push_back(*mat);  // copy
+        ++kuafu::global::materialIndex;            // TODO: check existing dup mat
+
+        ret->geometryIndex = kuafu::global::geometryIndex++;
+        ret->subMeshCount = 1;
+        ret->path = "";
+        ret->initialized = false;
+        ret->dynamic = dynamic;
+        ret->isOpaque = (mat->d >= 1.0F);
+
+        ret->recalculateNormals();
+
+        return ret;
+    }
+
+    // Modified from optifuser by Fanbo
+    std::shared_ptr<Geometry> createCapsule(
+            float halfHeight, float radius, bool dynamic, std::shared_ptr<Material> mat) {
+        auto ret = std::make_shared<Geometry>();
+
+        std::vector<Vertex> vertices1;
+        std::vector<Vertex> vertices2;
+        std::vector<uint32_t> indices1;
+        std::vector<uint32_t> indices2;
+
+        uint32_t stacks = 10;
+        uint32_t slices = 20;
+
+        for (uint32_t i = 0; i < stacks; ++i) {
+            float phi = glm::pi<float>() / 2 / stacks * i;
+            for (uint32_t j = 0; j < slices; ++j) {
+                float theta = glm::pi<float>() * 2 / slices * j;
+                float x = sinf(phi) * radius;
+                float y = cosf(theta) * cosf(phi) * radius;
+                float z = sinf(theta) * cosf(phi) * radius;
+                vertices1.push_back({.pos = {x + halfHeight, y, z}});
+                vertices2.push_back({.pos = {-x - halfHeight, y, z}});
+            }
+        }
+        vertices1.push_back({.pos = {radius + halfHeight, 0, 0}});
+        vertices2.push_back({.pos = {-radius - halfHeight, 0, 0}});
+
+        for (uint32_t i = 0; i < (stacks - 1) * slices; ++i) {
+            uint32_t right = (i + 1) % slices + i / slices * slices;
+            uint32_t up = i + slices;
+            uint32_t rightUp = right + slices;
+
+            indices1.push_back(i);
+            indices1.push_back(rightUp);
+            indices1.push_back(up);
+
+            indices1.push_back(i);
+            indices1.push_back(right);
+            indices1.push_back(rightUp);
+
+            indices2.push_back(i);
+            indices2.push_back(up);
+            indices2.push_back(rightUp);
+
+            indices2.push_back(i);
+            indices2.push_back(rightUp);
+            indices2.push_back(right);
+        }
+
+        for (uint32_t i = 0; i < slices; ++i) {
+            uint32_t curr = (stacks - 1) * slices + i;
+            uint32_t right = (curr + 1) % slices + curr / slices * slices;
+            uint32_t up = vertices1.size() - 1;
+
+            indices1.push_back(curr);
+            indices1.push_back(right);
+            indices1.push_back(up);
+
+            indices2.push_back(curr);
+            indices2.push_back(up);
+            indices2.push_back(right);
+        }
+
+        ret->vertices = vertices1;
+        ret->vertices.insert(ret->vertices.end(), vertices2.begin(), vertices2.end());
+
+        ret->indices = indices1;
+        ret->indices.reserve(indices1.size() + indices2.size());
+        for (auto i : indices2)
+            ret->indices.push_back(vertices1.size() + i);
+
+        for (uint32_t i = 0; i < slices; ++i) {
+            uint32_t right = (i + 1) % slices;
+            uint32_t up = i + vertices1.size();
+            uint32_t rightUp = right + vertices1.size();
+
+            ret->indices.push_back(i);
+            ret->indices.push_back(up);
+            ret->indices.push_back(rightUp);
+
+            ret->indices.push_back(i);
+            ret->indices.push_back(rightUp);
+            ret->indices.push_back(right);
+        }
+
+        ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
+        kuafu::global::materials.push_back(*mat);  // copy
+        ++kuafu::global::materialIndex;            // TODO: check existing dup mat
+
+        ret->geometryIndex = kuafu::global::geometryIndex++;
+        ret->subMeshCount = 1;
+        ret->path = "";
+        ret->initialized = false;
+        ret->dynamic = dynamic;
+        ret->isOpaque = (mat->d >= 1.0F);
+
+        ret->recalculateNormals();
+
+        return ret;
     }
 }

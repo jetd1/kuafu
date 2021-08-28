@@ -329,7 +329,7 @@ namespace kuafu {
             // Convert to memory aligned struct
             MaterialSSBO mat2;
             mat2.diffuse = glm::vec4(global::materials[i].kd, -1.0F);
-            mat2.emission = glm::vec4(global::materials[i].emission, global::materials[i].ns);
+            mat2.emission = glm::vec4(global::materials[i].emission, global::materials[i].shininess);
             mat2.dissolve = global::materials[i].d;
             mat2.ior = global::materials[i].ior;
             mat2.illum = global::materials[i].illum;

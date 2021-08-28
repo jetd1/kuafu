@@ -25,7 +25,7 @@ namespace kuafu {
         float d = 1.0F;
 
         /// Focus of the specular light (aka shininess). Ranges from 0 to 1000, with a high value resulting in a tight, concentrated highlight.
-        float ns = 0.0F;
+        float shininess = 0.0F;
 
         float roughness = 1000.0F;
 
@@ -42,6 +42,7 @@ namespace kuafu {
     /// @ingroup BASE
     struct Geometry {
         void setMaterial(const Material &material);
+        void recalculateNormals();
 
         std::vector<Vertex> vertices;   ///< Contains all vertices of the geometry.
         std::vector<uint32_t> indices;  ///< Contains all indices of the geometry.
@@ -108,5 +109,12 @@ namespace kuafu {
         uint32_t padding1 = 0;
         uint32_t padding2 = 0;
     };
+
+    std::shared_ptr<Geometry> createYZPlane(bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+    std::shared_ptr<Geometry> createCube(bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+    std::shared_ptr<Geometry> createSphere(bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+    std::shared_ptr<Geometry> createCapsule(
+            float halfHeight = 1., float radius = 1., bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+
 
 }

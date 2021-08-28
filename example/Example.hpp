@@ -173,63 +173,60 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 19.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
-        auto lightPlane = kuafu::loadObj("models/plane.obj");
-        kuafu::Material lightMaterial;
-        lightMaterial.emission = glm::vec3(1.0F);
-        lightPlane->setMaterial(lightMaterial);
+////        auto lightPlane = kuafu::loadObj("models/plane.obj");
+//        auto lightMaterial = std::make_shared<kuafu::Material>();
+//        lightMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
+//        lightMaterial->kd = glm::vec3(1.0, 0.2, 0.2);
+////        lightPlane->setMaterial(lightMaterial);
+//        auto lightPlane = kuafu::createYZPlane(true, lightMaterial);
 
-        auto floor = kuafu::loadObj("models/plane.obj");
-        kuafu::Material floorMaterial;
-        floorMaterial.kd = glm::vec3(1.0F);
-        floor->setMaterial(floorMaterial);
+        auto floorMaterial = std::make_shared<kuafu::Material>();
+//        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
+        floorMaterial->kd = glm::vec3(1.0, 0.3, 0.3);
+        auto floor = kuafu::createYZPlane(true, floorMaterial);
 
-        auto sphere = kuafu::loadObj("models/sphere.obj");
-        kuafu::Material mat;
-        mat.illum = 2;
-        mat.kd = glm::vec3(0.2F, 0.4F, 1.0F);
-        mat.ns = 0.0F;
-        mat.roughness = 1000.;
-        mat.ior = 0.0F;
-        mat.d = 1.0;
-        sphere->setMaterial(mat);
+        auto mat = std::make_shared<kuafu::Material>();
+        mat->illum = 2;
+        mat->kd = glm::vec3(0.2F, 0.4F, 1.0F);
+        mat->shininess = 0.0F;
+        mat->roughness = 1000.;
+        mat->ior = 0.0F;
+        mat->d = 1.0;
+        auto sphere = kuafu::createSphere(true, mat);
 
 //        auto sphere1 = kuafu::loadObj("models/sphere.obj");
 //        mat.kd = glm::vec3(1.0F, 0.8F, 0.0F);
-//        mat.ns = 0.0F;
+//        mat.shininess = 0.0F;
 //        mat.ior = 1;
 //        mat.illum = 0;
 //        mat.d = 0.5;
 //        mat.ior = 1.0F;
 //        sphere1->setMaterial(mat);
 
-        auto sphere1 = kuafu::loadObj("models/sphere.obj");
-        mat.illum = 1;
-        mat.kd = glm::vec3(0.2F, 0.4F, 1.0F);
-        mat.ns = 128.0F;
-        mat.roughness = 0.;
-        mat.ior = 1.4F;
-        sphere1->setMaterial(mat);
+        mat->illum = 1;
+        mat->kd = glm::vec3(0.2F, 0.4F, 1.0F);
+        mat->shininess = 128.0F;
+        mat->roughness = 0.;
+        mat->ior = 1.4F;
+        auto sphere1 = kuafu::createSphere(true, mat);
 
-        auto sphere2 = kuafu::loadObj("models/sphere.obj");
-        mat.illum = 1;
-        mat.kd = glm::vec3(1.0F, 1.0F, 1.0F);
-        mat.ns = 128.0F;
-        mat.roughness = 0.;
-        mat.ior = 1.4F;
-        sphere2->setMaterial(mat);
+        mat->illum = 1;
+        mat->kd = glm::vec3(1.0F, 1.0F, 1.0F);
+        mat->shininess = 128.0F;
+        mat->roughness = 0.;
+        mat->ior = 1.4F;
+        auto sphere2 = kuafu::createSphere(true, mat);
 
-        auto sphere3 = kuafu::loadObj("models/sphere.obj");
-        mat.illum = 2;
-        mat.kd = glm::vec3(0.2F, 0.4F, 1.0F);
-        mat.roughness = 0.02F;
-        mat.ior = 1.0F;
-        sphere3->setMaterial(mat);
+        mat->illum = 2;
+        mat->kd = glm::vec3(0.2F, 0.4F, 1.0F);
+        mat->roughness = 0.02F;
+        mat->ior = 1.0F;
+        auto sphere3 = kuafu::createSphere(true, mat);
 
-        auto sphere4 = kuafu::loadObj("models/sphere.obj");
-        mat.illum = 2;
-        mat.roughness = 0.2F;
-        mat.ior = 1.0F;
-        sphere4->setMaterial(mat);
+        mat->illum = 2;
+        mat->roughness = 0.2F;
+        mat->ior = 1.0F;
+        auto sphere4 = kuafu::createSphere(true, mat);
 
 //        auto sphere5 = kuafu::loadObj("models/sphere.obj");
 //        mat.illum = 2;
@@ -257,7 +254,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         renderer->getScene().setGeometries(
                 {
-                    lightPlane,
+//                    lightPlane,
                     floor, sphere,
                  sphere1, sphere2, sphere3, sphere4,
 //                 sphere5, sphere6, sphere7,
@@ -265,9 +262,10 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
                 });
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 80.0F, 0.0F));
-        auto lightPlaneInstance = kuafu::instance(lightPlane, transform);
+//        auto lightPlaneInstance = kuafu::instance(lightPlane, transform);
 
-        transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.2F, 0.2F, 0.2F));
+        transform = glm::scale(glm::mat4(1.0F), glm::vec3(5.0F, 5.0F, 5.0F));
+        transform = glm::rotate(transform, glm::radians(90.F), {0., 1., 0.});
         auto floorInstance = kuafu::instance(floor, transform);
 
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(-5.0F, 0.0F, 0.0F));
@@ -302,7 +300,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         renderer->getScene().setGeometryInstances(
                 {
-                    lightPlaneInstance,
+//                    lightPlaneInstance,
                     floorInstance, sphereInstance,
                  sphereInstance1, sphereInstance2, sphereInstance3,
                  sphereInstance4,
@@ -385,50 +383,43 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         renderer->getScene().setGeometryInstances({lightPlaneInstance, sponzaInstance});
     } else if (scene == Level::eNew) {
+
         renderer->reset();
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(1000);
-        renderer->getConfig().setTextureLimit(50); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
-        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+        renderer->getConfig().setGeometryInstanceLimit(15000);
+        renderer->getConfig().setTextureLimit(100); // Will give a warning.
+        renderer->getConfig().setAccumulatingFrames(false);
+//        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
 
-        renderer->getScene().removeEnvironmentMap();
-        renderer->getScene().getCamera()->setPosition(glm::vec3(-11.6F, 2.4F, -0.73F));
-        renderer->getScene().getCamera()->setFront(glm::vec3(0.98F, 0.19F, 0.0F));
+        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 19.4F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
-        auto floor = kuafu::loadObj("models/plane.obj");
-        kuafu::Material floorMaterial;
-//        floorMaterial.illum = 2;
-        floorMaterial.emission = glm::vec3(1.0F);
-        floorMaterial.kd = glm::vec3(1.0F);
-        floor->setMaterial(floorMaterial);
+        auto floorMaterial = std::make_shared<kuafu::Material>();
+        floorMaterial->kd = glm::vec3(1.0, 0.3, 0.3);
+        auto floor = kuafu::createYZPlane(true, floorMaterial);
 
-        auto transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.2F, 0.2F, 0.2F));
+        auto mat = std::make_shared<kuafu::Material>();
+        mat->illum = 2;
+        mat->kd = glm::vec3(1.0F, 1.0F, 1.0F);
+        mat->shininess = 0.0F;
+        mat->roughness = 2000.;
+        mat->ior = 0.0F;
+        mat->d = 1.0;
+        auto cube = kuafu::createCapsule(1.0, 1.0, true, mat);
+
+        renderer->getScene().setGeometries({floor, cube});
+
+        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 80.0F, 0.0F));
+        transform = glm::scale(glm::mat4(1.0F), glm::vec3(5.0F, 5.0F, 5.0F));
+        transform = glm::rotate(transform, glm::radians(90.F), {0., 1., 0.});
         auto floorInstance = kuafu::instance(floor, transform);
 
-        renderer->getScene().setGeometries({floor});
-        renderer->getScene().setGeometryInstances({floorInstance});
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-0.0F, 0.0F, 1.0F));
+        transform = glm::scale(transform, glm::vec3(1.0));
+        auto cubeInstance = kuafu::instance(cube, transform);
 
-//        renderer->getScene().removeEnvironmentMap();
-//        renderer->getScene().getCamera()->setPosition(glm::vec3(-11.6F, 2.4F, -0.73F));
-//        renderer->getScene().getCamera()->setFront(glm::vec3(0.98F, 0.19F, 0.0F));
-//
-//        auto lightPlane = kuafu::loadObj("models/plane.obj");
-//        kuafu::Material lightMaterial;
-//        lightMaterial.emission = glm::vec3(1.0F);
-//        lightPlane->setMaterial(lightMaterial);
-//
-//        auto sponza = kuafu::loadObj("models/sponza/sponza.obj");
-//
-//        renderer->getScene().setGeometries({lightPlane, sponza});
-//
-//        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 30.0F, 0.0F));
-//        auto lightPlaneInstance = kuafu::instance(lightPlane, transform);
-//
-//        transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.01F));
-//        auto sponzaInstance = kuafu::instance(sponza, transform);
-//
-
+        renderer->getScene().setGeometryInstances({floorInstance, cubeInstance});
     }
 }
 
