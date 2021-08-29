@@ -301,7 +301,7 @@ namespace kuafu {
             }
 
             cameraUBO.position = glm::vec4(mCurrentCamera->getPosition(), mCurrentCamera->getAperture());
-            cameraUBO.front = glm::vec4(mCurrentCamera->getFront(), mCurrentCamera->getFocalDistance());
+            cameraUBO.front = glm::vec4(mCurrentCamera->getFront(), mCurrentCamera->getFocalLength());
         }
 
         _cameraUniformBuffer.upload(imageIndex, cameraUBO);
@@ -355,8 +355,15 @@ namespace kuafu {
                 if (mGeometries[i] != nullptr) {
                     if (!mGeometries[i]->initialized) {
                         // Only keep one copy of both index and vertex buffers each.
-                        mVertexBuffers[i].init(mGeometries[i]->vertices, 2, true);
-                        mIndexBuffers[i].init(mGeometries[i]->indices, 2, true);
+                        mVertexBuffers[i].init(
+                                mGeometries[i]->vertices, 2, true,
+                                {vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR}
+                        );
+                        mIndexBuffers[i].init(
+                                mGeometries[i]->indices, 2, true,
+                                {vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR}
+
+                        );
                         _materialIndexBuffers[i].init(mGeometries[i]->matIndex, 2, true);
 
                         mGeometries[i]->initialized = true;

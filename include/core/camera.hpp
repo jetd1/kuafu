@@ -54,14 +54,15 @@ namespace kuafu {
         void setPosition(const glm::vec3 &position);
 
         void setFront(const glm::vec3 &front);
+        void setUp(const glm::vec3 &up);
 
         void setAperture(float aperture);
 
-        float getAperture() { return _aperture; }
+        inline float getAperture() const { return mAperture; }
 
-        void setFocalDistance(float focalDistance);
+        void setFocalLength(float focalLength);
 
-        float getFocalDistance() { return _focalDistance; }
+        inline float getFocalLength() const { return mFocalLength; }
 
         /// Is used to set a size for the camera that fits the viewport dimensions.
         /// @param width The width of the viewport.
@@ -72,25 +73,24 @@ namespace kuafu {
         /// @param fov The new field of view.
         void setFov(float fov);
 
-        [[nodiscard]] auto getWidth() const { return _width; }
-        [[nodiscard]] auto getHeight() const { return _height; }
-        [[nodiscard]] auto getFov() const { return _fov; }
+        void setPose(glm::mat4 pose);
+        glm::mat4 getPose() const;
 
-        /// Is used to set the mouse sensitivity.
-        /// @param sensitivity The new mouse sensitivity.
-        void setSensitivity(float sensitivity);
+        [[nodiscard]] auto getWidth() const { return mWidth; }
+        [[nodiscard]] auto getHeight() const { return mHeight; }
+        [[nodiscard]] auto getFov() const { return mFov; }
 
         /// @return The view matrix.
-        auto getViewMatrix() const -> const glm::mat4 & { return _view; }
+        auto getViewMatrix() const -> const glm::mat4 & { return mViewMatrix; }
 
         /// @return The projection matrix.
-        auto getProjectionMatrix() const -> const glm::mat4 & { return _projection; }
+        auto getProjectionMatrix() const -> const glm::mat4 & { return mProjMatrix; }
 
         /// @return The view matrix inversed.
-        auto getViewInverseMatrix() const -> const glm::mat4 & { return _viewInverse; }
+        auto getViewInverseMatrix() const -> glm::mat4 { return glm::inverse(mViewMatrix); }
 
         /// @return The projection matrix inversed.
-        auto getProjectionInverseMatrix() const -> const glm::mat4 & { return _projectionInverse; }
+        auto getProjectionInverseMatrix() const -> glm::mat4 { return glm::inverse(mProjMatrix); }
 
         /// Re-calculates the camera's view matrix as well as the inversed view matrix.
         void updateViewMatrix();
@@ -112,32 +112,28 @@ namespace kuafu {
         bool mProjNeedsUpdate = true; ///< Keeps track of whether or not to udpate the projection matrix.
 
     protected:
-        /// Updates the camera vectors.
-        /// @note Only needs to be called if mouse was moved.
-        void updateVectors();
-
-        int _width;  ///< The width of the viewport.
-        int _height; ///< The height of the viewport.
+        int mWidth;  ///< The width of the viewport.
+        int mHeight; ///< The height of the viewport.
 
         glm::vec3 mPosition; ///< The camera's position.
 
-        glm::mat4 _view = glm::mat4(1.0F); ///< The view matrix.
-        glm::mat4 _projection = glm::mat4(1.0F); ///< The projection matrix
+        glm::mat4 mViewMatrix = glm::mat4(1.0F); ///< The view matrix.
+        glm::mat4 mProjMatrix = glm::mat4(1.0F); ///< The projection matrix
 
-        glm::mat4 _viewInverse = glm::mat4(1.0F); ///< The view matrix inversed.
-        glm::mat4 _projectionInverse = glm::mat4(1.0F); ///< The projection matrix inversed.
+//        glm::mat4 _viewInverse = glm::mat4(1.0F); ///< The view matrix inversed.
+//        glm::mat4 _projectionInverse = glm::mat4(1.0F); ///< The projection matrix inversed.
 
-        glm::vec3 _worldUp = {0.0F, 0.0F, 1.0F}; ///< The world up vector.
-        glm::vec3 _up = {};                  ///< The local up vector.
-        glm::vec3 mDirRight = {};                  ///< The local right vector.
-        glm::vec3 mDirFront = {};                  ///< The viewing direction.
+//        glm::vec3 _worldUp = {0.0F, 0.0F, 1.0F}; ///< The world up vector.
+        glm::vec3 mDirUp = {0.0F, 0.0F, 1.0F};                  ///< The local up vector.
+        glm::vec3 mDirRight = {0.0F, -1.0F, 0.0F};                  ///< The local right vector.
+        glm::vec3 mDirFront = {1.0F, 0.0F, 0.0F};                  ///< The viewing direction.
 
-        float _yaw = -90.0F; ///< The yaw (left and right).
-        float _pitch = 0.0F;   ///< The pitch (down and up).
-        float _sensitivity = 0.06F;  ///< The mouse sensitivity.
-        float _fov = 45.0F;  ///< The field of view.
-        float _aperture = 0.0F;   // DOF disabled by default
-        float _focalDistance = 5.0F;
+//        float _yaw = -90.0F; ///< The yaw (left and right).
+//        float _pitch = 0.0F;   ///< The pitch (down and up).
+//        float _sensitivity = 0.06F;  ///< The mouse sensitivity.
+        float mFov = 90.0F;  ///< The field of view.
+        float mAperture = 0.0F;   // DOF disabled by default
+        float mFocalLength = 5.0F;
     };
 
     /*

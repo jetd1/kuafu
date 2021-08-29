@@ -39,7 +39,7 @@
   #define VK_CORE_ASSERT_DEVICE
 #endif
 
-#define VK_CORE_LOGGING
+//#define VK_CORE_LOGGING
 
 #ifdef VK_CORE_LOGGING
   #define VK_CORE_LOG( ... ) details::log( false, "vkCore: ", __VA_ARGS__ )
@@ -1889,7 +1889,9 @@ namespace vkCore
     /// @param data The data to fill the storage buffer(s) with.
     /// @param copies The amount of copies to make.
     /// @param deviceAddressVisible If true, the buffer will be device visible.
-    void init( const std::vector<T>& data, size_t copies = 1, bool deviceAddressVisible = false )
+    void init(
+            const std::vector<T>& data, size_t copies = 1,
+            bool deviceAddressVisible = false, const std::vector<vk::BufferUsageFlags>& additionalBufferUsageFlags = {})
     {
       _count = static_cast<uint32_t>( data.size( ) );
 
@@ -1918,10 +1920,10 @@ namespace vkCore
 
         vk::BufferUsageFlags bufferUsageFlags = vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer;
         if ( deviceAddressVisible )
-        {
-          // @todo Add vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR for vertex and index buffer
           bufferUsageFlags |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
-        }
+
+        for (auto flag: additionalBufferUsageFlags)
+            bufferUsageFlags |= flag;
 
         _storageBuffers[i].init( _maxSize,                                 // size
                                  bufferUsageFlags,                         // usage
