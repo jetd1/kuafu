@@ -34,7 +34,9 @@ namespace kuafu {
         std::string warn;
         std::string err;
 
-        bool res = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, std::string(path).c_str());
+        auto dirName = std::filesystem::path(path).parent_path();
+        bool res = tinyobj::LoadObj(
+                &attrib, &shapes, &materials, &warn, &err, std::string(path).c_str(), dirName.c_str());
 
         if (!warn.empty()) {
             KF_WARN(warn);
@@ -85,8 +87,12 @@ namespace kuafu {
                 mat.shininess = materials[materialIndex].shininess;
                 mat.ior = materials[materialIndex].ior;
                 mat.roughness = materials[materialIndex].roughness;
-                // @todo Add relative path here instead of inside the .mtl file.
-                mat.diffuseTexPath = materials[materialIndex].diffuse_texname;
+
+                auto tex_name = materials[materialIndex].diffuse_texname;
+                if (!std::filesystem::path(tex_name).is_absolute())
+                    tex_name = dirName / tex_name;
+
+                mat.diffuseTexPath = std::move(tex_name);
 
                 bool found = false;
                 size_t materialIndex = 0;
@@ -125,24 +131,28 @@ namespace kuafu {
 
             for (const auto &index : shape.mesh.indices) {
                 Vertex vertex = {};
-                if (static_cast<int>(attrib.vertices.size()) > 3 * index.vertex_index + 0) {
+                if (index.vertex_index > 0
+                        && static_cast<int>(attrib.vertices.size()) > 3 * index.vertex_index + 0) {
                     vertex.pos.x = attrib.vertices[3 * index.vertex_index + 0];
                     vertex.pos.y = attrib.vertices[3 * index.vertex_index + 1];
                     vertex.pos.z = attrib.vertices[3 * index.vertex_index + 2];
                 }
 
-                if (static_cast<int>(attrib.normals.size()) > 3 * index.normal_index + 0) {
+                if (index.normal_index > 0
+                        && static_cast<int>(attrib.normals.size()) > 3 * index.normal_index + 0) {
                     vertex.normal.x = attrib.normals[3 * index.normal_index + 0];
                     vertex.normal.y = attrib.normals[3 * index.normal_index + 1];
                     vertex.normal.z = attrib.normals[3 * index.normal_index + 2];
                 }
 
-                if (static_cast<int>(attrib.texcoords.size()) > 2 * index.texcoord_index + 1) {
+                if (index.texcoord_index > 0
+                        && static_cast<int>(attrib.texcoords.size()) > 2 * index.texcoord_index + 1) {
                     vertex.texCoord.x = attrib.texcoords[2 * index.texcoord_index + 0];
                     vertex.texCoord.y = 1.0F - attrib.texcoords[2 * index.texcoord_index + 1];
                 }
 
-                if (static_cast<int>(attrib.colors.size()) > 3 * index.vertex_index + 2) {
+                if (index.vertex_index > 0
+                        && static_cast<int>(attrib.colors.size()) > 3 * index.vertex_index + 2) {
                     vertex.color.x = attrib.colors[3 * index.vertex_index + 0];
                     vertex.color.y = attrib.colors[3 * index.vertex_index + 1];
                     vertex.color.z = attrib.colors[3 * index.vertex_index + 2];
@@ -156,6 +166,7 @@ namespace kuafu {
                 geometry->indices.push_back(uniqueVertices[vertex]);
             }
         }
+//        geometry->recalculateNormals();
 
         return geometry;
     }
@@ -369,90 +380,99 @@ namespace kuafu {
         return ret;
     }
 
-    // Modified from optifuser by Fanbo
+    // Modified from svulkan2 by Fanbo
+    // TODO: avoid copies
     std::shared_ptr<Geometry> createCapsule(
-            float halfHeight, float radius, bool dynamic, std::shared_ptr<Material> mat) {
+            float halfLength, float radius, bool dynamic, std::shared_ptr<Material> mat) {
         auto ret = std::make_shared<Geometry>();
 
-        std::vector<Vertex> vertices1;
-        std::vector<Vertex> vertices2;
-        std::vector<uint32_t> indices1;
-        std::vector<uint32_t> indices2;
+        int segments = 32;
+        int halfRings = 8;
 
-        uint32_t stacks = 10;
-        uint32_t slices = 20;
+        std::vector<glm::vec3> vertices;
+        std::vector<glm::vec3> normals;
+        std::vector<glm::vec2> uvs;
+        std::vector<glm::ivec3> indices;
 
-        for (uint32_t i = 0; i < stacks; ++i) {
-            float phi = glm::pi<float>() / 2 / stacks * i;
-            for (uint32_t j = 0; j < slices; ++j) {
-                float theta = glm::pi<float>() * 2 / slices * j;
-                float x = sinf(phi) * radius;
-                float y = cosf(theta) * cosf(phi) * radius;
-                float z = sinf(theta) * cosf(phi) * radius;
-                vertices1.push_back({.pos = {x + halfHeight, y, z}});
-                vertices2.push_back({.pos = {-x - halfHeight, y, z}});
-            }
+        for (int s = 0; s < segments; ++s) {
+          vertices.emplace_back(radius + halfLength, 0.f, 0.f);
+          normals.emplace_back(1.f, 0.f, 0.f);
+          uvs.emplace_back((0.5f + s) / segments, 1.f);
         }
-        vertices1.push_back({.pos = {radius + halfHeight, 0, 0}});
-        vertices2.push_back({.pos = {-radius - halfHeight, 0, 0}});
-
-        for (uint32_t i = 0; i < (stacks - 1) * slices; ++i) {
-            uint32_t right = (i + 1) % slices + i / slices * slices;
-            uint32_t up = i + slices;
-            uint32_t rightUp = right + slices;
-
-            indices1.push_back(i);
-            indices1.push_back(rightUp);
-            indices1.push_back(up);
-
-            indices1.push_back(i);
-            indices1.push_back(right);
-            indices1.push_back(rightUp);
-
-            indices2.push_back(i);
-            indices2.push_back(up);
-            indices2.push_back(rightUp);
-
-            indices2.push_back(i);
-            indices2.push_back(rightUp);
-            indices2.push_back(right);
+        int rings = 2 * halfRings;
+        for (int r = 1; r <= halfRings; ++r) {
+          float theta = glm::pi<float>() * r / rings;
+          float x = glm::cos(theta);
+          float yz = glm::sin(theta);
+          for (int s = 0; s < segments + 1; ++s) {
+            float phi = glm::pi<float>() * s * 2 / segments;
+            float y = yz * glm::cos(phi);
+            float z = yz * glm::sin(phi);
+            vertices.emplace_back(glm::vec3{x, y, z} * radius +
+                               glm::vec3{halfLength, 0, 0});
+            normals.emplace_back(x, y, z);
+            uvs.emplace_back(static_cast<float>(s) / segments,
+                           1.f - 0.5f * static_cast<float>(r) / rings);
+          }
         }
-
-        for (uint32_t i = 0; i < slices; ++i) {
-            uint32_t curr = (stacks - 1) * slices + i;
-            uint32_t right = (curr + 1) % slices + curr / slices * slices;
-            uint32_t up = vertices1.size() - 1;
-
-            indices1.push_back(curr);
-            indices1.push_back(right);
-            indices1.push_back(up);
-
-            indices2.push_back(curr);
-            indices2.push_back(up);
-            indices2.push_back(right);
+        for (int r = halfRings; r < rings; ++r) {
+          float theta = glm::pi<float>() * r / rings;
+          float x = glm::cos(theta);
+          float yz = glm::sin(theta);
+          for (int s = 0; s < segments + 1; ++s) {
+            float phi = glm::pi<float>() * s * 2 / segments;
+            float y = yz * glm::cos(phi);
+            float z = yz * glm::sin(phi);
+            vertices.emplace_back(glm::vec3{x, y, z} * radius -
+                               glm::vec3{halfLength, 0, 0});
+            normals.emplace_back(x, y, z);
+            uvs.emplace_back(static_cast<float>(s) / segments,
+                           0.5f - 0.5f * static_cast<float>(r) / rings);
+          }
         }
 
-        ret->vertices = vertices1;
-        ret->vertices.insert(ret->vertices.end(), vertices2.begin(), vertices2.end());
-
-        ret->indices = indices1;
-        ret->indices.reserve(indices1.size() + indices2.size());
-        for (auto i : indices2)
-            ret->indices.push_back(vertices1.size() + i);
-
-        for (uint32_t i = 0; i < slices; ++i) {
-            uint32_t right = (i + 1) % slices;
-            uint32_t up = i + vertices1.size();
-            uint32_t rightUp = right + vertices1.size();
-
-            ret->indices.push_back(i);
-            ret->indices.push_back(up);
-            ret->indices.push_back(rightUp);
-
-            ret->indices.push_back(i);
-            ret->indices.push_back(rightUp);
-            ret->indices.push_back(right);
+        for (int s = 0; s < segments; ++s) {
+          vertices.emplace_back(-radius - halfLength, 0.f, 0.f);
+          normals.emplace_back(-1.f, 0.f, 0.f);
+          uvs.emplace_back((0.5f + s) / segments, 0.f);
         }
+
+        for (int s = 0; s < segments; ++s) {
+          indices.emplace_back(s, s + segments, s + segments + 1);
+        }
+
+        for (int r = 0; r < rings - 1; ++r) {
+          for (int s = 0; s < segments; ++s) {
+            indices.emplace_back(
+                segments + (segments + 1) * r + s,
+                segments + (segments + 1) * (r + 1) + s,
+                segments + (segments + 1) * (r + 1) + s + 1);
+            indices.emplace_back(
+                segments + (segments + 1) * r + s,
+                segments + (segments + 1) * (r + 1) + s + 1,
+                segments + (segments + 1) * r + s + 1);
+          }
+        }
+        for (int s = 0; s < segments; ++s) {
+          indices.emplace_back(
+              segments + (segments + 1) * (rings - 1) + s,
+              segments + (segments + 1) * (rings) + s,
+              segments + (segments + 1) * (rings - 1) + s + 1);
+        }
+
+        auto nV = vertices.size();
+        ret->vertices.resize(nV);
+        for (size_t i = 0; i < nV; ++i) {
+          ret->vertices[i].pos = vertices[i];
+          ret->vertices[i].normal = normals[i];
+          ret->vertices[i].texCoord = uvs[i];
+        }
+
+        auto nF = indices.size();
+        ret->indices.resize(3 * nF);
+        for (size_t i = 0; i < nF; ++i)
+          for (int j = 0; j < 3; ++j)
+            ret->indices[3 * i + j] = indices[i][j];
 
         ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
         kuafu::global::materials.push_back(*mat);  // copy
@@ -464,8 +484,6 @@ namespace kuafu {
         ret->initialized = false;
         ret->dynamic = dynamic;
         ret->isOpaque = (mat->d >= 1.0F);
-
-        ret->recalculateNormals();
 
         return ret;
     }

@@ -392,8 +392,8 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 //        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
 
-        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 19.4F));
-        renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+        renderer->getScene().getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
 
         auto floorMaterial = std::make_shared<kuafu::Material>();
         floorMaterial->kd = glm::vec3(1.0, 0.3, 0.3);
@@ -401,25 +401,45 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         auto mat = std::make_shared<kuafu::Material>();
         mat->illum = 2;
-        mat->kd = glm::vec3(1.0F, 1.0F, 1.0F);
-        mat->shininess = 0.0F;
-        mat->roughness = 2000.;
-        mat->ior = 0.0F;
+        mat->kd = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat->shininess = 100.0F;
+        mat->roughness = 10.;
+        mat->ior = 10.0F;
         mat->d = 1.0;
-        auto cube = kuafu::createCapsule(1.0, 1.0, true, mat);
+        auto cap0 = kuafu::createCapsule(0.08, 0.05, true, mat);
+        auto cap1 = kuafu::createCapsule(0.1, 0.1, true, mat);
+        auto cap2 = kuafu::createCapsule(0.2, 0.2, true, mat);
+        auto cap3 = kuafu::createCapsule(0.3, 0.3, true, mat);
+        auto cap4 = kuafu::createCapsule(0.4, 0.4, true, mat);
 
-        renderer->getScene().setGeometries({floor, cube});
 
-        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 80.0F, 0.0F));
-        transform = glm::scale(glm::mat4(1.0F), glm::vec3(5.0F, 5.0F, 5.0F));
+//        auto cube = kuafu::loadObj(
+//                "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/camera/collision_mesh.obj", true);
+
+        renderer->getScene().setGeometries({floor, cap0, cap1, cap2, cap3, cap4});
+
+        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
+        transform = glm::scale(transform, glm::vec3(5.0F, 5.0F, 5.0F));
         transform = glm::rotate(transform, glm::radians(90.F), {0., 1., 0.});
         auto floorInstance = kuafu::instance(floor, transform);
 
-        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-0.0F, 0.0F, 1.0F));
-        transform = glm::scale(transform, glm::vec3(1.0));
-        auto cubeInstance = kuafu::instance(cube, transform);
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -2.0F, 0.05F));
+        auto cap0Instance = kuafu::instance(cap0, transform);
 
-        renderer->getScene().setGeometryInstances({floorInstance, cubeInstance});
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, 0.1F));
+        auto cap1Instance = kuafu::instance(cap1, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.2F));
+        auto cap2Instance = kuafu::instance(cap2, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 1.0F, 0.3F));
+        auto cap3Instance = kuafu::instance(cap3, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 2.0F, 0.4F));
+        auto cap4Instance = kuafu::instance(cap4, transform);
+
+        renderer->getScene().setGeometryInstances({
+            floorInstance, cap0Instance, cap1Instance, cap2Instance, cap3Instance, cap4Instance});
     }
 }
 

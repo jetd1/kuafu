@@ -67,7 +67,7 @@ namespace kuafu {
 
     auto RayTracer::geometryInstanceToAccelerationStructureInstance(
             std::shared_ptr<GeometryInstance> &geometryInstance) -> vk::AccelerationStructureInstanceKHR {
-//        KF_ASSERT(mBlas.size() > geometryInstance->geometryIndex, "Failed to transform geometry instance to a VkGeometryInstanceKHR because index is out of bounds.");
+        KF_ASSERT(mBlas.size() > geometryInstance->geometryIndex, "Failed to transform geometry instance to a VkGeometryInstanceKHR because index is out of bounds.");
         Blas &blas{mBlas[geometryInstance->geometryIndex]};
 
         vk::AccelerationStructureDeviceAddressInfoKHR addressInfo(blas.as.as);
