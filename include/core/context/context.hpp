@@ -37,8 +37,8 @@ namespace kuafu {
     class Kuafu;
 
     class Context {
-        std::shared_ptr<Window> mWindow = nullptr;
-        std::shared_ptr<Camera> mCamera = nullptr;
+        std::shared_ptr<Window> pWindow = nullptr;
+        std::shared_ptr<Camera> pCamera = nullptr;
         vk::UniqueInstance mInstance;
 
 #ifdef VK_VALIDATION
@@ -57,13 +57,12 @@ namespace kuafu {
         vkCore::Swapchain mSwapchain;
         vkCore::CommandBuffer mSwapchainCommandBuffers;
 
-        std::shared_ptr<Gui> mGui = nullptr;
+        std::shared_ptr<Gui> pGui = nullptr;
 
         Scene mScene;
         Config mConfig;
         std::vector<uint8_t> mLatestFrame;   // TODO: kuafu_urgent: optimize this
-
-
+        
         /// Used to set the GUI that will be used.
         ///
         /// The GUI can be changed at runtime. This enables the user to swap between different pre-built GUIs on the fly.

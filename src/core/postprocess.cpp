@@ -82,25 +82,25 @@ void PostProcessingRenderer::initRenderPass(vk::Format format) {
             vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite, // dstAccessMask
             vk::DependencyFlagBits::eByRegion);                                                  // dependencyFlags
 
-    _renderPass.init({colorAttachmentDescription}, {subpassDescription}, {subpassDependencies});
+    mRenderPass.init({colorAttachmentDescription}, {subpassDescription}, {subpassDependencies});
 }
 
 void PostProcessingRenderer::initDescriptorSet() {
     // Color image binding
-    _descriptors.bindings.add(0,
+    mDescriptors.bindings.add(0,
                               vk::DescriptorType::eCombinedImageSampler,
                               vk::ShaderStageFlagBits::eFragment);
 
-    _descriptors.layout = _descriptors.bindings.initLayoutUnique();
-    _descriptors.pool = _descriptors.bindings.initPoolUnique(vkCore::global::swapchainImageCount);
-    _descriptorSets = vkCore::allocateDescriptorSets(_descriptors.pool.get(), _descriptors.layout.get());
+    mDescriptors.layout = mDescriptors.bindings.initLayoutUnique();
+    mDescriptors.pool = mDescriptors.bindings.initPoolUnique(vkCore::global::swapchainImageCount);
+    mDescriptorSets = vkCore::allocateDescriptorSets(mDescriptors.pool.get(), mDescriptors.layout.get());
 }
 
 void PostProcessingRenderer::updateDescriptors(const vk::DescriptorImageInfo &imageInfo) {
 //        KF_ASSERT( imageInfo.imageView && imageInfo.sampler, "Failed to update post processing renderer descriptor sets because storage image info contains invalid elements." );
 
-    _descriptors.bindings.write(_descriptorSets, 0, &imageInfo);
-    _descriptors.bindings.update();
+mDescriptors.bindings.write(mDescriptorSets, 0, &imageInfo);
+mDescriptors.bindings.update();
 }
 
 void PostProcessingRenderer::initPipeline() {
@@ -170,12 +170,12 @@ void PostProcessingRenderer::initPipeline() {
 
     vk::PipelineLayoutCreateInfo layoutCreateInfo({},                         // flags
                                                   1,                           // setLayoutCount
-                                                  &_descriptors.layout.get(), // pSetLayouts
+                                                  &mDescriptors.layout.get(), // pSetLayouts
                                                   1,                           // pushConstantRangeCount
                                                   &pushConstantRange);        // pPushConstantRanges
 
-    _pipelineLayout = vkCore::global::device.createPipelineLayoutUnique(layoutCreateInfo);
-//        KF_ASSERT( _pipelineLayout.get( ), "Failed to create pipeline layout for post processing renderer." );
+    mPipelineLayout = vkCore::global::device.createPipelineLayoutUnique(layoutCreateInfo);
+//        KF_ASSERT( mPipelineLayout.get( ), "Failed to create pipeline layout for post processing renderer." );
 
     auto vert = vkCore::initShaderModuleUnique(global::assetsPath + "shaders/PostProcessing.vert", KF_GLSLC_PATH);
     auto frag = vkCore::initShaderModuleUnique(global::assetsPath + "shaders/PostProcessing.frag", KF_GLSLC_PATH);
@@ -196,15 +196,15 @@ void PostProcessingRenderer::initPipeline() {
                                               nullptr,                                       // pDepthStencilState
                                               &colorBlending,                                // pColorBlendState
                                               &dynamicStateInfo,                             // pDynamicState
-                                              _pipelineLayout.get(),                        // layout
-                                              _renderPass.get(),                            // renderPass
+        mPipelineLayout.get(),                        // layout
+        mRenderPass.get(),                            // renderPass
                                               0,                                             // subpass
                                               nullptr,                                       // basePipelineHandle
                                               0);                                           // basePipelineIndex
 
-    _pipeline = static_cast<vk::UniquePipeline>(
+    mPipeline = static_cast<vk::UniquePipeline>(
             vkCore::global::device.createGraphicsPipelineUnique(nullptr, createInfo, nullptr).value);
-    assert(_pipeline.get()); // "Failed to create rasterization pipeline."
+    assert(mPipeline.get()); // "Failed to create rasterization pipeline."
 }
 
 void PostProcessingRenderer::beginRenderPass(vk::CommandBuffer commandBuffer, vk::Framebuffer framebuffer,
@@ -213,11 +213,11 @@ void PostProcessingRenderer::beginRenderPass(vk::CommandBuffer commandBuffer, vk
     clearValues[0].color = std::array<float, 4>{1.0F, 1.0F, 1.0F, 1.0F};
     clearValues[1].depthStencil = vk::ClearDepthStencilValue{1.0F, 0};
 
-    _renderPass.begin(framebuffer, commandBuffer, {0, size}, {clearValues[0], clearValues[1]});
+    mRenderPass.begin(framebuffer, commandBuffer, {0, size}, {clearValues[0], clearValues[1]});
 }
 
 void PostProcessingRenderer::endRenderPass(vk::CommandBuffer commandBuffer) {
-    _renderPass.end(commandBuffer);
+  mRenderPass.end(commandBuffer);
 }
 
 void PostProcessingRenderer::render(vk::CommandBuffer commandBuffer, vk::Extent2D size, size_t imageIndex) {
@@ -228,19 +228,19 @@ void PostProcessingRenderer::render(vk::CommandBuffer commandBuffer, vk::Extent2
     commandBuffer.setScissor(0, {{{0, 0}, size}});
 
     auto aspectRatio = width / height;
-    commandBuffer.pushConstants(_pipelineLayout.get(),             // layout
+    commandBuffer.pushConstants(mPipelineLayout.get(),             // layout
                                 vk::ShaderStageFlagBits::eFragment, // stageFlags
                                 0,                                  // offset
                                 sizeof(float),                    // size
                                 &aspectRatio);                     // pValues
 
-    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, _pipeline.get());
+    commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, mPipeline.get());
 
     commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, // pipelineBindPoint
-                                     _pipelineLayout.get(),           // layout
+                                     mPipelineLayout.get(),           // layout
                                      0,                                // first set
                                      1,                                // descriptor set count
-                                     &_descriptorSets[imageIndex],     // descriptor sets
+                                     &mDescriptorSets[imageIndex],     // descriptor sets
                                      0,                                // dynamic offset count
                                      nullptr);                        // dynamic offsets
 

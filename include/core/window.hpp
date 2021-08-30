@@ -31,15 +31,15 @@ namespace kuafu {
 
 class Window {
 protected:
-    SDL_Window *mWindow = nullptr;
-    uint32_t mFlags = 0;
+    SDL_Window *pWindow = nullptr;
+    uint32_t mFlags = {};
 
     int mWidth = 800;
     int mHeight = 600;
-    std::string mTitle = "App";
+    std::string mTitle = "Kuafu App";
 
 public:
-    explicit Window(int width = 800, int height = 600, const std::string &title = "App", uint32_t flags = 0);
+    explicit Window(int width = 800, int height = 600, const std::string &title = "Kuafu App", uint32_t flags = {});
 
     virtual ~Window();
 
@@ -57,7 +57,7 @@ public:
 
     virtual void resize(int, int);
 
-    SDL_Window *get() { return mWindow; };
+    SDL_Window *get() { return pWindow; };
 
     vk::Extent2D getSize() const;
 

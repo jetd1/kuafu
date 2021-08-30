@@ -28,8 +28,8 @@
 
 namespace kuafu {
 class Kuafu {
-    std::shared_ptr<Window> mWindow = nullptr;
-    std::shared_ptr<Gui> mGUI = nullptr;
+    std::shared_ptr<Window> pWindow = nullptr;
+    std::shared_ptr<Gui> pGUI = nullptr;
     kuafu::Context mContext;
 
     bool mInitialized = false;
@@ -40,15 +40,15 @@ public:
 
     void run();
 
-    bool isRunning() const;
+    [[nodiscard]] bool isRunning() const;
 
-    const std::vector<uint8_t> &downloadLatestFrame() const;
+    [[nodiscard]] const std::vector<uint8_t> &downloadLatestFrame() const;
 
     void setWindow(std::shared_ptr<Window> other);
 
     void setWindow(int width, int height, const char *title = "App", uint32_t flags = 0);
 
-    auto getWindow() const { return mWindow; }
+    [[nodiscard]] auto getWindow() const { return pWindow; }
 
     void setGui(std::shared_ptr<Gui> gui);
 

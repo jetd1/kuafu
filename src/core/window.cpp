@@ -35,8 +35,8 @@ Window::Window(int width, int height, const std::string &title, uint32_t flags) 
 }
 
 Window::~Window() {
-    SDL_DestroyWindow(mWindow);
-    mWindow = nullptr;
+    SDL_DestroyWindow(pWindow);
+    pWindow = nullptr;
     SDL_Quit();
 }
 
@@ -50,10 +50,10 @@ auto Window::init() -> bool {
         return false;
     }
 
-    mWindow = SDL_CreateWindow(mTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mWidth, mHeight,
+    pWindow = SDL_CreateWindow(mTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mWidth, mHeight,
                                mFlags);
 
-    if (mWindow == nullptr) {
+    if (pWindow == nullptr) {
         throw std::runtime_error("Failed to create window. Closing application.");
         return false;
     }
@@ -74,7 +74,7 @@ auto Window::update() -> bool {
     // Fetch the latest window dimensions.
     int width;
     int height;
-    SDL_GetWindowSize(mWindow, &width, &height);
+    SDL_GetWindowSize(pWindow, &width, &height);
     resize(width, height);
 
     return true;
@@ -82,8 +82,8 @@ auto Window::update() -> bool {
 
 //void Window::clean( )
 //{
-//    SDL_DestroyWindow( mWindow );
-//    mWindow = nullptr;
+//    SDL_DestroyWindow( pWindow );
+//    pWindow = nullptr;
 //
 //    SDL_Quit( );
 //}
@@ -97,7 +97,7 @@ void Window::resize(int width, int height) {
 vk::Extent2D Window::getSize() const {
     int width;
     int height;
-    SDL_GetWindowSize(mWindow, &width, &height);
+    SDL_GetWindowSize(pWindow, &width, &height);
     return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 }
 
@@ -117,19 +117,19 @@ bool Window::changed() {
 }
 
 bool Window::minimized() {
-    return (SDL_GetWindowFlags(mWindow) & SDL_WINDOW_MINIMIZED) != 0U;
+    return (SDL_GetWindowFlags(pWindow) & SDL_WINDOW_MINIMIZED) != 0U;
 }
 
 auto Window::getExtensions() const -> gsl::span<const char *> {
     // Retrieve all extensions needed by SDL2.
     uint32_t sdlExtensionsCount;
-    SDL_bool result = SDL_Vulkan_GetInstanceExtensions(mWindow, &sdlExtensionsCount, nullptr);
+    SDL_bool result = SDL_Vulkan_GetInstanceExtensions(pWindow, &sdlExtensionsCount, nullptr);
 
     if (result != SDL_TRUE)
         throw std::runtime_error("Failed to get extensions required by SDL.");
 
     gsl::owner<const char **> sdlExtensionsNames = new const char *[sdlExtensionsCount];
-    result = SDL_Vulkan_GetInstanceExtensions(mWindow, &sdlExtensionsCount, sdlExtensionsNames);
+    result = SDL_Vulkan_GetInstanceExtensions(pWindow, &sdlExtensionsCount, sdlExtensionsNames);
 
     if (result != SDL_TRUE)
         throw std::runtime_error("Failed to get extensions required by SDL.");

@@ -119,9 +119,9 @@ public:
 
     inline auto getGeometryInstanceCount() { return mGeometries.size(); }
 
-    inline void markGeometriesChanged() { _uploadGeometries = true; }
+    inline void markGeometriesChanged() { mUploadGeometries = true; }
 
-    inline void markGeometryInstancesChanged() { _uploadGeometryInstancesToBuffer = true; }
+    inline void markGeometryInstancesChanged() { mUploadGeometryInstancesToBuffer = true; }
 
 private:
     void initSceneDescriptorSets();
@@ -152,37 +152,36 @@ private:
 
     void upload(vk::Fence fence, uint32_t imageIndex);
 
-    vkCore::Descriptors _sceneDescriptors;
-    vkCore::Descriptors _geometryDescriptors;
+    vkCore::Descriptors mSceneDescriptors;
+    vkCore::Descriptors mGeometryDescriptors;
 
     std::vector<vk::DescriptorSet> mSceneDescriptorSets;
     std::vector<vk::DescriptorSet> mGeometryDescriptorSets;
-    std::vector<vk::DescriptorSet> _textureDescriptorSets;
+    std::vector<vk::DescriptorSet> mTextureDescriptorSets;
 
-    vkCore::Cubemap _environmentMap;
-    vk::UniqueSampler _immutableSampler;
+    vkCore::Cubemap mEnvironmentMap;
+    vk::UniqueSampler mImmutableSampler;
 
     std::vector<vkCore::StorageBuffer<uint32_t>> mIndexBuffers;
-    std::vector<vkCore::StorageBuffer<uint32_t>> _materialIndexBuffers;
+    std::vector<vkCore::StorageBuffer<uint32_t>> mMaterialIndexBuffers;
     std::vector<vkCore::StorageBuffer<Vertex>> mVertexBuffers;
-    vkCore::StorageBuffer<MaterialSSBO> _materialBuffers;
-    vkCore::StorageBuffer<GeometryInstanceSSBO> _geometryInstancesBuffer;
-    std::vector<std::shared_ptr<vkCore::Texture>> _textures;
+    vkCore::StorageBuffer<MaterialSSBO> mMaterialBuffers;
+    vkCore::StorageBuffer<GeometryInstanceSSBO> mGeometryInstancesBuffer;
+    std::vector<std::shared_ptr<vkCore::Texture>> mTextures;
 
-    vkCore::UniformBuffer<CameraUBO> _cameraUniformBuffer;
+    vkCore::UniformBuffer<CameraUBO> mCameraUniformBuffer;
 
     std::vector<std::shared_ptr<Geometry>> mGeometries;
     std::vector<std::shared_ptr<GeometryInstance>> mGeometryInstances;
 
-    std::string _environmentMapTexturePath;
-    bool _useEnvironmentMap = false;
+    std::string mEnvironmentMapTexturePath;
+    bool mUseEnvironmentMap = false;
 
-    bool _uploadGeometryInstancesToBuffer = false;
-    bool _uploadEnvironmentMap = false;
-    bool _uploadGeometries = false;
+    bool mUploadGeometryInstancesToBuffer = false;
+    bool mUploadEnvironmentMap = false;
+    bool mUploadGeometries = false;
     bool mDummy = false;
 
-//        std::unordered_set<std::shared_ptr<Camera>> mCameras; ///< The cameras that can be used for rendering.
     std::shared_ptr<Camera> mCurrentCamera;               ///< The camera that is currently being used for rendering.
 
     Config *mConfig = nullptr;

@@ -91,9 +91,9 @@ private:
     /// Creates the ImGui font textures.
     void initFonts();
 
-    vk::UniqueDescriptorPool _descriptorPool; ///< A Vulkan descriptor pool with a unique handle.
-    vk::UniqueCommandPool _commandPool;       ///< A Vulkan command pool with a unique handle.
-    vk::Extent2D _swapchainImageExtent;       ///< The swapchain images' image extent.
-    SDL_Window *_window = nullptr;
+    vk::UniqueDescriptorPool mDescriptorPool; ///< A Vulkan descriptor pool with a unique handle.
+    vk::UniqueCommandPool mCommandPool;       ///< A Vulkan command pool with a unique handle.
+    vk::Extent2D mSwapchainImageExtent;       ///< The swapchain images' image extent.
+    SDL_Window *pWindow = nullptr;
 };
 }

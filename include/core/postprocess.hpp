@@ -29,11 +29,11 @@ namespace kuafu {
 /// @ingroup API
 class PostProcessingRenderer {
 public:
-    auto getRenderPass() const -> const vkCore::RenderPass & { return _renderPass; }
+    auto getRenderPass() const -> const vkCore::RenderPass & { return mRenderPass; }
 
-    auto getPipeline() const -> const vk::Pipeline { return _pipeline.get(); }
+    auto getPipeline() const -> const vk::Pipeline { return mPipeline.get(); }
 
-    auto getPipelineLayout() const -> const vk::PipelineLayout { return _pipelineLayout.get(); }
+    auto getPipelineLayout() const -> const vk::PipelineLayout { return mPipelineLayout.get(); }
 
     //void initDepthImage( vk::Extent2D extent );
 
@@ -58,12 +58,12 @@ private:
     //vkCore::Image _depthImage;
     //vk::UniqueImageView _depthImageView;
 
-    vkCore::RenderPass _renderPass;
+    vkCore::RenderPass mRenderPass;
 
-    vk::UniquePipeline _pipeline;
-    vk::UniquePipelineLayout _pipelineLayout;
+    vk::UniquePipeline mPipeline;
+    vk::UniquePipelineLayout mPipelineLayout;
 
-    vkCore::Descriptors _descriptors;
-    std::vector<vk::DescriptorSet> _descriptorSets;
+    vkCore::Descriptors mDescriptors;
+    std::vector<vk::DescriptorSet> mDescriptorSets;
 };
 }

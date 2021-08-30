@@ -604,7 +604,7 @@ void RayTracer::createPipeline(const std::vector<vk::DescriptorSetLayout> &descr
 
     _pipeline = static_cast<vk::UniquePipeline>(
             vkCore::global::device.createRayTracingPipelineKHRUnique({}, nullptr, createInfo).value);
-//        KF_ASSERT(_pipeline.get(), "Failed to create path tracing pipeline.");
+//        KF_ASSERT(mPipeline.get(), "Failed to create path tracing pipeline.");
 }
 
 void RayTracer::trace(vk::CommandBuffer swapchainCommandBuffer, vk::Image swapchainImage, vk::Extent2D extent) {
@@ -672,7 +672,7 @@ void RayTracer::updateDescriptors() {
     mDescriptors.bindings.write(_descriptorSets, 1, &mStorageImageInfo);
 
 #ifdef KF_VARIANCE_ESTIMATOR
-    mDescriptors.bindings.write(_descriptorSets, 2, &varianceBufferInfo);
+    mDescriptors.bindings.write(mDescriptorSets, 2, &varianceBufferInfo);
 #endif
 
     mDescriptors.bindings.update();

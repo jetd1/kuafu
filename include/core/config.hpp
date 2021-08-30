@@ -52,19 +52,19 @@ public:
     /// @param recursionDepth The new value for the recursion depth.
     void setPathDepth(uint32_t recursionDepth);
 
-    bool getRussianRoulette() { return _russianRoulette; }
+    bool getRussianRoulette() { return mRussianRoulette; }
 
     void setRussianRoulette(bool flag);
 
-    bool getNextEventEstimation() { return _nextEventEstimation; }
+    bool getNextEventEstimation() { return mNextEventEstimation; }
 
     void setNextEventEstimation(bool flag);
 
-    uint32_t getNextEventEstimationMinBounces() { return _nextEventEstimationMinBounces; }
+    uint32_t getNextEventEstimationMinBounces() { return mNextEventEstimationMinBounces; }
 
     void setNextEventEstimationMinBounces(uint32_t minBounces);
 
-    uint32_t getRussianRouletteMinBounces() { return _russianRouletteMinBounces; }
+    uint32_t getRussianRouletteMinBounces() { return mRussianRouletteMinBounces; }
 
     void setRussianRouletteMinBounces(uint32_t minBounces);
 
@@ -72,7 +72,7 @@ public:
     auto getMaxPathDepth() const -> uint32_t { return mMaxPathDepth; }
 
     /// @return Returns the clear color.
-    auto getClearColor() const -> const glm::vec4 & { return _clearColor; }
+    auto getClearColor() const -> const glm::vec4 & { return mClearColor; }
 
     /// Used to changed the clear color.
     ///
@@ -87,7 +87,7 @@ public:
     static void setDefaultAssetsPath(std::string path);
 
     /// @return Returns the path to assets.
-    auto getAssetsPath() const -> std::string_view { return _assetsPath; }
+    auto getAssetsPath() const -> std::string_view { return mAssetsPath; }
 
     /// Used to set a path to the directory containing all assets.
     ///
@@ -125,13 +125,13 @@ public:
 
     void setAccumulatingFrames(bool flag);
 
-    auto isAccumulatingFrames() const -> bool { return _accumulateFrames; }
+    auto isAccumulatingFrames() const -> bool { return mAccumulateFrames; }
 
     void triggerPipelineRefresh() { mPipelineNeedsRefresh = true; }
 
     void triggerSwapchainRefresh() { mSwapchainNeedsRefresh = true; }
 
-    float getVariance() { return _variance; }
+    float getVariance() { return mVariance; }
 
     void updateVariance(bool flag);
 
@@ -139,33 +139,33 @@ private:
     bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
     bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
 
-    size_t _maxGeometryInstances = 256; ///< Can be set to avoid pipeline recreation everytime a geometry instance is added.
-    bool _maxGeometryInstancesChanged = false;
-    size_t _maxGeometry = 128; ///< The maximum amount of geometry (Must be a multiple of minimum storage buffer alignment).
-    bool _maxGeometryChanged = false;
-    size_t _maxTextures = 128; ///< The maximum amount of textures.
-    bool _maxTexturesChanged = false;
-    size_t _maxMaterials = 256;
+    size_t mMaxGeometryInstances = 256; ///< Can be set to avoid pipeline recreation everytime a geometry instance is added.
+    bool mMaxGeometryInstancesChanged = false;
+    size_t mMaxGeometry = 128; ///< The maximum amount of geometry (Must be a multiple of minimum storage buffer alignment).
+    bool mMaxGeometryChanged = false;
+    size_t mMaxTextures = 128; ///< The maximum amount of textures.
+    bool mMaxTexturesChanged = false;
+    size_t mMaxMaterials = 256;
 
-    std::string _assetsPath; ///< Where all assets like models, textures and shaders are stored.
+    std::string mAssetsPath; ///< Where all assets like ~~~models, textures and~~~ shaders are stored.
 
-    glm::vec4 _clearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
+    glm::vec4 mClearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
     uint32_t mMaxPathDepth = 10;                                     ///< The maximum path depth.
     uint32_t mPathDepth = 5;                                         ///< The current path depth.
     uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.
-    uint32_t _russianRouletteMinBounces = 3;
+    uint32_t mRussianRouletteMinBounces = 3;
 
     bool mUseDenoiser = false;  // todo
 
-    bool _nextEventEstimation = false;
-    uint32_t _nextEventEstimationMinBounces = 0; // temporary for debugging
+    bool mNextEventEstimation = false;
+    uint32_t mNextEventEstimationMinBounces = 0; // temporary for debugging
 
-    float _variance = 0.0F;
-    bool _updateVariance = false;
+    float mVariance = 0.0F;
+    bool mUpdateVariance = false;
 
-    bool _accumulateFrames = true;
-    bool _russianRoulette = true;
-    bool _automaticPipelineRefresh = false; ///< Keeps track of whether or not the graphics pipelines should be recreated automatically as soon as possible.
-    bool _automaticSwapchainRefresh = false; ///< Keeps track of whether or not the swapchain should be recreated automatically as soon as possible.
+    bool mAccumulateFrames = true;
+    bool mRussianRoulette = true;
+    bool mAutomaticPipelineRefresh = false;  ///< Keeps track of whether or not the graphics pipelines should be recreated automatically as soon as possible.
+    bool mAutomaticSwapchainRefresh = false; ///< Keeps track of whether or not the swapchain should be recreated automatically as soon as possible.
 };
 }

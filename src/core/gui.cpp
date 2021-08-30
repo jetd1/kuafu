@@ -32,13 +32,13 @@ void Gui::configure() {
 
 void Gui::init(SDL_Window *window, const vkCore::Surface *const surface, vk::Extent2D swapchainImageExtent,
                vk::RenderPass renderPass) {
-    _window = window;
-    _swapchainImageExtent = swapchainImageExtent;
+  pWindow = window;
+    mSwapchainImageExtent = swapchainImageExtent;
 //
 //        configure();
 //
-////        KF_ASSERT( ImGui_ImplSDL2_InitForVulkan( _window ), "Failed to init ImGui for Vulkan" );
-//        assert(ImGui_ImplSDL2_InitForVulkan(_window));
+////        KF_ASSERT( ImGui_ImplSDL2_InitForVulkan( pWindow ), "Failed to init ImGui for Vulkan" );
+//        assert(ImGui_ImplSDL2_InitForVulkan(pWindow));
 //
 //        initDescriptorPool();
 //
@@ -49,7 +49,7 @@ void Gui::init(SDL_Window *window, const vkCore::Surface *const surface, vk::Ext
 //        init_info.QueueFamily = vkCore::global::graphicsFamilyIndex;
 //        init_info.Queue = static_cast<VkQueue>( vkCore::global::graphicsQueue );
 //        init_info.PipelineCache = NULL;
-//        init_info.DescriptorPool = static_cast<VkDescriptorPool>( _descriptorPool.get());
+//        init_info.DescriptorPool = static_cast<VkDescriptorPool>( mDescriptorPool.get());
 //        init_info.Allocator = NULL;
 //        init_info.MinImageCount = surface->getCapabilities().minImageCount + 1;
 //        init_info.ImageCount = static_cast<uint32_t>( vkCore::global::swapchainImageCount );
@@ -61,7 +61,7 @@ void Gui::init(SDL_Window *window, const vkCore::Surface *const surface, vk::Ext
 }
 
 void Gui::recreate(vk::Extent2D swapchainImageExtent) {
-//        _swapchainImageExtent = swapchainImageExtent;
+//        mSwapchainImageExtent = swapchainImageExtent;
 }
 
 void Gui::render() {
@@ -69,7 +69,7 @@ void Gui::render() {
 }
 
 void Gui::renderDrawData(vk::CommandBuffer commandBuffer) {
-//        ImGui_ImplSDL2_NewFrame(_window);
+//        ImGui_ImplSDL2_NewFrame(pWindow);
 //        ImGui::NewFrame();
 //
 //        render();
@@ -97,14 +97,14 @@ void Gui::initDescriptorPool() {
 //                                                         {vk::DescriptorType::eStorageBufferDynamic, 1000},
 //                                                         {vk::DescriptorType::eInputAttachment,      1000}};
 //
-//        _descriptorPool = vkCore::initDescriptorPoolUnique(poolSizes, vkCore::global::swapchainImageCount);
+//        mDescriptorPool = vkCore::initDescriptorPoolUnique(poolSizes, vkCore::global::swapchainImageCount);
 }
 
 void Gui::initFonts() {
-//        _commandPool = vkCore::initCommandPoolUnique(vkCore::global::graphicsFamilyIndex,
+//        mCommandPool = vkCore::initCommandPoolUnique(vkCore::global::graphicsFamilyIndex,
 //                                                     vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 //
-//        vkCore::CommandBuffer commandBuffer(_commandPool.get());
+//        vkCore::CommandBuffer commandBuffer(mCommandPool.get());
 //        commandBuffer.begin();
 //
 ////        KF_ASSERT( ImGui_ImplVulkan_CreateFontsTexture( static_cast<VkCommandBuffer>( commandBuffer.get( 0 ) ) ), "Failed to create ImGui fonts texture." );

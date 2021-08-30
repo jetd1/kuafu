@@ -30,15 +30,14 @@ namespace kuafu {
 void Kuafu::init() {
     KF_INFO("Starting Kuafu.");
 
-    if (mWindow == nullptr) {
-        mWindow = std::make_shared<Window>();
+    if (pWindow == nullptr) {
+      pWindow = std::make_shared<Window>();
     }
 
     if (mContext.mScene.mCurrentCamera == nullptr)
-        mContext.mScene.mCurrentCamera = std::make_shared<Camera>(
-                mWindow->getWidth(), mWindow->getHeight());
+        mContext.mScene.mCurrentCamera = std::make_shared<Camera>(pWindow->getWidth(), pWindow->getHeight());
 
-    mContext.mWindow = mWindow;
+    mContext.pWindow = pWindow;
 
     mContext.mScene.mConfig = &mContext.mConfig;
 
@@ -50,7 +49,7 @@ void Kuafu::init() {
     if (mInitialized)
         throw std::runtime_error("Renderer was already initialized.");
 
-    mInitialized = mWindow->init();
+    mInitialized = pWindow->init();
     mContext.init();
 }
 
@@ -67,7 +66,7 @@ void Kuafu::run() {
         return;
     }
 
-    mRunning = mWindow->update();
+    mRunning = pWindow->update();
     mContext.mScene.mCurrentCamera->update();
     mContext.render();
 }
@@ -77,13 +76,13 @@ const std::vector<uint8_t> &Kuafu::downloadLatestFrame() const {
 }
 
 void Kuafu::setWindow(std::shared_ptr<Window> window) {
-    mWindow = window;
-    mContext.mWindow = mWindow;
+  pWindow = window;
+    mContext.pWindow = pWindow;
 }
 
 void Kuafu::setWindow(int width, int height, const char *title, uint32_t flags) {
-    mWindow = std::make_shared<Window>(width, height, title, flags);
-    mContext.mWindow = mWindow;
+  pWindow = std::make_shared<Window>(width, height, title, flags);
+    mContext.pWindow = pWindow;
 }
 
 void Kuafu::setGui(std::shared_ptr<Gui> gui) {
@@ -103,10 +102,10 @@ void Kuafu::reset() {
 
     // Delete all textures
     global::materials.clear();
-    global::materials.reserve(mContext.mScene.mConfig->_maxMaterials);
+    global::materials.reserve(mContext.mScene.mConfig->mMaxMaterials);
 
-    mContext.mScene._textures.clear();
-    mContext.mScene._textures.resize(static_cast<size_t>( mContext.mScene.mConfig->_maxTextures ));
+    mContext.mScene.mTextures.clear();
+    mContext.mScene.mTextures.resize(static_cast<size_t>( mContext.mScene.mConfig->mMaxTextures));
     mContext.mScene.updateGeoemtryDescriptors();
 }
 }

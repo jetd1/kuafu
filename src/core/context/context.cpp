@@ -62,18 +62,18 @@ Context::~Context() {
     vkCore::global::device.waitIdle();
 
     // Gui needs to be destroyed manually, as RAII destruction will not be possible.
-    if (mGui != nullptr) {
-        mGui->destroy();
+    if (pGui != nullptr) {
+      pGui->destroy();
     }
 }
 
 void Context::setGui(const std::shared_ptr<Gui> &gui, bool initialize) {
-    if (mGui != nullptr) {
+    if (pGui != nullptr) {
         recreateSwapchain();
-        mGui->destroy();
+        pGui->destroy();
     }
 
-    mGui = gui;
+    pGui = gui;
 
     if (initialize) {
         initGui();
@@ -84,7 +84,7 @@ void Context::init() {
 //        KF_LOG_TIME_START("Context start up ...");
 
     // Retrieve and add window extensions to other extensions.
-    auto windowExtensions = mWindow->getExtensions();
+    auto windowExtensions = pWindow->getExtensions();
     extensions.insert(extensions.end(), windowExtensions.begin(), windowExtensions.end());
 
     // Instance
@@ -97,13 +97,14 @@ void Context::init() {
 
     // Surface
     VkSurfaceKHR surface;
-    SDL_bool result = SDL_Vulkan_CreateSurface(mWindow->get(), static_cast<VkInstance>(vkCore::global::instance),
+    SDL_bool result = SDL_Vulkan_CreateSurface(
+        pWindow->get(), static_cast<VkInstance>(vkCore::global::instance),
                                                &surface);
 
     if (result != SDL_TRUE)
         throw std::runtime_error("Failed to create surface");
 
-    mSurface.init(vk::SurfaceKHR(surface), mWindow->getSize());
+    mSurface.init(vk::SurfaceKHR(surface), pWindow->getSize());
 
     // Physical device
     vkCore::global::physicalDevice = vkCore::initPhysicalDevice(); // @todo This function does not check if any feature is available when evaluating a device. Additionally, it is pointless to assign vkCore::global::physicalDevice in here because it doesn't need a unique handle.
@@ -191,8 +192,8 @@ void Context::init() {
     // Path tracer
     mRayTracer.init();
     mConfig.mMaxPathDepth = mRayTracer.getCapabilities().pipelineProperties.maxRayRecursionDepth;
-    mRayTracer.initVarianceBuffer(static_cast<float>(mWindow->getWidth()),
-                                  static_cast<float>(mWindow->getHeight()));
+    mRayTracer.initVarianceBuffer(static_cast<float>(pWindow->getWidth()),
+                                  static_cast<float>(pWindow->getHeight()));
 
     mScene.prepareBuffers();
 
@@ -232,7 +233,7 @@ void Context::update() {
 
 #ifdef KF_VARIANCE_ESTIMATOR
     // update variance
-if (mConfig._updateVariance)
+if (mConfig.mUpdateVariance)
 {
   static uint32_t counter = 0;
   const int maxSize       = 100;
@@ -287,7 +288,7 @@ if (mConfig._updateVariance)
       avg += ppSum[i] / static_cast<float>(mConfig.mPerPixelSampleRate);
     }
 
-    mConfig._variance = avg / pixelCount;
+    mConfig.mVariance = avg / pixelCount;
   }
 }
 
@@ -312,18 +313,18 @@ if (mConfig._updateVariance)
         mScene.removeDummy();
     }
 
-    if (mScene._uploadEnvironmentMap) {
+    if (mScene.mUploadEnvironmentMap) {
         mSync.waitForFrame(prevFrame);
         mScene.uploadEnvironmentMap();
         mScene.updateSceneDescriptors();
     }
 
-    if (mScene._uploadGeometries) {
+    if (mScene.mUploadGeometries) {
         mScene.uploadGeometries();
         mScene.updateGeoemtryDescriptors();
     }
 
-    if (mScene._uploadGeometryInstancesToBuffer) {
+    if (mScene.mUploadGeometryInstancesToBuffer) {
         mScene.uploadGeometryInstances();
 
         // @TODO Try to call this as few times as possible.
@@ -339,7 +340,7 @@ if (mConfig._updateVariance)
     }
 
     // Increment frame counter for jitter cam.
-    if (mConfig._accumulateFrames)
+    if (mConfig.mAccumulateFrames)
         ++global::frameCount;
     else
         global::frameCount = -1;
@@ -419,16 +420,16 @@ void Context::submitFrame() {
 }
 
 void Context::updateSettings() {
-    if (mConfig._maxGeometryChanged || mConfig._maxTexturesChanged) {
+    if (mConfig.mMaxGeometryChanged || mConfig.mMaxTexturesChanged) {
         mSync.waitForFrame(prevFrame);
 
-        mConfig._maxGeometryChanged = false;
-        mConfig._maxTexturesChanged = false;
+        mConfig.mMaxGeometryChanged = false;
+        mConfig.mMaxTexturesChanged = false;
 
-        mScene.mVertexBuffers.resize(mConfig._maxGeometry);
-        mScene.mIndexBuffers.resize(mConfig._maxGeometry);
-        mScene._materialIndexBuffers.resize(mConfig._maxGeometry);
-        mScene._textures.resize(mConfig._maxTextures);
+        mScene.mVertexBuffers.resize(mConfig.mMaxGeometry);
+        mScene.mIndexBuffers.resize(mConfig.mMaxGeometry);
+        mScene.mMaterialIndexBuffers.resize(mConfig.mMaxGeometry);
+        mScene.mTextures.resize(mConfig.mMaxTextures);
 
         mScene.initGeoemtryDescriptorSets();
 
@@ -457,15 +458,15 @@ void Context::updateSettings() {
 void Context::render() {
     update();
 
-    if (mWindow->minimized()) {
-        KF_WARN("mWindow->minimized()");
+    if (pWindow->minimized()) {
+        KF_WARN("pWindow->minimized()");
         return;
     }
 
-    if (mWindow->changed()) {
-        KF_WARN("mWindow->changed()");
+    if (pWindow->changed()) {
+        KF_WARN("pWindow->changed()");
         mScene.mCurrentCamera->mProjNeedsUpdate = true;
-//            mCamera->mProjNeedsUpdate = true;
+//            pCamera->mProjNeedsUpdate = true;
         return;
     }
 
@@ -494,14 +495,14 @@ void Context::recreateSwapchain() {
 
     mRayTracer.updateDescriptors();
 
-    if (mGui != nullptr) {
-        mGui->recreate(mSwapchain.getExtent());
+    if (pGui != nullptr) {
+      pGui->recreate(mSwapchain.getExtent());
     }
 
     // Update the camera screen size to avoid image stretching.
     auto screenSize = mSwapchain.getExtent();
     mScene.mCurrentCamera->setSize(screenSize.width, screenSize.height);
-//        mCamera->setSize(screenSize.width, screenSize.height);
+//        pCamera->setSize(screenSize.width, screenSize.height);
 
     mConfig.mSwapchainNeedsRefresh = false;
 
@@ -513,8 +514,8 @@ void Context::initPipelines() {
 
     // path tracing pipeline
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = {mRayTracer.getDescriptorSetLayout(),
-                                                                 mScene._sceneDescriptors.layout.get(),
-                                                                 mScene._geometryDescriptors.layout.get()};
+                                                                 mScene.mSceneDescriptors.layout.get(),
+                                                                 mScene.mGeometryDescriptors.layout.get()};
 
     mRayTracer.createPipeline(descriptorSetLayouts);
     mConfig.mPipelineNeedsRefresh = false;
@@ -523,8 +524,8 @@ void Context::initPipelines() {
 }
 
 void Context::initGui() {
-    if (mGui != nullptr) {
-        mGui->init(mWindow->get(), &mSurface, mSwapchain.getExtent(),
+    if (pGui != nullptr) {
+      pGui->init(pWindow->get(), &mSurface, mSwapchain.getExtent(),
                    mPostProcessingRenderer.getRenderPass().get());
     }
 }
@@ -532,15 +533,15 @@ void Context::initGui() {
 void Context::recordSwapchainCommandBuffers() {
     mSync.waitForFrame(prevFrame);
 
-    RtPushConstants pushConstants = {mConfig._clearColor,
+    RtPushConstants pushConstants = {mConfig.mClearColor,
                                      global::frameCount,
                                      mConfig.mPerPixelSampleRate,
                                      mConfig.mPathDepth,
-                                     static_cast<uint32_t>(mScene._useEnvironmentMap),
-                                     static_cast<uint32_t>(mConfig._russianRoulette),
-                                     mConfig._russianRouletteMinBounces,
-                                     mConfig._nextEventEstimation,
-                                     mConfig._nextEventEstimationMinBounces};
+                                     static_cast<uint32_t>(mScene.mUseEnvironmentMap),
+                                     static_cast<uint32_t>(mConfig.mRussianRoulette),
+                                     mConfig.mRussianRouletteMinBounces,
+                                     mConfig.mNextEventEstimation,
+                                     mConfig.mNextEventEstimationMinBounces};
 
     for (size_t imageIndex = 0; imageIndex < mSwapchainCommandBuffers.get().size(); ++imageIndex) {
         vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);
@@ -581,8 +582,8 @@ void Context::recordSwapchainCommandBuffers() {
                 mPostProcessingRenderer.render(cmdBuf, mSwapchain.getExtent(), index);
 
                 // imGui
-                if (mGui != nullptr) {
-                    mGui->renderDrawData(cmdBuf);
+                if (pGui != nullptr) {
+                  pGui->renderDrawData(cmdBuf);
                 }
             }
             mPostProcessingRenderer.endRenderPass(cmdBuf);

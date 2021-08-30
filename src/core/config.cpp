@@ -49,55 +49,52 @@ void Config::setClearColor(const glm::vec4 &clearColor) {
         triggerSwapchainRefresh();
     }
 
-    _clearColor = clearColor;
+    mClearColor = clearColor;
 
     global::frameCount = -1;
 }
 
-void Config::setNextEventEstimation(bool flag) {
-    _nextEventEstimation = flag;
+void Config::setNextEventEstimation(bool flag) { mNextEventEstimation = flag;
 }
 
 void Config::setNextEventEstimationMinBounces(uint32_t minBounces) {
-    _nextEventEstimationMinBounces = minBounces;
+  mNextEventEstimationMinBounces = minBounces;
 }
 
-void Config::setRussianRoulette(bool flag) {
-    _russianRoulette = flag;
+void Config::setRussianRoulette(bool flag) { mRussianRoulette = flag;
 }
 
 void Config::setRussianRouletteMinBounces(uint32_t minBounces) {
-    _russianRouletteMinBounces = minBounces;
+  mRussianRouletteMinBounces = minBounces;
 }
 
 void Config::setAssetsPath(int argc, char *argv[]) {
-    _assetsPath = "";
+  mAssetsPath = "";
 
     for (int i = 0; i < argc; ++i) {
-        _assetsPath += argv[i];
+      mAssetsPath += argv[i];
     }
 
-    std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
+    std::replace(mAssetsPath.begin(), mAssetsPath.end(), '\\', '/');
 
-    _assetsPath = _assetsPath.substr(0, _assetsPath.find_last_of('/') + 1);
+    mAssetsPath = mAssetsPath.substr(0, mAssetsPath.find_last_of('/') + 1);
 
-    global::assetsPath = _assetsPath;
+    global::assetsPath = mAssetsPath;
 }
 
 void Config::setAssetsPath(std::string_view path) {
-    _assetsPath = path;
+  mAssetsPath = path;
 
-    std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
+    std::replace(mAssetsPath.begin(), mAssetsPath.end(), '\\', '/');
 
     if (path[path.size() - 1] != '/') {
-        _assetsPath += '/';
+      mAssetsPath += '/';
     }
 
-    global::assetsPath = _assetsPath;
+    global::assetsPath = mAssetsPath;
 }
 
-void Config::setAutomaticPipelineRefresh(bool flag) {
-    _automaticPipelineRefresh = flag;
+void Config::setAutomaticPipelineRefresh(bool flag) { mAutomaticPipelineRefresh = flag;
 }
 
 void Config::setGeometryInstanceLimit(uint32_t amount) {
@@ -107,9 +104,9 @@ void Config::setGeometryInstanceLimit(uint32_t amount) {
     }
 
     // Increment by one to accommodate the triangle dummy for emtpy scenes.
-    _maxGeometryInstances = amount;
+    mMaxGeometryInstances = amount;
 
-    _maxGeometryInstancesChanged = true;
+    mMaxGeometryInstancesChanged = true;
 }
 
 void Config::setGeometryLimit(size_t amount) {
@@ -128,9 +125,9 @@ void Config::setGeometryLimit(size_t amount) {
         amount = 16;
     }
 
-    _maxGeometry = ++amount;
+    mMaxGeometry = ++amount;
 
-    _maxGeometryChanged = true;
+    mMaxGeometryChanged = true;
 }
 
 void Config::setTextureLimit(size_t amount) {
@@ -139,9 +136,9 @@ void Config::setTextureLimit(size_t amount) {
         KF_WARN("Can not use value 0 for the maximum amount of textures. Using 1 instead.");
     }
 
-    _maxTextures = ++amount;
+    mMaxTextures = ++amount;
 
-    _maxTexturesChanged = true;
+    mMaxTexturesChanged = true;
 }
 
 void Config::setUseDenoiser(bool useDenoiser) {
@@ -153,11 +150,9 @@ void Config::setPerPixelSampleRate(uint32_t sampleRate) {
     mPerPixelSampleRate = sampleRate;
 }
 
-void Config::setAccumulatingFrames(bool flag) {
-    _accumulateFrames = flag;
+void Config::setAccumulatingFrames(bool flag) { mAccumulateFrames = flag;
 }
 
-void Config::updateVariance(bool flag) {
-    _updateVariance = flag;
+void Config::updateVariance(bool flag) { mUpdateVariance = flag;
 }
 }
