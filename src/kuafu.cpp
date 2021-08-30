@@ -70,6 +70,10 @@ namespace kuafu {
         mContext.render();
     }
 
+    const std::vector<uint8_t>& Kuafu::downloadLatestFrame() const {
+        return mContext.mLatestFrame;
+    }
+
     void Kuafu::setWindow(std::shared_ptr<Window> window) {
         mWindow = window;
         mContext.mWindow = mWindow;

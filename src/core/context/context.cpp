@@ -343,6 +343,16 @@ namespace kuafu {
         // This will mark the current image to be in use by this frame.
         mSync.getImageInFlight(imageIndex_t) = mSync.getInFlightFence(currentFrame);
 
+        // Download every frame
+        // TODO: get this into command buffer
+        mLatestFrame = vkCore::download<uint8_t>(
+                mSwapchain.getImage(imageIndex),
+                mSurface.getFormat(), vk::ImageLayout::ePresentSrcKHR,
+                vk::Extent3D{mSurface.getExtent(), 1});
+
+//        mSwapchain.setImageLayout(imageIndex,
+//                                  vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::ePresentSrcKHR);
+
         vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);
 
         // Reset the signaled state of the current frame's fence to the unsignaled one.

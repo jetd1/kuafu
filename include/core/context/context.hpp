@@ -43,6 +43,7 @@ namespace kuafu {
 
         Scene mScene;
         Config mConfig;
+        std::vector<uint8_t> mLatestFrame;   // TODO: kuafu_urgent: optimize this
 
 
         /// Used to set the GUI that will be used.

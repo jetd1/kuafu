@@ -726,6 +726,20 @@ namespace vkCore
     {
       barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
     }
+    else if ( oldLayout == vk::ImageLayout::ePresentSrcKHR && newLayout == vk::ImageLayout::eTransferSrcOptimal )
+    {
+        barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+    }
+    else if ( oldLayout == vk::ImageLayout::eColorAttachmentOptimal && newLayout == vk::ImageLayout::eTransferSrcOptimal )
+    {
+      barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+      barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+    }
+    // TODO: jet: Check the following 5 lines
+    else if ( oldLayout == vk::ImageLayout::eTransferSrcOptimal && newLayout == vk::ImageLayout::ePresentSrcKHR )
+    {
+      barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+    }
     else if ( oldLayout == vk::ImageLayout::eColorAttachmentOptimal && newLayout == vk::ImageLayout::ePresentSrcKHR )
     {
       barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
@@ -1866,6 +1880,106 @@ namespace vkCore
       }
     }
 
+    /// Initializes the cubemap from a created ktxTexture
+    /// It's the callers responsibility to destroy the texture: ktxTexture_Destroy( texture );
+    /// @param texture A pointer to the ktx cubemap.
+    void init( ktxTexture* texture )
+    {
+      ktx_uint8_t* textureData = texture->pData;
+      ktx_size_t textureSize   = texture->dataSize;
+      uint32_t width           = texture->baseWidth;
+      uint32_t height          = texture->baseHeight;
+      uint32_t numLevels       = 1;
+
+
+      // Set up the staging buffer.
+      Buffer stagingBuffer( textureSize,
+                            vk::BufferUsageFlagBits::eTransferSrc,
+                            { global::graphicsFamilyIndex },
+                            vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent );
+
+      vk::MemoryRequirements reqs = global::device.getBufferMemoryRequirements( stagingBuffer.get( ) );
+
+      // Copy to staging buffer
+      stagingBuffer.fill<ktx_uint8_t>( textureData );
+
+      // Init image
+      vk::Extent3D extent( width, height, 1 );
+
+      auto imageCreateInfo        = getImageCreateInfo( extent );
+      imageCreateInfo.arrayLayers = 6;
+      imageCreateInfo.flags       = vk::ImageCreateFlagBits::eCubeCompatible;
+      imageCreateInfo.mipLevels   = numLevels;
+      imageCreateInfo.format      = vk::Format::eR8G8B8A8Unorm; // @todo add format support handling
+
+      Image::init( imageCreateInfo );
+
+      // Image create info
+      auto imageViewCreateInfo                        = getImageViewCreateInfo( _image.get( ), _format, vk::ImageViewType::eCube );
+      imageViewCreateInfo.subresourceRange.layerCount = 6;
+      imageViewCreateInfo.subresourceRange.levelCount = numLevels;
+      imageViewCreateInfo.components                  = { vk::ComponentSwizzle::eR, vk::ComponentSwizzle::eG, vk::ComponentSwizzle::eB, vk::ComponentSwizzle::eA };
+
+      // Create buffer copy regions
+      std::vector<vk::BufferImageCopy> bufferCopyRegions;
+      bufferCopyRegions.reserve( 6 * numLevels );
+
+      for ( uint32_t face = 0; face < 6; ++face )
+      {
+        for ( uint32_t mipLevel = 0; mipLevel < numLevels; ++mipLevel )
+        {
+          ktx_size_t offset = 0;
+          if ( texture != nullptr )
+          {
+            VK_CORE_ASSERT( ktxTexture_GetImageOffset( texture, mipLevel, 0, face, &offset ) == KTX_SUCCESS, "KTX: Failed to get image offset." );
+          }
+          vk::BufferImageCopy bufferCopyRegion             = { };
+          bufferCopyRegion.imageSubresource.aspectMask     = vk::ImageAspectFlagBits::eColor;
+          bufferCopyRegion.imageSubresource.mipLevel       = mipLevel;
+          bufferCopyRegion.imageSubresource.baseArrayLayer = face;
+          bufferCopyRegion.imageSubresource.layerCount     = 1;
+          bufferCopyRegion.imageExtent.width               = width >> mipLevel;
+          bufferCopyRegion.imageExtent.height              = height >> mipLevel;
+          bufferCopyRegion.imageExtent.depth               = 1;
+          bufferCopyRegion.bufferOffset                    = offset;
+          bufferCopyRegions.push_back( bufferCopyRegion );
+        }
+      }
+
+      // Fill the actual image.
+      transitionToLayout( vk::ImageLayout::eTransferDstOptimal, &imageViewCreateInfo.subresourceRange );
+
+      CommandBuffer commandBuffer( global::graphicsCmdPool );
+      commandBuffer.begin( );
+      {
+        commandBuffer.get( 0 ).copyBufferToImage( stagingBuffer.get( ),
+                                                  _image.get( ),
+                                                  vk::ImageLayout::eTransferDstOptimal,
+                                                  static_cast<uint32_t>( bufferCopyRegions.size( ) ),
+                                                  bufferCopyRegions.data( ) ); // CMD
+      }
+      commandBuffer.end( );
+      commandBuffer.submitToQueue( global::graphicsQueue );
+
+      transitionToLayout( vk::ImageLayout::eShaderReadOnlyOptimal, &imageViewCreateInfo.subresourceRange );
+
+      // Init sampler
+      auto samplerCreateInfo          = getSamplerCreateInfo( );
+      samplerCreateInfo.addressModeU  = vk::SamplerAddressMode::eClampToEdge;
+      samplerCreateInfo.addressModeV  = vk::SamplerAddressMode::eClampToEdge;
+      samplerCreateInfo.addressModeW  = vk::SamplerAddressMode::eClampToEdge;
+      samplerCreateInfo.minLod        = 0.0F;
+      samplerCreateInfo.maxLod        = static_cast<float>( numLevels );
+      samplerCreateInfo.borderColor   = vk::BorderColor::eFloatOpaqueWhite;
+      samplerCreateInfo.maxAnisotropy = 1.0F;
+      samplerCreateInfo.compareOp     = vk::CompareOp::eNever;
+
+      _sampler = initSamplerUnique( samplerCreateInfo );
+
+      // Init image view
+      _imageView = initImageViewUnique( imageViewCreateInfo );
+    }
+
   private:
     vk::UniqueSampler _sampler;
     vk::UniqueImageView _imageView;
@@ -2532,7 +2646,9 @@ namespace vkCore
       }
 
       createInfo.imageArrayLayers = 1;
-      createInfo.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst;
+      createInfo.imageUsage       = vk::ImageUsageFlagBits::eColorAttachment
+                                  | vk::ImageUsageFlagBits::eTransferDst
+                                  | vk::ImageUsageFlagBits::eTransferSrc;
 
       std::vector<uint32_t> queueFamilyIndices = { global::graphicsFamilyIndex };
 
@@ -2601,12 +2717,15 @@ namespace vkCore
     /// Used to transition from one layout to another.
     /// @param oldLayout The swapchain images' current image layout.
     /// @param newLayout The target image layout.
-    void setImageLayout( vk::ImageLayout oldLayout, vk::ImageLayout newLayout )
+    void setImageLayout(size_t idx, vk::ImageLayout oldLayout, vk::ImageLayout newLayout )
     {
-      for ( const auto& image : _images )
-      {
-        transitionImageLayout( image, oldLayout, newLayout );
-      }
+      transitionImageLayout( _images[idx], oldLayout, newLayout );
+    }
+
+    void setImageLayout(vk::ImageLayout oldLayout, vk::ImageLayout newLayout )
+    {
+      for (const auto& image : _images)
+          transitionImageLayout( image, oldLayout, newLayout );
     }
 
     /// Retrieves the next swapchain image.
@@ -2778,4 +2897,160 @@ namespace vkCore
 
     const size_t _maxFramesInFlight = 2;
   };
+
+
+
+
+    // Additional Utilities by Jet
+
+    ///
+    /// @param
+    inline void download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
+                  void *data, size_t size, vk::Offset3D offset, vk::Extent3D extent) {
+        vk::ImageAspectFlags aspect;
+        uint32_t formatSize;
+
+        switch (_format) {
+            case vk::Format::eR8G8B8A8Unorm:
+            case vk::Format::eB8G8R8A8Unorm:
+                formatSize = 4;
+                aspect = vk::ImageAspectFlagBits::eColor;
+                break;
+            case vk::Format::eR32G32B32A32Uint:
+                formatSize = 16;
+                aspect = vk::ImageAspectFlagBits::eColor;
+                break;
+            case vk::Format::eR32G32B32A32Sfloat:
+                formatSize = 16;
+                aspect = vk::ImageAspectFlagBits::eColor;
+                break;
+//            case vk::Format::eD32Sfloat:
+//                formatSize = 4;
+//                aspect = vk::ImageAspectFlagBits::eDepth;
+//                break;
+//            case vk::Format::eD24UnormS8Uint:
+//                formatSize = 4;
+//                aspect = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+//                break;
+            default:
+                throw std::runtime_error("failed to download image: unsupported format.");
+        }
+
+        size_t imageSize = extent.width * extent.height * extent.depth * formatSize;
+        if (size != 0 && size != imageSize) {
+            throw std::runtime_error("image download failed: expecting size " +
+                                     std::to_string(imageSize) + ", got " +
+                                     std::to_string(size));
+        }
+        size = imageSize;
+
+        vk::ImageLayout sourceLayout;
+        vk::AccessFlags sourceAccessFlag;
+        vk::PipelineStageFlags sourceStage;
+
+        switch (_layout) {
+            case vk::ImageLayout::ePresentSrcKHR:
+                sourceLayout = vk::ImageLayout::ePresentSrcKHR;
+                sourceAccessFlag = {};
+                sourceStage = vk::PipelineStageFlagBits::eAllCommands;
+                break;
+            case vk::ImageLayout::eColorAttachmentOptimal:
+                sourceLayout = vk::ImageLayout::eColorAttachmentOptimal;
+                sourceAccessFlag = vk::AccessFlagBits::eColorAttachmentWrite;
+                sourceStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+                break;
+//            case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+//                sourceLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+//                sourceAccessFlag = vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+//                sourceStage = vk::PipelineStageFlagBits::eEarlyFragmentTests |
+//                              vk::PipelineStageFlagBits::eLateFragmentTests;
+//                break;
+//            case vk::ImageLayout::eShaderReadOnlyOptimal:
+//                sourceLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+//                sourceAccessFlag = {};
+//                sourceStage = vk::PipelineStageFlagBits::eFragmentShader;
+//                break;
+//            case vk::ImageLayout::eTransferSrcOptimal:
+//                break;
+            default:
+                throw std::runtime_error("failed to download image: invalid layout.");
+        }
+
+        Buffer stagingBuffer(size,
+                             vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
+                             { global::transferFamilyIndex },  // TODO: check this
+                             vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent );
+        CommandBuffer commandBuffer(global::graphicsCmdPool);
+        commandBuffer.begin();
+
+        if (_layout != vk::ImageLayout::eTransferSrcOptimal) {
+            auto barrierInfo = getImageMemoryBarrierInfo(_image, _layout, vk::ImageLayout::eTransferSrcOptimal);
+            commandBuffer.get(0).pipelineBarrier( std::get<1>( barrierInfo ), // srcStageMask
+                                                  std::get<2>( barrierInfo ), // dstStageMask
+                                                  vk::DependencyFlagBits::eByRegion,
+                                                  0,
+                                                  nullptr,
+                                                  0,
+                                                  nullptr,
+                                                  1,
+                                                  &std::get<0>( barrierInfo ) ); // barrier
+        }
+        vk::BufferImageCopy copyRegion(0, _extent.width, _extent.height,
+                                       {aspect, 0, 0, 1}, offset, extent);
+        commandBuffer.get(0).copyImageToBuffer(_image, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer.get(), copyRegion);
+        commandBuffer.end();
+        commandBuffer.submitToQueue(global::graphicsQueue);  // wait idle inside
+
+        void *mapped;
+        auto result = vkCore::global::device.mapMemory(
+                stagingBuffer.getMemory(), 0, stagingBuffer.getSize(), {}, &mapped);
+        std::memcpy(data, mapped, size);
+        vkCore::global::device.unmapMemory(stagingBuffer.getMemory());
+    }
+
+    inline void download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
+                  void *data, size_t size) {
+        download(_image, _format, _layout, _extent, data, size, {0, 0, 0}, _extent);
+    }
+
+    template <typename DataType>
+    inline std::vector<DataType> download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
+                                   vk::Offset3D offset, vk::Extent3D extent) {
+//        if (!isFormatCompatible<DataType>(_format)) {
+//            throw std::runtime_error("Download failed: incompatible format");
+//        }
+        static_assert(sizeof(DataType) == 1 ||
+                      sizeof(DataType) == 4); // only support char, int or float
+        uint32_t formatSize;
+        switch (_format) {
+            case vk::Format::eR8G8B8A8Unorm:
+            case vk::Format::eB8G8R8A8Unorm:
+                formatSize = 4;
+                break;
+            case vk::Format::eR32G32B32A32Uint:
+                formatSize = 16;
+                break;
+            case vk::Format::eR32G32B32A32Sfloat:
+                formatSize = 16;
+                break;
+            case vk::Format::eD32Sfloat:
+                formatSize = 4;
+                break;
+            case vk::Format::eD24UnormS8Uint:
+                formatSize = 4;
+                break;
+            default:
+                throw std::runtime_error("failed to download image: unsupported format.");
+        }
+        size_t size = formatSize * extent.width * extent.height * extent.depth;
+        std::vector<DataType> data(size / sizeof(DataType));
+        download(_image, _format, _layout, _extent, data.data(), size, offset, extent);
+        return data;
+    }
+
+    template <typename DataType>
+    inline std::vector<DataType> download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent) {
+        return download<DataType>(_image, _format, _layout, _extent, {0, 0, 0}, _extent);
+    }
+
 }

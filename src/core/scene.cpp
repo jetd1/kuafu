@@ -4,6 +4,7 @@
 
 #include "core/scene.hpp"
 #include "core/context/global.hpp"
+#include <kuafu_utils.hpp>
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -308,14 +309,21 @@ namespace kuafu {
     }
 
     void Scene::uploadEnvironmentMap() {
-        _uploadEnvironmentMap = false;
+      _uploadEnvironmentMap = false;
+      if (!_useEnvironmentMap || _environmentMapTexturePath == "") {
+        _environmentMap.init("");
+        return;
+      }
 
+      auto ext = std::filesystem::path(_environmentMapTexturePath).extension();
+      if (kuafu::utils::iequals(ext, ".ktx")) {
         _environmentMap.init(_environmentMapTexturePath);
+        return;
+      }
 
-        if (_removeEnvironmentMap) {
-            removeEnvironmentMap();
-            _removeEnvironmentMap = false;
-        }
+      // TODO: build cube map from 6 images
+      throw std::runtime_error(
+          "cubemap format not supported: " + _environmentMapTexturePath);
     }
 
     void Scene::uploadGeometries() {

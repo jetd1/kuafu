@@ -24,6 +24,8 @@ namespace kuafu {
 
         bool isRunning() const;
 
+        const std::vector<uint8_t>& downloadLatestFrame() const;
+
         void setWindow(std::shared_ptr<Window> other);
 
         void setWindow(int width, int height, const char *title = "App", uint32_t flags = 0);

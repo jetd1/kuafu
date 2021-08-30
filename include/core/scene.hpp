@@ -154,9 +154,8 @@ namespace kuafu {
         std::vector<std::shared_ptr<Geometry>> mGeometries;
         std::vector<std::shared_ptr<GeometryInstance>> mGeometryInstances;
 
-        std::string_view _environmentMapTexturePath;
+        std::string _environmentMapTexturePath;
         bool _useEnvironmentMap = false;
-        bool _removeEnvironmentMap = false;
 
         bool _uploadGeometryInstancesToBuffer = false;
         bool _uploadEnvironmentMap = false;
