@@ -62,6 +62,11 @@ namespace kuafu {
         /// @param clearColor The new value for the clear color.
         void setClearColor(const glm::vec4 &clearColor);
 
+        /// This function will be called by Kuafu::init() in case the path was not set manually.
+        /// @warning This function might file in setting the correct path. That is why it is recommended to set it automatically using setAssetsPath(std::string).
+        static std::string sDefaultAssetsPath;
+        static void setDefaultAssetsPath(std::string path);
+
         /// @return Returns the path to assets.
         auto getAssetsPath() const -> std::string_view { return _assetsPath; }
 
@@ -112,10 +117,6 @@ namespace kuafu {
         void updateVariance(bool flag);
 
     private:
-        /// This function will be called by Kuafu::init() in case the path was not set manually.
-        /// @warning This function might file in setting the correct path. That is why it is recommended to set it automatically using setAssetsPath(std::string).
-        void setDefaultAssetsPath();
-
         bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
         bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
 

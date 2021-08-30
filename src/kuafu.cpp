@@ -28,7 +28,7 @@ namespace kuafu {
 
 
       if (mContext.mConfig.getAssetsPath().empty()) {
-            //mContext.mConfig.setDefaultAssetsPath();
+            mContext.mConfig.setAssetsPath(mContext.mConfig.sDefaultAssetsPath);
         }
 
         if (mInitialized) {

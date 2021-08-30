@@ -6,6 +6,9 @@
 #include "core/context/global.hpp"
 
 namespace kuafu {
+    std::string Config::sDefaultAssetsPath;
+    void Config::setDefaultAssetsPath(std::string p) { sDefaultAssetsPath = std::move(p); }
+
     void Config::setPathDepth(uint32_t recursionDepth) {
         if (recursionDepth <= mMaxPathDepth) {
             mPathDepth = recursionDepth;
@@ -120,15 +123,6 @@ namespace kuafu {
         _maxTextures = ++amount;
 
         _maxTexturesChanged = true;
-    }
-
-    void Config::setDefaultAssetsPath() {
-        _assetsPath = std::filesystem::current_path().string() += "/";
-
-        std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
-
-        global::assetsPath = _assetsPath;
-//        KF_WARN( "No path to assets specified. Using default path as path to resources: ", _assetsPath );
     }
 
     void Config::setUseDenoiser(bool useDenoiser) {
