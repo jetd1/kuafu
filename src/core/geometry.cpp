@@ -4,6 +4,10 @@
 
 #include "core/geometry.hpp"
 #include "core/context/global.hpp"
+#include <assimp/Importer.hpp>
+#include <assimp/pbrmaterial.h>
+#include <assimp/postprocess.h>
+#include <assimp/scene.h>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 
@@ -21,7 +25,205 @@ namespace kuafu {
                (m1.roughness == m2.roughness);
     }
 
-    std::shared_ptr<Geometry> loadObj(std::string_view path, bool dynamic) {
+  std::vector<std::shared_ptr<Geometry> > loadScene(
+        std::string_view fname, bool dynamic) {
+    auto path = std::filesystem::absolute(fname);
+
+    Assimp::Importer importer;
+    uint32_t flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate |
+                     aiProcess_GenNormals | aiProcess_FlipUVs |
+                     aiProcess_PreTransformVertices;
+    importer.SetPropertyInteger(AI_CONFIG_PP_PTV_ADD_ROOT_TRANSFORMATION, 1);
+    const aiScene *scene = importer.ReadFile(path, flags);
+
+    if (!scene)
+        throw std::runtime_error(
+                "Failed to load scene: " + std::string(importer.GetErrorString()) +
+                ", " + path.string());
+    if (scene->mRootNode->mMetaData) {
+      KF_ERROR("Failed to load mesh file: file contains unsupported metadata, " +
+          path.string());
+    }
+
+
+    auto parentDir = path.parent_path();
+
+//    const uint32_t MIP_LEVEL = 3;
+
+    std::vector<std::shared_ptr<Geometry>> geometries;
+    std::vector<Material> materials;
+
+    for (uint32_t mat_idx = 0; mat_idx < scene->mNumMaterials; ++mat_idx) {
+      auto *m = scene->mMaterials[mat_idx];
+      aiColor3D diffuse{0, 0, 0};
+      aiColor3D specular{0, 0, 0};
+      aiColor3D emission{0, 0, 0};
+      float alpha = 1.f;
+      float shininess = 0.f;
+      float ior = 0.f;
+      float transmission = 0.f;
+      uint32_t illum = 2;
+      m->Get(AI_MATKEY_OPACITY, alpha);
+      m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
+      m->Get(AI_MATKEY_COLOR_SPECULAR, specular);
+      m->Get(AI_MATKEY_SHININESS, shininess);         // TODO: strength
+      m->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
+      m->Get(AI_MATKEY_REFRACTI, ior);
+//      m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION, transmission); // TODO: full glTF
+
+      if (alpha < 1e-5 && (fname.ends_with("dae") ||    // TODO: dAE?
+                           fname.ends_with("DAE"))) {
+        KF_WARN("The DAE file " + path.string() +
+                " is fully transparent. This is probably "
+                "due to modeling error. Setting opacity to 1 instead...");
+        alpha = 1.f;
+      }
+
+      float roughness;
+      if (shininess <= 5.f)
+        roughness = 1.f;
+      else if (shininess >= 1605.f)
+        roughness = 0.f;
+      else
+        roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
+
+      if (transmission > 0)
+        illum = 1;
+
+//      std::shared_ptr<SVTexture> baseColorTexture{};
+//      std::shared_ptr<SVTexture> normalTexture{};
+//      std::shared_ptr<SVTexture> roughnessTexture{};
+//      std::shared_ptr<SVTexture> metallicTexture{};
+
+      aiString tpath;
+      std::string diffuseTexPath;
+      if (m->GetTextureCount(aiTextureType_DIFFUSE) > 0 &&
+          m->GetTexture(aiTextureType_DIFFUSE, 0, &tpath) == AI_SUCCESS) {
+        KF_INFO("Trying to load texture {}", tpath.C_Str());
+        if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {
+          KF_ERROR("embedded texture not supported");
+        } else {
+          std::string p = std::string(tpath.C_Str());
+          if (!std::filesystem::path(p).is_absolute())
+            p = (parentDir / p).string();
+          diffuseTexPath = p;
+        }
+      }
+
+      if (m->GetTextureCount(aiTextureType_METALNESS) > 0) {
+        KF_WARN("metalness texture not supported");
+      }
+
+      if (m->GetTextureCount(aiTextureType_NORMALS) > 0) {
+        KF_WARN("normals texture not supported");
+      }
+
+      if (m->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) > 0) {
+        KF_WARN("diffuse roughness texture not supported");
+      }
+
+      if (m->GetTexture(
+          AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
+          &tpath) == AI_SUCCESS) {
+        KF_WARN("roughness metallic texture not supported");
+      }
+
+      materials.push_back({
+          .kd = {diffuse.r, diffuse.g, diffuse.b},
+          .diffuseTexPath = std::move(diffuseTexPath),
+          .emission = {emission.r, emission.g, emission.b},  // TODO: strength
+          .illum = illum,
+          .d = alpha,
+          .shininess = shininess,
+          .roughness = roughness,
+          .ior = ior,
+      });
+    }
+
+    // Upload materials to global resources
+    std::vector<uint32_t> matLocal2GlobalIdx(
+        materials.size(), std::numeric_limits<uint32_t>::max());
+    for (size_t i = 0; i < materials.size(); i++) {
+      // lookup dups
+      bool found = false;
+      size_t materialIndex = 0;
+      for (size_t j = 0; j < global::materials.size(); j++) {
+        if (materials[i] == global::materials[j]) {
+          found = true;
+          materialIndex = j;
+          break;
+        }
+      }
+
+      if (found)
+        matLocal2GlobalIdx[i] = materialIndex;
+      else {
+        global::materials.push_back(std::move(materials[i]));
+        matLocal2GlobalIdx[i] = global::materialIndex++;
+      }
+    }
+
+    // Meshes
+    for (uint32_t mesh_idx = 0; mesh_idx < scene->mNumMeshes; ++mesh_idx) {
+      auto mesh = scene->mMeshes[mesh_idx];
+      if (!mesh->HasFaces())
+        continue;
+
+      // Vertices
+      std::vector<Vertex> vertices;
+      vertices.resize(mesh->mNumVertices);
+
+      for (uint32_t v = 0; v < mesh->mNumVertices; v++) {
+        vertices[v].pos = {mesh->mVertices[v].x, mesh->mVertices[v].y, mesh->mVertices[v].z};
+        if (mesh->HasNormals())
+          vertices[v].normal = {mesh->mNormals[v].x, mesh->mNormals[v].y, mesh->mNormals[v].z};
+        if (mesh->HasTextureCoords(0))
+          vertices[v].texCoord = {mesh->mTextureCoords[0][v].x, mesh->mTextureCoords[0][v].y};
+        if (mesh->HasVertexColors(0))
+          vertices[v].color = {mesh->mColors[0][v].r, mesh->mColors[0][v].g, mesh->mColors[0][v].b};
+      }
+
+      // Indices
+      std::vector<uint32_t> indices;
+      for (uint32_t f = 0; f < mesh->mNumFaces; f++) {
+        auto face = mesh->mFaces[f];
+        if (face.mNumIndices != 3) {
+          KF_WARN("Mesh not triangulated!");
+          continue;
+        }
+        indices.push_back(face.mIndices[0]);
+        indices.push_back(face.mIndices[1]);
+        indices.push_back(face.mIndices[2]);
+      }
+
+      if (mesh->mNumVertices == 0 || indices.size() == 0) {
+        KF_WARN("A mesh in the file has no triangles: " + path.string());
+        continue;
+      }
+
+
+      // Create Geometry
+      std::shared_ptr<Geometry> geometry = std::make_shared<Geometry>();
+      geometry->path = path;
+      geometry->geometryIndex = global::geometryIndex++;
+      geometry->dynamic = dynamic;
+      geometry->vertices = vertices;
+      geometry->indices = indices;
+      geometry->subMeshCount = 1;
+      geometry->initialized = false;
+      geometry->matIndex = std::vector<uint32_t>(
+          indices.size() / 3, matLocal2GlobalIdx[mesh->mMaterialIndex]);
+      geometry->isOpaque = global::materials[geometry->matIndex.front()].d >= 1.F;
+
+      // Add to ret
+      geometries.push_back(std::move(geometry));
+    }
+
+    return geometries;
+  }
+
+
+  std::shared_ptr<Geometry> loadObj(std::string_view path, bool dynamic) {
         std::shared_ptr<Geometry> geometry = std::make_shared<Geometry>();
         geometry->path = path;
         geometry->geometryIndex = global::geometryIndex++;

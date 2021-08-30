@@ -21,7 +21,7 @@ int main() {
     scene.setCamera(std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f)));
 
-    loadScene(&renderer, Level::eNew);
+    loadScene(&renderer, Level::eObj);
 
 //    renderer.getConfig().setPerPixelSampleRate(256);
 //    renderer.getConfig().setUseDenoiser(false);

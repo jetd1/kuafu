@@ -6,7 +6,8 @@ enum class Level {
     eSpheres,
     eMirrors,
     eSponza,
-    eNew
+    eNew,
+    eObj
 };
 
 inline Level currentLevel;
@@ -412,10 +413,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto cap3 = kuafu::createCapsule(0.3, 0.3, true, mat);
         auto cap4 = kuafu::createCapsule(0.4, 0.4, true, mat);
 
-
-//        auto cube = kuafu::loadObj(
-//                "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/camera/collision_mesh.obj", true);
-
         renderer->getScene().setGeometries({floor, cap0, cap1, cap2, cap3, cap4});
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
@@ -440,6 +437,47 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         renderer->getScene().setGeometryInstances({
             floorInstance, cap0Instance, cap1Instance, cap2Instance, cap3Instance, cap4Instance});
+    } else if (scene == Level::eObj) {
+        renderer->reset();
+        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
+        renderer->getConfig().setGeometryInstanceLimit(15000);
+        renderer->getConfig().setTextureLimit(100); // Will give a warning.
+        renderer->getConfig().setAccumulatingFrames(false);
+//        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
+
+        renderer->getScene().getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
+
+        auto floorMaterial = std::make_shared<kuafu::Material>();
+        floorMaterial->kd = glm::vec3(1.0, 0.3, 0.3);
+        auto floor = kuafu::createYZPlane(true, floorMaterial);
+
+        auto mat = std::make_shared<kuafu::Material>();
+        mat->illum = 2;
+        mat->kd = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat->shininess = 100.0F;
+        mat->roughness = 10.;
+        mat->ior = 10.0F;
+        mat->d = 1.0;
+
+        auto scene = kuafu::loadScene(
+                "/zdata/ssource/ICCV2021_Diagnosis/description/xarm_description/meshes/optical_table/visual/optical_table.dae", true);
+        KF_INFO(scene.size());
+
+        renderer->getScene().setGeometries({floor});
+        for (auto& g: scene)
+            renderer->getScene().submitGeometry(g);
+
+        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
+        transform = glm::scale(transform, glm::vec3(5.0F, 5.0F, 5.0F));
+        transform = glm::rotate(transform, glm::radians(90.F), {0., 1., 0.});
+        auto floorInstance = kuafu::instance(floor, transform);
+
+        renderer->getScene().setGeometryInstances({floorInstance});
+        for (auto& g: scene)
+            renderer->getScene().submitGeometryInstance(instance(g, glm::mat4(1.0F)));
+
     }
 }
 

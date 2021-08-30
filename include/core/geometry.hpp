@@ -66,6 +66,8 @@ namespace kuafu {
         uint32_t geometryIndex = 0; ///< Used to assign this instance a model.
     };
 
+    std::vector<std::shared_ptr<Geometry> > loadScene(std::string_view fname, bool dynamic);
+
     /// A commodity function for loading a wavefront (.obj) model file and allocate a geometry object from it.
     ///
     /// The function will attempt to find sub-meshes in the file and retrieve all materials.

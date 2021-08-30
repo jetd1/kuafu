@@ -105,7 +105,9 @@ namespace kuafu {
     }
 
     void Camera::setPose(glm::mat4 pose) {
-      setPosition({pose[3][0], pose[3][1], pose[3][2]});
+      // TODO: kuafu_urgent: change check to avoid View update
+
+      mPosition = {pose[3][0], pose[3][1], pose[3][2]};
       mDirFront = {-pose[2][0], -pose[2][1], -pose[2][2]};
       mDirUp = {pose[1][0], pose[1][1], pose[1][2]};
 
