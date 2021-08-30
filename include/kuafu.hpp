@@ -1,7 +1,25 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #pragma once
 
 #include <memory>
@@ -9,36 +27,36 @@
 #include "core/context/context.hpp"
 
 namespace kuafu {
-    class Kuafu {
-        std::shared_ptr<Window> mWindow = nullptr;
-        std::shared_ptr<Gui> mGUI = nullptr;
-        kuafu::Context mContext;
+class Kuafu {
+    std::shared_ptr<Window> mWindow = nullptr;
+    std::shared_ptr<Gui> mGUI = nullptr;
+    kuafu::Context mContext;
 
-        bool mInitialized = false;
-        bool mRunning = true;
+    bool mInitialized = false;
+    bool mRunning = true;
 
-    public:
-        void init();
+public:
+    void init();
 
-        void run();
+    void run();
 
-        bool isRunning() const;
+    bool isRunning() const;
 
-        const std::vector<uint8_t>& downloadLatestFrame() const;
+    const std::vector<uint8_t> &downloadLatestFrame() const;
 
-        void setWindow(std::shared_ptr<Window> other);
+    void setWindow(std::shared_ptr<Window> other);
 
-        void setWindow(int width, int height, const char *title = "App", uint32_t flags = 0);
+    void setWindow(int width, int height, const char *title = "App", uint32_t flags = 0);
 
-        auto getWindow() const { return mWindow; }
+    auto getWindow() const { return mWindow; }
 
-        void setGui(std::shared_ptr<Gui> gui);
+    void setGui(std::shared_ptr<Gui> gui);
 
-        inline kuafu::Config &getConfig() { return mContext.mConfig; }
+    inline kuafu::Config &getConfig() { return mContext.mConfig; }
 
-        inline kuafu::Scene &getScene() { return mContext.mScene; }
+    inline kuafu::Scene &getScene() { return mContext.mScene; }
 
-        void reset();
-    };
+    void reset();
+};
 
 }

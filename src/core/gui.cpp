@@ -1,20 +1,39 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
+//
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
 //
 
 #include "core/gui.hpp"
 #include "core/context/global.hpp"
 
 namespace kuafu {
-    void Gui::configure() {
+void Gui::configure() {
 //        IMGUI_CHECKVERSION();
 //        ImGui::CreateContext();
-    }
+}
 
-    void Gui::init(SDL_Window *window, const vkCore::Surface *const surface, vk::Extent2D swapchainImageExtent,
-                   vk::RenderPass renderPass) {
-        _window = window;
-        _swapchainImageExtent = swapchainImageExtent;
+void Gui::init(SDL_Window *window, const vkCore::Surface *const surface, vk::Extent2D swapchainImageExtent,
+               vk::RenderPass renderPass) {
+    _window = window;
+    _swapchainImageExtent = swapchainImageExtent;
 //
 //        configure();
 //
@@ -39,17 +58,17 @@ namespace kuafu {
 //        assert(ImGui_ImplVulkan_Init(&init_info, static_cast<VkRenderPass>( renderPass )));
 //
 //        initFonts();
-    }
+}
 
-    void Gui::recreate(vk::Extent2D swapchainImageExtent) {
+void Gui::recreate(vk::Extent2D swapchainImageExtent) {
 //        _swapchainImageExtent = swapchainImageExtent;
-    }
+}
 
-    void Gui::render() {
+void Gui::render() {
 //        ImGui::ShowDemoWindow();
-    }
+}
 
-    void Gui::renderDrawData(vk::CommandBuffer commandBuffer) {
+void Gui::renderDrawData(vk::CommandBuffer commandBuffer) {
 //        ImGui_ImplSDL2_NewFrame(_window);
 //        ImGui::NewFrame();
 //
@@ -57,15 +76,15 @@ namespace kuafu {
 //        ImGui::Render();
 //
 //        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VkCommandBuffer>( commandBuffer ));
-    }
+}
 
-    void Gui::destroy() {
+void Gui::destroy() {
 //        ImGui_ImplVulkan_Shutdown();
 //        ImGui_ImplSDL2_Shutdown();
 //        ImGui::DestroyContext();
-    }
+}
 
-    void Gui::initDescriptorPool() {
+void Gui::initDescriptorPool() {
 //        std::vector<vk::DescriptorPoolSize> poolSizes = {{vk::DescriptorType::eSampler,              1000},
 //                                                         {vk::DescriptorType::eCombinedImageSampler, 1000},
 //                                                         {vk::DescriptorType::eSampledImage,         1000},
@@ -79,9 +98,9 @@ namespace kuafu {
 //                                                         {vk::DescriptorType::eInputAttachment,      1000}};
 //
 //        _descriptorPool = vkCore::initDescriptorPoolUnique(poolSizes, vkCore::global::swapchainImageCount);
-    }
+}
 
-    void Gui::initFonts() {
+void Gui::initFonts() {
 //        _commandPool = vkCore::initCommandPoolUnique(vkCore::global::graphicsFamilyIndex,
 //                                                     vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
 //
@@ -93,5 +112,5 @@ namespace kuafu {
 //
 //        commandBuffer.end();
 //        commandBuffer.submitToQueue(vkCore::global::graphicsQueue);
-    }
+}
 }

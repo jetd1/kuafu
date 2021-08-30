@@ -1,66 +1,84 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #include "core/window.hpp"
 #include "core/context/global.hpp"
 #include "SDL_vulkan.h"
 
 namespace kuafu {
 
-    Window::Window(int width, int height, const std::string& title, uint32_t flags) :
-            mFlags(flags),
-            mWidth(width),
-            mHeight(height),
-            mTitle(title) {
-        mFlags |= SDL_WINDOW_VULKAN;
+Window::Window(int width, int height, const std::string &title, uint32_t flags) :
+        mFlags(flags),
+        mWidth(width),
+        mHeight(height),
+        mTitle(title) {
+    mFlags |= SDL_WINDOW_VULKAN;
+}
+
+Window::~Window() {
+    SDL_DestroyWindow(mWindow);
+    mWindow = nullptr;
+    SDL_Quit();
+}
+
+
+auto Window::init() -> bool {
+    //SDL_SetHint( SDL_HINT_FRAMEBUFFER_ACCELERATION, "1" );
+    //SDL_SetHint( SDL_HINT_RENDER_VSYNC, "1" );
+
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        throw std::runtime_error("SDL Error, Closing application.");
+        return false;
     }
 
-    Window::~Window() {
-        SDL_DestroyWindow(mWindow);
-        mWindow = nullptr;
-        SDL_Quit();
+    mWindow = SDL_CreateWindow(mTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mWidth, mHeight,
+                               mFlags);
+
+    if (mWindow == nullptr) {
+        throw std::runtime_error("Failed to create window. Closing application.");
+        return false;
     }
 
+    //if ( SDL_GL_SetSwapInterval( 1 ) == -1 )
+    //{
+    //  throw std::runtime_error( "Swap interval not supported." );
+    //  return false;
+    //}
 
-    auto Window::init() -> bool {
-        //SDL_SetHint( SDL_HINT_FRAMEBUFFER_ACCELERATION, "1" );
-        //SDL_SetHint( SDL_HINT_RENDER_VSYNC, "1" );
+    return true;
+}
 
-        if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-            throw std::runtime_error("SDL Error, Closing application.");
-            return false;
-        }
+auto Window::update() -> bool {
+    // Updates local timer bound to this window.
+    Time::update();
 
-        mWindow = SDL_CreateWindow(mTitle.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, mWidth, mHeight,
-                                   mFlags);
+    // Fetch the latest window dimensions.
+    int width;
+    int height;
+    SDL_GetWindowSize(mWindow, &width, &height);
+    resize(width, height);
 
-        if (mWindow == nullptr) {
-            throw std::runtime_error("Failed to create window. Closing application.");
-            return false;
-        }
-
-        //if ( SDL_GL_SetSwapInterval( 1 ) == -1 )
-        //{
-        //  throw std::runtime_error( "Swap interval not supported." );
-        //  return false;
-        //}
-
-        return true;
-    }
-
-    auto Window::update() -> bool {
-        // Updates local timer bound to this window.
-        Time::update();
-
-        // Fetch the latest window dimensions.
-        int width;
-        int height;
-        SDL_GetWindowSize(mWindow, &width, &height);
-        resize(width, height);
-
-        return true;
-    }
+    return true;
+}
 
 //void Window::clean( )
 //{
@@ -71,52 +89,52 @@ namespace kuafu {
 //}
 
 
-    void Window::resize(int width, int height) {
-        mWidth = width;
-        mHeight = height;
+void Window::resize(int width, int height) {
+    mWidth = width;
+    mHeight = height;
+}
+
+vk::Extent2D Window::getSize() const {
+    int width;
+    int height;
+    SDL_GetWindowSize(mWindow, &width, &height);
+    return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+}
+
+bool Window::changed() {
+    static int prevWidth = mWidth;
+    static int prevHeight = mHeight;
+
+    if (mWidth != prevWidth || mHeight != prevHeight) {
+        global::frameCount = -1;
+
+        prevWidth = mWidth;
+        prevHeight = mHeight;
+        return true;
     }
 
-    vk::Extent2D Window::getSize() const {
-        int width;
-        int height;
-        SDL_GetWindowSize(mWindow, &width, &height);
-        return {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-    }
+    return false;
+}
 
-    bool Window::changed() {
-        static int prevWidth = mWidth;
-        static int prevHeight = mHeight;
+bool Window::minimized() {
+    return (SDL_GetWindowFlags(mWindow) & SDL_WINDOW_MINIMIZED) != 0U;
+}
 
-        if (mWidth != prevWidth || mHeight != prevHeight) {
-            global::frameCount = -1;
+auto Window::getExtensions() const -> gsl::span<const char *> {
+    // Retrieve all extensions needed by SDL2.
+    uint32_t sdlExtensionsCount;
+    SDL_bool result = SDL_Vulkan_GetInstanceExtensions(mWindow, &sdlExtensionsCount, nullptr);
 
-            prevWidth = mWidth;
-            prevHeight = mHeight;
-            return true;
-        }
+    if (result != SDL_TRUE)
+        throw std::runtime_error("Failed to get extensions required by SDL.");
 
-        return false;
-    }
+    gsl::owner<const char **> sdlExtensionsNames = new const char *[sdlExtensionsCount];
+    result = SDL_Vulkan_GetInstanceExtensions(mWindow, &sdlExtensionsCount, sdlExtensionsNames);
 
-    bool Window::minimized() {
-        return (SDL_GetWindowFlags(mWindow) & SDL_WINDOW_MINIMIZED) != 0U;
-    }
+    if (result != SDL_TRUE)
+        throw std::runtime_error("Failed to get extensions required by SDL.");
 
-    auto Window::getExtensions() const -> gsl::span<const char *> {
-        // Retrieve all extensions needed by SDL2.
-        uint32_t sdlExtensionsCount;
-        SDL_bool result = SDL_Vulkan_GetInstanceExtensions(mWindow, &sdlExtensionsCount, nullptr);
-
-        if (result != SDL_TRUE)
-            throw std::runtime_error("Failed to get extensions required by SDL.");
-
-        gsl::owner<const char **> sdlExtensionsNames = new const char *[sdlExtensionsCount];
-        result = SDL_Vulkan_GetInstanceExtensions(mWindow, &sdlExtensionsCount, sdlExtensionsNames);
-
-        if (result != SDL_TRUE)
-            throw std::runtime_error("Failed to get extensions required by SDL.");
-
-        return gsl::span<const char *>(sdlExtensionsNames, sdlExtensionsCount);
-    }
+    return gsl::span<const char *>(sdlExtensionsNames, sdlExtensionsCount);
+}
 
 }

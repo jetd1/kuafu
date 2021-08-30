@@ -1,7 +1,25 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #pragma once
 
 #include <string>
@@ -9,33 +27,33 @@
 #include "core/geometry.hpp"
 
 namespace kuafu::global {
-    extern int frameCount;
+extern int frameCount;
 
-    extern std::string assetsPath;
-    extern uint32_t geometryIndex;
-    extern uint32_t materialIndex;
-    extern uint32_t textureIndex;
-    const size_t maxResources = 2;
-    extern std::vector<Material> materials;
+extern std::string assetsPath;
+extern uint32_t geometryIndex;
+extern uint32_t materialIndex;
+extern uint32_t textureIndex;
+const size_t maxResources = 2;
+extern std::vector<Material> materials;
 
-    namespace keys {
-        extern bool eW;
-        extern bool eA;
-        extern bool eS;
-        extern bool eD;
+namespace keys {
+extern bool eW;
+extern bool eA;
+extern bool eS;
+extern bool eD;
 
-        extern bool eQ;
-        extern bool eE;
+extern bool eQ;
+extern bool eE;
 
-        extern bool eX;
-        extern bool eY;
-        extern bool eZ;
+extern bool eX;
+extern bool eY;
+extern bool eZ;
 
-        extern bool eC;
-        extern bool eSpace;
-        extern bool eLeftShift;
-        extern bool eLeftCtrl;
-        extern bool eB;
-        extern bool eL;
-    }
+extern bool eC;
+extern bool eSpace;
+extern bool eLeftShift;
+extern bool eLeftCtrl;
+extern bool eB;
+extern bool eL;
+}
 }

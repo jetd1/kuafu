@@ -1,152 +1,171 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #pragma once
 
 #include "stdafx.hpp"
 
 namespace kuafu {
-    /// Exposes all graphic settings supported by the renderer.
+/// Exposes all graphic settings supported by the renderer.
+///
+/// Any necessary pipeline recreations and swapchain recreations will not be performed at the point of calling any setter but instead the next time the renderer
+/// will be updated.
+/// @warning Any function that sets the maximum of a given entity needs to be called before kuafu::Kuafu::init().
+/// @ingroup BASE
+/// @todo Add a setUseTotalPathsOnly( bool flag )
+class Config {
+public:
+    friend class Context;
+
+    friend class Kuafu;
+
+    friend class Pipeline;
+
+    friend class Scene;
+
+    /// @return Returns the path depth.
+    auto getPathDepth() const -> uint32_t { return mPathDepth; }
+
+    /// Used to set the path depth.
     ///
-    /// Any necessary pipeline recreations and swapchain recreations will not be performed at the point of calling any setter but instead the next time the renderer
-    /// will be updated.
-    /// @warning Any function that sets the maximum of a given entity needs to be called before kuafu::Kuafu::init().
-    /// @ingroup BASE
-    /// @todo Add a setUseTotalPathsOnly( bool flag )
-    class Config {
-    public:
-        friend class Context;
+    /// The function will trigger a pipeline recreation as soon as possible unless it was explicitely disabled using setAutomaticPipelineRefresh(bool).
+    /// If a value higher than the device's maximum supported value is set, it will use the maximum value instead.
+    /// @param recursionDepth The new value for the recursion depth.
+    void setPathDepth(uint32_t recursionDepth);
 
-        friend class Kuafu;
+    bool getRussianRoulette() { return _russianRoulette; }
 
-        friend class Pipeline;
+    void setRussianRoulette(bool flag);
 
-        friend class Scene;
+    bool getNextEventEstimation() { return _nextEventEstimation; }
 
-        /// @return Returns the path depth.
-        auto getPathDepth() const -> uint32_t { return mPathDepth; }
+    void setNextEventEstimation(bool flag);
 
-        /// Used to set the path depth.
-        ///
-        /// The function will trigger a pipeline recreation as soon as possible unless it was explicitely disabled using setAutomaticPipelineRefresh(bool).
-        /// If a value higher than the device's maximum supported value is set, it will use the maximum value instead.
-        /// @param recursionDepth The new value for the recursion depth.
-        void setPathDepth(uint32_t recursionDepth);
+    uint32_t getNextEventEstimationMinBounces() { return _nextEventEstimationMinBounces; }
 
-        bool getRussianRoulette() { return _russianRoulette; }
+    void setNextEventEstimationMinBounces(uint32_t minBounces);
 
-        void setRussianRoulette(bool flag);
+    uint32_t getRussianRouletteMinBounces() { return _russianRouletteMinBounces; }
 
-        bool getNextEventEstimation() { return _nextEventEstimation; }
+    void setRussianRouletteMinBounces(uint32_t minBounces);
 
-        void setNextEventEstimation(bool flag);
+    /// @return Returns the maximum path depth on the GPU.
+    auto getMaxPathDepth() const -> uint32_t { return mMaxPathDepth; }
 
-        uint32_t getNextEventEstimationMinBounces() { return _nextEventEstimationMinBounces; }
+    /// @return Returns the clear color.
+    auto getClearColor() const -> const glm::vec4 & { return _clearColor; }
 
-        void setNextEventEstimationMinBounces(uint32_t minBounces);
+    /// Used to changed the clear color.
+    ///
+    /// The function will trigger a swapchain recreation as soon as possible unless it was explicitely disabled using setAutomaticPipelineRefresh(bool).
+    /// @param clearColor The new value for the clear color.
+    void setClearColor(const glm::vec4 &clearColor);
 
-        uint32_t getRussianRouletteMinBounces() { return _russianRouletteMinBounces; }
+    /// This function will be called by Kuafu::init() in case the path was not set manually.
+    /// @warning This function might file in setting the correct path. That is why it is recommended to set it automatically using setAssetsPath(std::string).
+    static std::string sDefaultAssetsPath;
 
-        void setRussianRouletteMinBounces(uint32_t minBounces);
+    static void setDefaultAssetsPath(std::string path);
 
-        /// @return Returns the maximum path depth on the GPU.
-        auto getMaxPathDepth() const -> uint32_t { return mMaxPathDepth; }
+    /// @return Returns the path to assets.
+    auto getAssetsPath() const -> std::string_view { return _assetsPath; }
 
-        /// @return Returns the clear color.
-        auto getClearColor() const -> const glm::vec4 & { return _clearColor; }
+    /// Used to set a path to the directory containing all assets.
+    ///
+    /// This path should contain all models, textures and shaders.
+    /// @param argc The argc parameter that can be retrieved from the main-function's parameters.
+    /// @param argv The argv parameter that can be retrieved from the main-function's parameters.
+    void setAssetsPath(int argc, char *argv[]);
 
-        /// Used to changed the clear color.
-        ///
-        /// The function will trigger a swapchain recreation as soon as possible unless it was explicitely disabled using setAutomaticPipelineRefresh(bool).
-        /// @param clearColor The new value for the clear color.
-        void setClearColor(const glm::vec4 &clearColor);
+    /// Used to set a path to the directory containing all assets.
+    ///
+    /// This path should contain all models, textures and shaders.
+    /// @param path The path to assets.
+    void setAssetsPath(std::string_view path);
 
-        /// This function will be called by Kuafu::init() in case the path was not set manually.
-        /// @warning This function might file in setting the correct path. That is why it is recommended to set it automatically using setAssetsPath(std::string).
-        static std::string sDefaultAssetsPath;
-        static void setDefaultAssetsPath(std::string path);
+    /// Used to toggle the automatic pipeline recreation.
+    /// @param flag If false, the pipelines will not be recreated automatically until this function is called with true.
+    void setAutomaticPipelineRefresh(bool flag);
 
-        /// @return Returns the path to assets.
-        auto getAssetsPath() const -> std::string_view { return _assetsPath; }
+    /// Used to set the maximum amount of geometry (3D models) that can be loaded.
+    void setGeometryLimit(size_t amount);
 
-        /// Used to set a path to the directory containing all assets.
-        ///
-        /// This path should contain all models, textures and shaders.
-        /// @param argc The argc parameter that can be retrieved from the main-function's parameters.
-        /// @param argv The argv parameter that can be retrieved from the main-function's parameters.
-        void setAssetsPath(int argc, char *argv[]);
+    /// Used to set the maximum amount of geometry instances (instances of 3D models) that can be loaded.
+    void setGeometryInstanceLimit(uint32_t amount);
 
-        /// Used to set a path to the directory containing all assets.
-        ///
-        /// This path should contain all models, textures and shaders.
-        /// @param path The path to assets.
-        void setAssetsPath(std::string_view path);
+    /// Used to set the maximum amount of textures that can be loaded.
+    void setTextureLimit(size_t amount);
 
-        /// Used to toggle the automatic pipeline recreation.
-        /// @param flag If false, the pipelines will not be recreated automatically until this function is called with true.
-        void setAutomaticPipelineRefresh(bool flag);
+    void setPerPixelSampleRate(uint32_t sampleRate);
 
-        /// Used to set the maximum amount of geometry (3D models) that can be loaded.
-        void setGeometryLimit(size_t amount);
+    auto getPerPixelSampleRate() const -> uint32_t { return mPerPixelSampleRate; }
 
-        /// Used to set the maximum amount of geometry instances (instances of 3D models) that can be loaded.
-        void setGeometryInstanceLimit(uint32_t amount);
+    void setUseDenoiser(bool useDenoiser = true);
 
-        /// Used to set the maximum amount of textures that can be loaded.
-        void setTextureLimit(size_t amount);
+    auto isUsingDenoiser() const -> bool { return mUseDenoiser; }
 
-        void setPerPixelSampleRate(uint32_t sampleRate);
+    void setAccumulatingFrames(bool flag);
 
-        auto getPerPixelSampleRate() const -> uint32_t { return mPerPixelSampleRate; }
+    auto isAccumulatingFrames() const -> bool { return _accumulateFrames; }
 
-        void setUseDenoiser(bool useDenoiser = true);
+    void triggerPipelineRefresh() { mPipelineNeedsRefresh = true; }
 
-        auto isUsingDenoiser() const -> bool { return mUseDenoiser; }
+    void triggerSwapchainRefresh() { mSwapchainNeedsRefresh = true; }
 
-        void setAccumulatingFrames(bool flag);
+    float getVariance() { return _variance; }
 
-        auto isAccumulatingFrames() const -> bool { return _accumulateFrames; }
+    void updateVariance(bool flag);
 
-        void triggerPipelineRefresh() { mPipelineNeedsRefresh = true; }
+private:
+    bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
+    bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
 
-        void triggerSwapchainRefresh() { mSwapchainNeedsRefresh = true; }
+    size_t _maxGeometryInstances = 256; ///< Can be set to avoid pipeline recreation everytime a geometry instance is added.
+    bool _maxGeometryInstancesChanged = false;
+    size_t _maxGeometry = 128; ///< The maximum amount of geometry (Must be a multiple of minimum storage buffer alignment).
+    bool _maxGeometryChanged = false;
+    size_t _maxTextures = 128; ///< The maximum amount of textures.
+    bool _maxTexturesChanged = false;
+    size_t _maxMaterials = 256;
 
-        float getVariance() { return _variance; }
+    std::string _assetsPath; ///< Where all assets like models, textures and shaders are stored.
 
-        void updateVariance(bool flag);
+    glm::vec4 _clearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
+    uint32_t mMaxPathDepth = 10;                                     ///< The maximum path depth.
+    uint32_t mPathDepth = 5;                                         ///< The current path depth.
+    uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.
+    uint32_t _russianRouletteMinBounces = 3;
 
-    private:
-        bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
-        bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
+    bool mUseDenoiser = false;  // todo
 
-        size_t _maxGeometryInstances = 256; ///< Can be set to avoid pipeline recreation everytime a geometry instance is added.
-        bool _maxGeometryInstancesChanged = false;
-        size_t _maxGeometry = 128; ///< The maximum amount of geometry (Must be a multiple of minimum storage buffer alignment).
-        bool _maxGeometryChanged = false;
-        size_t _maxTextures = 128; ///< The maximum amount of textures.
-        bool _maxTexturesChanged = false;
-        size_t _maxMaterials = 256;
+    bool _nextEventEstimation = false;
+    uint32_t _nextEventEstimationMinBounces = 0; // temporary for debugging
 
-        std::string _assetsPath; ///< Where all assets like models, textures and shaders are stored.
+    float _variance = 0.0F;
+    bool _updateVariance = false;
 
-        glm::vec4 _clearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
-        uint32_t mMaxPathDepth = 10;                                     ///< The maximum path depth.
-        uint32_t mPathDepth = 5;                                         ///< The current path depth.
-        uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.
-        uint32_t _russianRouletteMinBounces = 3;
-
-        bool mUseDenoiser = false;  // todo
-
-        bool _nextEventEstimation = false;
-        uint32_t _nextEventEstimationMinBounces = 0; // temporary for debugging
-
-        float _variance = 0.0F;
-        bool _updateVariance = false;
-
-        bool _accumulateFrames = true;
-        bool _russianRoulette = true;
-        bool _automaticPipelineRefresh = false; ///< Keeps track of whether or not the graphics pipelines should be recreated automatically as soon as possible.
-        bool _automaticSwapchainRefresh = false; ///< Keeps track of whether or not the swapchain should be recreated automatically as soon as possible.
-    };
+    bool _accumulateFrames = true;
+    bool _russianRoulette = true;
+    bool _automaticPipelineRefresh = false; ///< Keeps track of whether or not the graphics pipelines should be recreated automatically as soon as possible.
+    bool _automaticSwapchainRefresh = false; ///< Keeps track of whether or not the swapchain should be recreated automatically as soon as possible.
+};
 }

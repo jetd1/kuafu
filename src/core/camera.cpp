@@ -1,123 +1,122 @@
 //
-// Created by jet on 4/9/21.
+// By Jet <i@jetd.me> 2021.
 //
-
 #include "core/camera.hpp"
 #include "core/context/global.hpp"
 
 namespace kuafu {
-    Camera::Camera(int width, int height, const glm::vec3 &position) : mWidth(width), mHeight(height),
-            mPosition(position) {
-        reset();
-    }
+Camera::Camera(int width, int height, const glm::vec3 &position) : mWidth(width), mHeight(height),
+                                                                   mPosition(position) {
+    reset();
+}
 
-    void Camera::reset() {
-        static glm::vec3 position = mPosition;
+void Camera::reset() {
+    static glm::vec3 position = mPosition;
 
-        mPosition = position;
-        mDirUp = {0.0F, 0.0F, 1.0F};
-        mDirRight = {0.0F, -1.0F, 0.0F};
-        mDirFront = {1.0F, 0.0F, 0.0F};
+    mPosition = position;
+    mDirUp = {0.0F, 0.0F, 1.0F};
+    mDirRight = {0.0F, -1.0F, 0.0F};
+    mDirFront = {1.0F, 0.0F, 0.0F};
 
-        mFov = 90.0F;
+    mFov = 90.0F;
 
-        updateViewMatrix();
-        updateProjectionMatrix();
+    updateViewMatrix();
+    updateProjectionMatrix();
 
-        mViewNeedsUpdate = true;
-        mProjNeedsUpdate = true;
+    mViewNeedsUpdate = true;
+    mProjNeedsUpdate = true;
 
+    global::frameCount = -1;
+}
+
+glm::mat4 Camera::getPose() const {
+    return {
+            {mDirFront[0],  mDirFront[1],  mDirFront[2],  0},
+            {-mDirRight[0], -mDirRight[1], -mDirRight[2], 0},
+            {mDirUp[0],     mDirUp[1],     mDirUp[2],     0},
+            {mPosition[0],  mPosition[1],  mPosition[2],  1}
+    };
+}
+
+void Camera::update() {
+    // If position has changed, reset frame counter for jitter cam.
+    static glm::vec3 prevPosition = mPosition;
+    if (prevPosition != mPosition) {
         global::frameCount = -1;
+        prevPosition = mPosition;
     }
 
-    glm::mat4 Camera::getPose() const {
-      return {
-          {mDirFront[0], mDirFront[1], mDirFront[2], 0},
-          {-mDirRight[0], -mDirRight[1], -mDirRight[2], 0},
-          {mDirUp[0], mDirUp[1], mDirUp[2], 0},
-          {mPosition[0], mPosition[1], mPosition[2], 1}
-      };
-    }
+    processKeyboard();
+    updateViewMatrix();
+}
 
-    void Camera::update() {
-        // If position has changed, reset frame counter for jitter cam.
-        static glm::vec3 prevPosition = mPosition;
-        if (prevPosition != mPosition) {
-            global::frameCount = -1;
-            prevPosition = mPosition;
-        }
+void Camera::setAperture(float aperture) {
+    mAperture = aperture;
+}
 
-        processKeyboard();
-        updateViewMatrix();
-    }
+void Camera::setFocalLength(float focalLength) {
+    mFocalLength = focalLength;
+}
 
-    void Camera::setAperture(float aperture) {
-        mAperture = aperture;
-    }
+void Camera::setPosition(const glm::vec3 &position) {
+    mPosition = position;
 
-    void Camera::setFocalLength(float focalLength) {
-        mFocalLength = focalLength;
-    }
+    updateViewMatrix();
+}
 
-    void Camera::setPosition(const glm::vec3 &position) {
-        mPosition = position;
+void Camera::setFront(const glm::vec3 &front) {
+    mDirFront = front;
 
-        updateViewMatrix();
-    }
+    updateViewMatrix();
+}
 
-    void Camera::setFront(const glm::vec3 &front) {
-        mDirFront = front;
+void Camera::setUp(const glm::vec3 &up) {
+    mDirUp = up;
 
-        updateViewMatrix();
-    }
+    updateViewMatrix();
+}
 
-    void Camera::setUp(const glm::vec3 &up) {
-      mDirUp = up;
+void Camera::setSize(int width, int height) {
+    mWidth = width;
+    mHeight = height;
 
-      updateViewMatrix();
-    }
+    updateProjectionMatrix();
+}
 
-    void Camera::setSize(int width, int height) {
-      mWidth = width;
-      mHeight = height;
+void Camera::setFov(float fov) {
+    mFov = fov;
 
-        updateProjectionMatrix();
-    }
+    updateProjectionMatrix();
+}
 
-    void Camera::setFov(float fov) {
-      mFov = fov;
+void Camera::updateViewMatrix() {
+    mViewMatrix = glm::lookAt(mPosition, mPosition + mDirFront, mDirUp);
+    mViewNeedsUpdate = true;
+}
 
-        updateProjectionMatrix();
-    }
+void Camera::updateProjectionMatrix() {
+    mProjMatrix = glm::perspective(
+            glm::radians(mFov),
+            static_cast<float>(mWidth) / static_cast<float>(mHeight),
+            0.1F, 100.0F);
+    mProjMatrix[1][1] *= -1;
+    mProjNeedsUpdate = true;
+}
 
-    void Camera::updateViewMatrix() {
-      mViewMatrix = glm::lookAt(mPosition, mPosition + mDirFront, mDirUp);
-      mViewNeedsUpdate = true;
-    }
+void Camera::setPose(glm::mat4 pose) {
+    // TODO: kuafu_urgent: change check to avoid View update
 
-    void Camera::updateProjectionMatrix() {
-      mProjMatrix = glm::perspective(
-          glm::radians(mFov),
-          static_cast<float>(mWidth) / static_cast<float>(mHeight),
-          0.1F, 100.0F);
-      mProjMatrix[1][1] *= -1;
-      mProjNeedsUpdate = true;
-    }
+    mPosition = {pose[3][0], pose[3][1], pose[3][2]};
+    mDirFront = {-pose[2][0], -pose[2][1], -pose[2][2]};
+    mDirUp = {pose[1][0], pose[1][1], pose[1][2]};
 
-    void Camera::setPose(glm::mat4 pose) {
-      // TODO: kuafu_urgent: change check to avoid View update
-
-      mPosition = {pose[3][0], pose[3][1], pose[3][2]};
-      mDirFront = {-pose[2][0], -pose[2][1], -pose[2][2]};
-      mDirUp = {pose[1][0], pose[1][1], pose[1][2]};
-
-      mViewNeedsUpdate = true;
-      global::frameCount = -1;
-    }
+    mViewNeedsUpdate = true;
+    global::frameCount = -1;
+}
 
 
-    void Camera::processMouse(float xOffset, float yOffset) {
-          mViewNeedsUpdate = true;
-          global::frameCount = -1;
-      }
+void Camera::processMouse(float xOffset, float yOffset) {
+    mViewNeedsUpdate = true;
+    global::frameCount = -1;
+}
 }

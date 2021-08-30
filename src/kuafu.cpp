@@ -1,7 +1,25 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #include "kuafu.hpp"
 #include "core/context/global.hpp"
 
@@ -9,102 +27,86 @@
 #include <memory>
 
 namespace kuafu {
-    void Kuafu::init() {
-//      KF_WARN((size_t)&getConfig());
-//      KF_WARN((size_t)&mContext.mConfig);
+void Kuafu::init() {
+    KF_INFO("Starting Kuafu.");
 
-//        KF_INFO( "Starting Kuafu." );
-
-        if (mWindow == nullptr) {
-            mWindow = std::make_shared<Window>();
-        }
-
-        if (mContext.mScene.mCurrentCamera == nullptr)
-            mContext.mScene.mCurrentCamera = std::make_shared<Camera>(mWindow->getWidth(), mWindow->getHeight());
-
-        mContext.mWindow = mWindow;
-
-        mContext.mScene._settings = &mContext.mConfig;
-
-
-      if (mContext.mConfig.getAssetsPath().empty()) {
-            mContext.mConfig.setAssetsPath(mContext.mConfig.sDefaultAssetsPath);
-        }
-
-        if (mInitialized) {
-            throw std::runtime_error("Renderer was already initialized.");
-            return;
-        }
-
-//#ifdef KF_COPY_ASSETS
-//        KF_INFO( "Copying resources to binary output directory. " );
-//
-//        std::filesystem::copy( KF_ASSETS_PATH "shaders", KF_PATH_TO_LIBRARY "shaders", std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive );
-//        std::filesystem::copy( KF_ASSETS_PATH "models", KF_PATH_TO_LIBRARY "models", std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive );
-//        std::filesystem::copy( KF_ASSETS_PATH "DroidSans.ttf", KF_PATH_TO_LIBRARY "DroidSans.ttf", std::filesystem::copy_options::overwrite_existing | std::filesystem::copy_options::recursive );
-//#endif
-
-        mInitialized = mWindow->init();
-        mContext.init();
+    if (mWindow == nullptr) {
+        mWindow = std::make_shared<Window>();
     }
 
-    auto Kuafu::isRunning() const -> bool {
-        if (!mRunning) {
-//            KF_INFO( "Shutting down Kuafu." );
-        }
+    if (mContext.mScene.mCurrentCamera == nullptr)
+        mContext.mScene.mCurrentCamera = std::make_shared<Camera>(
+                mWindow->getWidth(), mWindow->getHeight());
 
-        return mRunning;
+    mContext.mWindow = mWindow;
+
+    mContext.mScene.mConfig = &mContext.mConfig;
+
+
+    if (mContext.mConfig.getAssetsPath().empty()) {
+        mContext.mConfig.setAssetsPath(mContext.mConfig.sDefaultAssetsPath);
     }
 
-    void Kuafu::run() {
-        if (!mRunning || !mInitialized) {
-            KF_WARN("!mRunning || !mInitialized");
-            return;
-        }
+    if (mInitialized)
+        throw std::runtime_error("Renderer was already initialized.");
 
-        mRunning = mWindow->update();
+    mInitialized = mWindow->init();
+    mContext.init();
+}
 
-//        mContext.mCamera = mContext.mScene.mCurrentCamera;
-        mContext.mScene.mCurrentCamera->update();
+auto Kuafu::isRunning() const -> bool {
+    if (!mRunning)
+        KF_INFO("Shutting down Kuafu.");
 
-        mContext.render();
+    return mRunning;
+}
+
+void Kuafu::run() {
+    if (!mRunning || !mInitialized) {
+        KF_WARN("!mRunning || !mInitialized");
+        return;
     }
 
-    const std::vector<uint8_t>& Kuafu::downloadLatestFrame() const {
-        return mContext.mLatestFrame;
-    }
+    mRunning = mWindow->update();
+    mContext.mScene.mCurrentCamera->update();
+    mContext.render();
+}
 
-    void Kuafu::setWindow(std::shared_ptr<Window> window) {
-        mWindow = window;
-        mContext.mWindow = mWindow;
-    }
+const std::vector<uint8_t> &Kuafu::downloadLatestFrame() const {
+    return mContext.mLatestFrame;
+}
 
-    void Kuafu::setWindow(int width, int height, const char *title, uint32_t flags) {
-        mWindow = std::make_shared<Window>(width, height, title, flags);
-        mContext.mWindow = mWindow;
-    }
+void Kuafu::setWindow(std::shared_ptr<Window> window) {
+    mWindow = window;
+    mContext.mWindow = mWindow;
+}
 
-    void Kuafu::setGui(std::shared_ptr<Gui> gui) {
-        mInitialized ? mContext.setGui(gui, true) : mContext.setGui(gui);
-    }
+void Kuafu::setWindow(int width, int height, const char *title, uint32_t flags) {
+    mWindow = std::make_shared<Window>(width, height, title, flags);
+    mContext.mWindow = mWindow;
+}
 
-    void Kuafu::reset() {
-        // Reset indices
-        kuafu::global::geometryIndex = 0;
-        kuafu::global::textureIndex = 0;
-        kuafu::global::materialIndex = 0;
+void Kuafu::setGui(std::shared_ptr<Gui> gui) {
+    mInitialized ? mContext.setGui(gui, true) : mContext.setGui(gui);
+}
 
-        // Reset frame counter
-        kuafu::global::frameCount = -1;
+void Kuafu::reset() {
+    // Reset indices
+    kuafu::global::geometryIndex = 0;
+    kuafu::global::textureIndex = 0;
+    kuafu::global::materialIndex = 0;
 
-        mContext.mScene.getCamera()->reset();
+    // Reset frame counter
+    kuafu::global::frameCount = -1;
 
-        // Delete all textures
-        global::materials.clear();
-        global::materials.reserve(mContext.mScene._settings->_maxMaterials);
+    mContext.mScene.getCamera()->reset();
 
-        mContext.mScene._textures.clear();
-        mContext.mScene._textures.resize(static_cast<size_t>( mContext.mScene._settings->_maxTextures ));
-        mContext.mScene.updateGeoemtryDescriptors();
-    }
+    // Delete all textures
+    global::materials.clear();
+    global::materials.reserve(mContext.mScene.mConfig->_maxMaterials);
+
+    mContext.mScene._textures.clear();
+    mContext.mScene._textures.resize(static_cast<size_t>( mContext.mScene.mConfig->_maxTextures ));
+    mContext.mScene.updateGeoemtryDescriptors();
+}
 }

@@ -1,144 +1,163 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #include "core/config.hpp"
 #include "core/context/global.hpp"
 
 namespace kuafu {
-    std::string Config::sDefaultAssetsPath;
-    void Config::setDefaultAssetsPath(std::string p) { sDefaultAssetsPath = std::move(p); }
+std::string Config::sDefaultAssetsPath;
 
-    void Config::setPathDepth(uint32_t recursionDepth) {
-        if (recursionDepth <= mMaxPathDepth) {
-            mPathDepth = recursionDepth;
-        } else {
-            mPathDepth = mMaxPathDepth;
-//            KF_WARN( "Exceeded maximum path depth of ", mMaxPathDepth, ". Using highest possible value instead." );
-        }
+void Config::setDefaultAssetsPath(std::string p) { sDefaultAssetsPath = std::move(p); }
 
+void Config::setPathDepth(uint32_t recursionDepth) {
+    if (recursionDepth <= mMaxPathDepth) {
         mPathDepth = recursionDepth;
-        //triggerPipelineRefresh( );
+    } else {
+        mPathDepth = mMaxPathDepth;
+//            KF_WARN( "Exceeded maximum path depth of ", mMaxPathDepth, ". Using highest possible value instead." );
     }
 
-    void Config::setClearColor(const glm::vec4 &clearColor) {
-        static bool firstRun = true;
+    mPathDepth = recursionDepth;
+    //triggerPipelineRefresh( );
+}
 
-        if (firstRun) {
-            firstRun = false;
-        } else {
-            triggerSwapchainRefresh();
-        }
+void Config::setClearColor(const glm::vec4 &clearColor) {
+    static bool firstRun = true;
 
-        _clearColor = clearColor;
-
-        global::frameCount = -1;
+    if (firstRun) {
+        firstRun = false;
+    } else {
+        triggerSwapchainRefresh();
     }
 
-    void Config::setNextEventEstimation(bool flag) {
-        _nextEventEstimation = flag;
+    _clearColor = clearColor;
+
+    global::frameCount = -1;
+}
+
+void Config::setNextEventEstimation(bool flag) {
+    _nextEventEstimation = flag;
+}
+
+void Config::setNextEventEstimationMinBounces(uint32_t minBounces) {
+    _nextEventEstimationMinBounces = minBounces;
+}
+
+void Config::setRussianRoulette(bool flag) {
+    _russianRoulette = flag;
+}
+
+void Config::setRussianRouletteMinBounces(uint32_t minBounces) {
+    _russianRouletteMinBounces = minBounces;
+}
+
+void Config::setAssetsPath(int argc, char *argv[]) {
+    _assetsPath = "";
+
+    for (int i = 0; i < argc; ++i) {
+        _assetsPath += argv[i];
     }
 
-    void Config::setNextEventEstimationMinBounces(uint32_t minBounces) {
-        _nextEventEstimationMinBounces = minBounces;
+    std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
+
+    _assetsPath = _assetsPath.substr(0, _assetsPath.find_last_of('/') + 1);
+
+    global::assetsPath = _assetsPath;
+}
+
+void Config::setAssetsPath(std::string_view path) {
+    _assetsPath = path;
+
+    std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
+
+    if (path[path.size() - 1] != '/') {
+        _assetsPath += '/';
     }
 
-    void Config::setRussianRoulette(bool flag) {
-        _russianRoulette = flag;
+    global::assetsPath = _assetsPath;
+}
+
+void Config::setAutomaticPipelineRefresh(bool flag) {
+    _automaticPipelineRefresh = flag;
+}
+
+void Config::setGeometryInstanceLimit(uint32_t amount) {
+    if (amount == 0) {
+        ++amount;
+        KF_WARN("Can not use value 0 for the maximum amount of geometry instances. Using 1 instead.");
     }
 
-    void Config::setRussianRouletteMinBounces(uint32_t minBounces) {
-        _russianRouletteMinBounces = minBounces;
-    }
+    // Increment by one to accommodate the triangle dummy for emtpy scenes.
+    _maxGeometryInstances = amount;
 
-    void Config::setAssetsPath(int argc, char *argv[]) {
-        _assetsPath = "";
+    _maxGeometryInstancesChanged = true;
+}
 
-        for (int i = 0; i < argc; ++i) {
-            _assetsPath += argv[i];
-        }
-
-        std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
-
-        _assetsPath = _assetsPath.substr(0, _assetsPath.find_last_of('/') + 1);
-
-        global::assetsPath = _assetsPath;
-    }
-
-    void Config::setAssetsPath(std::string_view path) {
-        _assetsPath = path;
-
-        std::replace(_assetsPath.begin(), _assetsPath.end(), '\\', '/');
-
-        if (path[path.size() - 1] != '/') {
-            _assetsPath += '/';
-        }
-
-        global::assetsPath = _assetsPath;
-    }
-
-    void Config::setAutomaticPipelineRefresh(bool flag) {
-        _automaticPipelineRefresh = flag;
-    }
-
-    void Config::setGeometryInstanceLimit(uint32_t amount) {
-        if (amount == 0) {
-            ++amount;
-            KF_WARN( "Can not use value 0 for the maximum amount of geometry instances. Using 1 instead." );
-        }
-
-        // Increment by one to accommodate the triangle dummy for emtpy scenes.
-        _maxGeometryInstances = amount;
-
-        _maxGeometryInstancesChanged = true;
-    }
-
-    void Config::setGeometryLimit(size_t amount) {
-        if (amount == 0) {
+void Config::setGeometryLimit(size_t amount) {
+    if (amount == 0) {
 //            KF_WARN( "Can not use value 0 for the maximum number of geometries. Using 16 instead." );
-            amount = 16;
-        }
+        amount = 16;
+    }
 
-        if (amount < 16) {
+    if (amount < 16) {
 //            KF_WARN( "Can not use value ", amount, " for the maximum number of geometries. Using 16 instead." );
-            amount = 16;
-        }
+        amount = 16;
+    }
 
-        if (amount % 4 != 0) {
+    if (amount % 4 != 0) {
 //            KF_WARN( "Minimum storage buffer for geometries alignment must be a multiple of 4. Using 16 instead." );
-            amount = 16;
-        }
-
-        _maxGeometry = ++amount;
-
-        _maxGeometryChanged = true;
+        amount = 16;
     }
 
-    void Config::setTextureLimit(size_t amount) {
-        if (amount == 0) {
+    _maxGeometry = ++amount;
+
+    _maxGeometryChanged = true;
+}
+
+void Config::setTextureLimit(size_t amount) {
+    if (amount == 0) {
 //            amount;
-            KF_WARN( "Can not use value 0 for the maximum amount of textures. Using 1 instead." );
-        }
-
-        _maxTextures = ++amount;
-
-        _maxTexturesChanged = true;
+        KF_WARN("Can not use value 0 for the maximum amount of textures. Using 1 instead.");
     }
 
-    void Config::setUseDenoiser(bool useDenoiser) {
-        mUseDenoiser = useDenoiser;
-        // TODO: implement this
-    }
+    _maxTextures = ++amount;
 
-    void Config::setPerPixelSampleRate(uint32_t sampleRate) {
-        mPerPixelSampleRate = sampleRate;
-    }
+    _maxTexturesChanged = true;
+}
 
-    void Config::setAccumulatingFrames(bool flag) {
-        _accumulateFrames = flag;
-    }
+void Config::setUseDenoiser(bool useDenoiser) {
+    mUseDenoiser = useDenoiser;
+    // TODO: implement this
+}
 
-    void Config::updateVariance(bool flag) {
-        _updateVariance = flag;
-    }
+void Config::setPerPixelSampleRate(uint32_t sampleRate) {
+    mPerPixelSampleRate = sampleRate;
+}
+
+void Config::setAccumulatingFrames(bool flag) {
+    _accumulateFrames = flag;
+}
+
+void Config::updateVariance(bool flag) {
+    _updateVariance = flag;
+}
 }

@@ -1,51 +1,69 @@
 //
-// Created by jet on 4/9/21.
+// Modified by Jet <i@jetd.me> based on Rayex source code.
+// Original copyright notice:
 //
-
+// Copyright (c) 2021 Christian Hilpert
+//
+// This software is provided 'as-is', without any express or implied
+// warranty. In no event will the author be held liable for any damages
+// arising from the use of this software.
+//
+// Permission is granted to anyone to use this software for any purpose
+// and to alter it and redistribute it freely, subject to the following
+// restrictions:
+//
+// 1. The origin of this software must not be misrepresented; you must not
+//    claim that you wrote the original software. If you use this software
+//    in a product, an acknowledgment in the product documentation would be
+//    appreciated but is not required.
+// 2. Altered source versions must be plainly marked as such, and must not be
+//    misrepresented as being the original software.
+// 3. This notice may not be removed or altered from any source distribution.
+//
 #pragma once
 
 #include "stdafx.hpp"
 
 namespace kuafu {
-    /// The post processing renderer acts as a second render pass for enabling post processing operations, such as gamma correction.
-    /// @ingroup API
-    class PostProcessingRenderer {
-    public:
-        auto getRenderPass() const -> const vkCore::RenderPass & { return _renderPass; }
+/// The post processing renderer acts as a second render pass for enabling post processing operations, such as gamma correction.
+/// @ingroup API
+class PostProcessingRenderer {
+public:
+    auto getRenderPass() const -> const vkCore::RenderPass & { return _renderPass; }
 
-        auto getPipeline() const -> const vk::Pipeline { return _pipeline.get(); }
+    auto getPipeline() const -> const vk::Pipeline { return _pipeline.get(); }
 
-        auto getPipelineLayout() const -> const vk::PipelineLayout { return _pipelineLayout.get(); }
+    auto getPipelineLayout() const -> const vk::PipelineLayout { return _pipelineLayout.get(); }
 
-        //void initDepthImage( vk::Extent2D extent );
+    //void initDepthImage( vk::Extent2D extent );
 
-        void initRenderPass(vk::Format format);
+    void initRenderPass(vk::Format format);
 
-        void initDescriptorSet();
+    void initDescriptorSet();
 
-        /// @param imageInfo The descriptor image info of the path tracer's storage image.
-        void updateDescriptors(const vk::DescriptorImageInfo &imageInfo);
+    /// @param imageInfo The descriptor image info of the path tracer's storage image.
+    void updateDescriptors(const vk::DescriptorImageInfo &imageInfo);
 
-        void initPipeline();
+    void initPipeline();
 
-        void beginRenderPass(vk::CommandBuffer commandBuffer, vk::Framebuffer framebuffer, vk::Extent2D size);
+    void beginRenderPass(vk::CommandBuffer commandBuffer, vk::Framebuffer framebuffer, vk::Extent2D size);
 
-        void endRenderPass(vk::CommandBuffer commandBuffer);
+    void endRenderPass(vk::CommandBuffer commandBuffer);
 
-        /// Records the draw calls to a given command buffer.
-        /// @param imageIndex The current swapchain image index for selecting the correct descriptor set.
-        void render(vk::CommandBuffer commandBuffer, vk::Extent2D size, size_t imageIndex);
+    /// Records the draw calls to a given command buffer.
+    /// @param imageIndex The current swapchain image index for selecting the correct descriptor set.
+    void render(vk::CommandBuffer commandBuffer, vk::Extent2D size, size_t imageIndex);
 
-    private:
-        //vkCore::Image _depthImage;
-        //vk::UniqueImageView _depthImageView;
+private:
+    //vkCore::Image _depthImage;
+    //vk::UniqueImageView _depthImageView;
 
-        vkCore::RenderPass _renderPass;
+    vkCore::RenderPass _renderPass;
 
-        vk::UniquePipeline _pipeline;
-        vk::UniquePipelineLayout _pipelineLayout;
+    vk::UniquePipeline _pipeline;
+    vk::UniquePipelineLayout _pipelineLayout;
 
-        vkCore::Descriptors _descriptors;
-        std::vector<vk::DescriptorSet> _descriptorSets;
-    };
+    vkCore::Descriptors _descriptors;
+    std::vector<vk::DescriptorSet> _descriptorSets;
+};
 }
