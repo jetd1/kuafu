@@ -101,31 +101,37 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(1000); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(10000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getConfig().setClearColor(glm::vec4(0.45F, 0.45F, 0.45F, 0.8F));
+//        renderer->getConfig().setClearColor(glm::vec4(0.45F, 0.45F, 0.45F, 0.8F));
+        renderer->getConfig().setClearColor(glm::vec4(0.6F, 0.6F, 0.5F, 1.0F));
         renderer->getConfig().setAccumulatingFrames(true);
 
-        //renderer->getScene( ).getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.5F ) );
-        //renderer->getScene( ).getCamera( )->setFov( 90.0F );
+        renderer->getScene( ).getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
+        renderer->getScene( ).getCamera( )->setFront( glm::vec3( 0.0F, 0.0F, -1.F ) );
+        renderer->getScene( ).getCamera( )->setUp( glm::vec3( 0.0F, 1.0F, 0.F ) );
+//        renderer->getScene( ).getCamera( )->setFov( 90.0F );
 
-        auto cornell = kuafu::loadObj("models/CornellBox.obj");
+        auto cornell = kuafu::loadScene("models/CornellBox.obj", false);
         //auto cornell = kuafu::loadObj( "models/Sphere.obj" );
 
 //        auto lightPlane = kuafu::loadObj( "models/plane.obj" );
 //        kuafu::Material lightMaterial;
-//        lightMaterial.emission = glm::vec3( 10.0F );
+//        lightMaterial.emission = glm::vec3( 1.0F );
 //        lightPlane->setMaterial( lightMaterial );
 
-        renderer->getScene().setGeometries({cornell});
+//        renderer->getScene().setGeometries({lightPlane});
+        for (auto& c: cornell)
+            renderer->getScene().submitGeometry(c);
 
-        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, -1.0F));
-        auto cornellInstance = kuafu::instance(cornell, transform);
-
-//        transform               = glm::translate( glm::mat4( 1.0F ), glm::vec3( 0.0F, 80.0F, 0.0F ) );
+//        auto transform= glm::translate( glm::mat4( 1.0F ), glm::vec3( 0.0F, 80.0F, 0.0F ) );
 //        auto lightPlaneInstance = kuafu::instance( lightPlane, transform );
 
-        renderer->getScene().setGeometryInstances({cornellInstance,
-//                                                   lightPlaneInstance
-        });
+
+//        renderer->getScene().setGeometryInstances({lightPlaneInstance});
+        for (auto& c: cornell) {
+            auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, -1.0F));
+            auto cornellInstance = kuafu::instance(c, transform);
+            renderer->getScene().submitGeometryInstance(cornellInstance);
+        }
 
         renderer->getScene().removeEnvironmentMap();
     } else if (scene == Level::eAnimations) {

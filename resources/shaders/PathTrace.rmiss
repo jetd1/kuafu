@@ -31,7 +31,7 @@ void main( )
   {
     if ( useEnvironmentMap )
     {
-      ray.emission = texture( environmentMap, dir ).xyz * 0.8F;
+      ray.emission = texture( environmentMap, dir ).xyz * 0.8F;  // TODO: kuafu_urgent: make sense?
     }
     else
     {

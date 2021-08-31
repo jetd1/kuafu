@@ -182,8 +182,7 @@ private:
     bool mUploadGeometries = false;
     bool mDummy = false;
 
-    std::shared_ptr<Camera> mCurrentCamera;               ///< The camera that is currently being used for rendering.
-
-    Config *mConfig = nullptr;
+    std::shared_ptr<Camera> mCurrentCamera = nullptr;      ///< The camera that is currently being used for rendering.
+    std::shared_ptr<Config> pConfig = nullptr;
 };
 }

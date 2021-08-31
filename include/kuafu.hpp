@@ -36,7 +36,12 @@ class Kuafu {
     bool mRunning = true;
 
 public:
-    void init();
+    Kuafu(std::shared_ptr<Config> config = nullptr,
+          std::shared_ptr<Window> window = nullptr,
+          std::shared_ptr<Camera> camera = nullptr,
+          std::shared_ptr<Gui> gui = nullptr);
+
+//    void init(std::shared_ptr<Config> config = nullptr);
 
     void run();
 
@@ -52,7 +57,7 @@ public:
 
     void setGui(std::shared_ptr<Gui> gui);
 
-    inline kuafu::Config &getConfig() { return mContext.mConfig; }
+    inline auto& getConfig() { return *mContext.pConfig; }
 
     inline kuafu::Scene &getScene() { return mContext.mScene; }
 

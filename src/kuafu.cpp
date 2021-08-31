@@ -27,24 +27,25 @@
 #include <memory>
 
 namespace kuafu {
-void Kuafu::init() {
+Kuafu::Kuafu(std::shared_ptr<Config> config,
+             std::shared_ptr<Window> window,
+             std::shared_ptr<Camera> camera,
+             std::shared_ptr<Gui> gui) {
     KF_INFO("Starting Kuafu.");
 
-    if (pWindow == nullptr) {
-      pWindow = std::make_shared<Window>();
-    }
-
-    if (mContext.mScene.mCurrentCamera == nullptr)
-        mContext.mScene.mCurrentCamera = std::make_shared<Camera>(pWindow->getWidth(), pWindow->getHeight());
-
+    pWindow = window ? window
+            : std::make_shared<Window>();
     mContext.pWindow = pWindow;
 
-    mContext.mScene.mConfig = &mContext.mConfig;
+    mContext.mScene.mCurrentCamera = camera ? camera
+            : std::make_shared<Camera>(pWindow->getWidth(), pWindow->getHeight());
 
+    mContext.pConfig = config ? config
+            : std::make_shared<Config>();
+    mContext.mScene.pConfig = mContext.pConfig;
 
-    if (mContext.mConfig.getAssetsPath().empty()) {
-        mContext.mConfig.setAssetsPath(mContext.mConfig.sDefaultAssetsPath);
-    }
+    if (mContext.pConfig->getAssetsPath() == "")
+        mContext.pConfig->setAssetsPath(mContext.pConfig->sDefaultAssetsPath);
 
     if (mInitialized)
         throw std::runtime_error("Renderer was already initialized.");
@@ -102,10 +103,10 @@ void Kuafu::reset() {
 
     // Delete all textures
     global::materials.clear();
-    global::materials.reserve(mContext.mScene.mConfig->mMaxMaterials);
+    global::materials.reserve(mContext.mScene.pConfig->mMaxMaterials);
 
     mContext.mScene.mTextures.clear();
-    mContext.mScene.mTextures.resize(static_cast<size_t>( mContext.mScene.mConfig->mMaxTextures));
+    mContext.mScene.mTextures.resize(static_cast<size_t>( mContext.mScene.pConfig->mMaxTextures));
     mContext.mScene.updateGeoemtryDescriptors();
 }
 }

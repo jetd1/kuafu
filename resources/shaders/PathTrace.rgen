@@ -122,6 +122,7 @@ void main( )
 
     for ( ray.depth = 0; ray.depth <= maxPathDepth; ++ray.depth )
     {
+      // TODO: kuafu_urgent: Push Constant
       // refractive rays are allowed to bounce more time to have the all effects at lower sample rates
       if ( ray.refractive )
       {

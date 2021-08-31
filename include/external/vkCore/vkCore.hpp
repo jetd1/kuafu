@@ -748,19 +748,25 @@ namespace vkCore
     {
       barrier.dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
     }
+    // TODO: jet: check the following 20 lines
     else if ( oldLayout == vk::ImageLayout::ePresentSrcKHR && newLayout == vk::ImageLayout::eTransferSrcOptimal )
     {
         barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+        dstStageMask = vk::PipelineStageFlagBits::eTransfer;
     }
     else if ( oldLayout == vk::ImageLayout::eColorAttachmentOptimal && newLayout == vk::ImageLayout::eTransferSrcOptimal )
     {
       barrier.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
       barrier.dstAccessMask = vk::AccessFlagBits::eTransferRead;
+
+      srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+      dstStageMask = vk::PipelineStageFlagBits::eTransfer;
     }
-    // TODO: jet: Check the following 5 lines
     else if ( oldLayout == vk::ImageLayout::eTransferSrcOptimal && newLayout == vk::ImageLayout::ePresentSrcKHR )
     {
-      barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
+        srcStageMask = vk::PipelineStageFlagBits::eTransfer;
+        dstStageMask = vk::PipelineStageFlagBits::eBottomOfPipe;
+        barrier.srcAccessMask = vk::AccessFlagBits::eTransferRead;
     }
     else if ( oldLayout == vk::ImageLayout::eColorAttachmentOptimal && newLayout == vk::ImageLayout::ePresentSrcKHR )
     {

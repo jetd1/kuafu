@@ -83,6 +83,9 @@ void Config::setAssetsPath(int argc, char *argv[]) {
 }
 
 void Config::setAssetsPath(std::string_view path) {
+  if (path == "")
+    return;
+
   mAssetsPath = path;
 
     std::replace(mAssetsPath.begin(), mAssetsPath.end(), '\\', '/');

@@ -77,11 +77,11 @@ public:
 
     void setAperture(float aperture);
 
-    inline float getAperture() const { return mAperture; }
+    [[nodiscard]] inline float getAperture() const { return mAperture; }
 
     void setFocalLength(float focalLength);
 
-    inline float getFocalLength() const { return mFocalLength; }
+    [[nodiscard]] inline float getFocalLength() const { return mFocalLength; }
 
     /// Is used to set a size for the camera that fits the viewport dimensions.
     /// @param width The width of the viewport.

@@ -60,9 +60,9 @@ namespace kuafu {
         std::shared_ptr<Gui> pGui = nullptr;
 
         Scene mScene;
-        Config mConfig;
+        std::shared_ptr<Config> pConfig;
         std::vector<uint8_t> mLatestFrame;   // TODO: kuafu_urgent: optimize this
-        
+
         /// Used to set the GUI that will be used.
         ///
         /// The GUI can be changed at runtime. This enables the user to swap between different pre-built GUIs on the fly.

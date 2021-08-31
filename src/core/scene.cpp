@@ -65,7 +65,7 @@ auto Scene::getGeometryInstance(size_t index) const -> std::shared_ptr<GeometryI
 
 void Scene::submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryInstance) {
     if (!mDummy) {
-        if (mGeometryInstances.size() > mConfig->mMaxGeometryInstances) {
+        if (mGeometryInstances.size() > pConfig->mMaxGeometryInstances) {
             throw std::runtime_error(
                     "Failed to submit geometry instance because instance buffer size has been exceeded.");
             return;
@@ -129,7 +129,7 @@ void Scene::popGeometryInstance() {
 
 void Scene::submitGeometry(std::shared_ptr<Geometry> geometry) {
     if (!mDummy) {
-        if (mGeometries.size() >= mConfig->mMaxGeometry) {
+        if (mGeometries.size() >= pConfig->mMaxGeometry) {
             throw std::runtime_error(
                     "Failed to submit geometry because geometries buffer size has been exceeded.");
             return;
@@ -282,17 +282,17 @@ void Scene::prepareBuffers() {
     // Resize and initialize buffers with "dummy data".
     // The advantage of doing this is that the buffers are all initialized right away (even though it is invalid data) and
     // this makes it possible to call fill instead of initialize again, when changing any of the data below.
-    std::vector<GeometryInstanceSSBO> geometryInstances(mConfig->mMaxGeometryInstances);
+    std::vector<GeometryInstanceSSBO> geometryInstances(pConfig->mMaxGeometryInstances);
     mGeometryInstancesBuffer.init(geometryInstances, global::maxResources);
 
     // @todo is this even necessary?
-    std::vector<MaterialSSBO> materials(mConfig->mMaxMaterials);
+    std::vector<MaterialSSBO> materials(pConfig->mMaxMaterials);
     mMaterialBuffers.init(materials, global::maxResources);
 
-    mVertexBuffers.resize(mConfig->mMaxGeometry);
-    mIndexBuffers.resize(mConfig->mMaxGeometry);
-    mMaterialIndexBuffers.resize(mConfig->mMaxGeometry);
-    mTextures.resize(mConfig->mMaxTextures);
+    mVertexBuffers.resize(pConfig->mMaxGeometry);
+    mIndexBuffers.resize(pConfig->mMaxGeometry);
+    mMaterialIndexBuffers.resize(pConfig->mMaxGeometry);
+    mTextures.resize(pConfig->mMaxTextures);
 
     initCameraBuffer();
 }
@@ -401,10 +401,10 @@ void Scene::uploadGeometries() {
 }
 
 void Scene::uploadGeometryInstances() {
-    if (mConfig->mMaxGeometryInstancesChanged) {
-        mConfig->mMaxGeometryInstancesChanged = false;
+    if (pConfig->mMaxGeometryInstancesChanged) {
+        pConfig->mMaxGeometryInstancesChanged = false;
 
-        std::vector<GeometryInstanceSSBO> geometryInstances(mConfig->mMaxGeometryInstances);
+        std::vector<GeometryInstanceSSBO> geometryInstances(pConfig->mMaxGeometryInstances);
         mGeometryInstancesBuffer.init(geometryInstances, global::maxResources);
 
         updateSceneDescriptors();
@@ -500,21 +500,21 @@ void Scene::initGeoemtryDescriptorSets() {
   mGeometryDescriptors.bindings.add(0,
                                       vk::DescriptorType::eStorageBuffer,
                                       vk::ShaderStageFlagBits::eClosestHitKHR,
-                                      mConfig->mMaxGeometry,
+                                      pConfig->mMaxGeometry,
                                       vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     // Index buffers
   mGeometryDescriptors.bindings.add(1,
                                       vk::DescriptorType::eStorageBuffer,
                                       vk::ShaderStageFlagBits::eClosestHitKHR,
-                                      mConfig->mMaxGeometry,
+                                      pConfig->mMaxGeometry,
                                       vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     // MatIndex buffers
   mGeometryDescriptors.bindings.add(2,
                                       vk::DescriptorType::eStorageBuffer,
                                       vk::ShaderStageFlagBits::eClosestHitKHR | vk::ShaderStageFlagBits::eAnyHitKHR,
-                                      mConfig->mMaxGeometry,
+                                      pConfig->mMaxGeometry,
                                       vk::DescriptorBindingFlagBits::eUpdateAfterBind);
 
     // Textures
@@ -522,7 +522,7 @@ void Scene::initGeoemtryDescriptorSets() {
       mImmutableSampler = vkCore::initSamplerUnique(vkCore::getSamplerCreateInfo());
     }
 
-    std::vector<vk::Sampler> immutableSamplers(mConfig->mMaxTextures);
+    std::vector<vk::Sampler> immutableSamplers(pConfig->mMaxTextures);
     for (auto &immutableSampler : immutableSamplers) {
         immutableSampler = mImmutableSampler.get();
     }
@@ -530,7 +530,7 @@ void Scene::initGeoemtryDescriptorSets() {
     mGeometryDescriptors.bindings.add(3,
                                       vk::DescriptorType::eCombinedImageSampler,
                                       vk::ShaderStageFlagBits::eClosestHitKHR,
-                                      mConfig->mMaxTextures,
+                                      pConfig->mMaxTextures,
                                       vk::DescriptorBindingFlagBits::eUpdateAfterBind,
                                       immutableSamplers.data());
 
@@ -568,10 +568,10 @@ void Scene::updateSceneDescriptors() {
 }
 
 void Scene::updateGeoemtryDescriptors() {
-//        KF_ASSERT( mGeometries.size( ) <= mConfig->mMaxGeometry, "Can not bind more than ", mConfig->mMaxGeometry, " geometries." );
-//        KF_ASSERT( mVertexBuffers.size( ) == mConfig->mMaxGeometry, "Vertex buffers container size and geometry limit must be identical." );
-//        KF_ASSERT( mIndexBuffers.size( ) == mConfig->mMaxGeometry, "Index buffers container size and geometry limit must be identical." );
-//        KF_ASSERT( mTextures.size( ) == mConfig->mMaxTextures, "Texture container size and texture limit must be identical." );
+//        KF_ASSERT( mGeometries.size( ) <= pConfig->mMaxGeometry, "Can not bind more than ", pConfig->mMaxGeometry, " geometries." );
+//        KF_ASSERT( mVertexBuffers.size( ) == pConfig->mMaxGeometry, "Vertex buffers container size and geometry limit must be identical." );
+//        KF_ASSERT( mIndexBuffers.size( ) == pConfig->mMaxGeometry, "Index buffers container size and geometry limit must be identical." );
+//        KF_ASSERT( mTextures.size( ) == pConfig->mMaxTextures, "Texture container size and texture limit must be identical." );
 
     // Vertex buffers infos
     std::vector<vk::DescriptorBufferInfo> vertexBufferInfos;
@@ -610,7 +610,7 @@ void Scene::updateGeoemtryDescriptors() {
     // Texture samplers
     std::vector<vk::DescriptorImageInfo> textureInfos;
     textureInfos.reserve(mTextures.size());
-    for (size_t i = 0; i < mConfig->mMaxTextures; ++i) {
+    for (size_t i = 0; i < pConfig->mMaxTextures; ++i) {
         vk::DescriptorImageInfo textureInfo = {};
 
         if (mTextures[i] != nullptr) {

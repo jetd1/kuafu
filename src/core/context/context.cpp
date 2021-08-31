@@ -75,9 +75,8 @@ void Context::setGui(const std::shared_ptr<Gui> &gui, bool initialize) {
 
     pGui = gui;
 
-    if (initialize) {
+    if (initialize)
         initGui();
-    }
 }
 
 void Context::init() {
@@ -181,7 +180,7 @@ void Context::init() {
 
     // Swapchain
     mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
-    mConfig.mSwapchainNeedsRefresh = false;
+    pConfig->mSwapchainNeedsRefresh = false;
 
     // GUI
     initGui();
@@ -191,7 +190,7 @@ void Context::init() {
 
     // Path tracer
     mRayTracer.init();
-    mConfig.mMaxPathDepth = mRayTracer.getCapabilities().pipelineProperties.maxRayRecursionDepth;
+    pConfig->mMaxPathDepth = mRayTracer.getCapabilities().pipelineProperties.maxRayRecursionDepth;
     mRayTracer.initVarianceBuffer(static_cast<float>(pWindow->getWidth()),
                                   static_cast<float>(pWindow->getHeight()));
 
@@ -233,7 +232,7 @@ void Context::update() {
 
 #ifdef KF_VARIANCE_ESTIMATOR
     // update variance
-if (mConfig.mUpdateVariance)
+if (pConfig->mUpdateVariance)
 {
   static uint32_t counter = 0;
   const int maxSize       = 100;
@@ -244,11 +243,11 @@ if (mConfig.mUpdateVariance)
   //extent.width* extent.height;
   ppVariances.resize(pixelCount); // as many ppVariances as pixels
 
-  KF_ASSERT(maxSize > mConfig.mPerPixelSampleRate, "Variance Estimates Out Of Bound");
+  KF_ASSERT(maxSize > pConfig->mPerPixelSampleRate, "Variance Estimates Out Of Bound");
 
   // 1. Gathering stage
   bool finishedGatheringPp = false;
-  if (counter < mConfig.mPerPixelSampleRate)
+  if (counter < pConfig->mPerPixelSampleRate)
   {
     // For each new sample of a frame for each pixel set estimated variance
     for (uint32_t i = 0; i < pixelCount; ++i)
@@ -272,7 +271,7 @@ if (mConfig.mUpdateVariance)
     std::vector<float> ppSum(pixelCount, 0.0F);
 
     // Sum up samples for each pixel and store results separately
-    for (uint32_t i = 0; i < mConfig.mPerPixelSampleRate; ++i)
+    for (uint32_t i = 0; i < pConfig->mPerPixelSampleRate; ++i)
     {
       for (uint32_t j = 0; j < pixelCount; ++j)
       {
@@ -285,10 +284,10 @@ if (mConfig.mUpdateVariance)
     for (size_t i = 0; i < ppSum.size(); ++i)
     {
       // Do not forget to take the average of the previous sample sum per pixel
-      avg += ppSum[i] / static_cast<float>(mConfig.mPerPixelSampleRate);
+      avg += ppSum[i] / static_cast<float>(pConfig->mPerPixelSampleRate);
     }
 
-    mConfig.mVariance = avg / pixelCount;
+    pConfig->mVariance = avg / pixelCount;
   }
 }
 
@@ -340,7 +339,7 @@ if (mConfig.mUpdateVariance)
     }
 
     // Increment frame counter for jitter cam.
-    if (mConfig.mAccumulateFrames)
+    if (pConfig->mAccumulateFrames)
         ++global::frameCount;
     else
         global::frameCount = -1;
@@ -407,12 +406,12 @@ void Context::submitFrame() {
     try {
         vk::Result result = vkCore::global::graphicsQueue.presentKHR(presentInfo);
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
-            mConfig.triggerSwapchainRefresh();
+            pConfig->triggerSwapchainRefresh();
             KF_WARN("Swapchain out of data or suboptimal.");
         }
     }
     catch (...) {
-        mConfig.triggerSwapchainRefresh();
+        pConfig->triggerSwapchainRefresh();
     }
 
     prevFrame = currentFrame;
@@ -420,25 +419,25 @@ void Context::submitFrame() {
 }
 
 void Context::updateSettings() {
-    if (mConfig.mMaxGeometryChanged || mConfig.mMaxTexturesChanged) {
+    if (pConfig->mMaxGeometryChanged || pConfig->mMaxTexturesChanged) {
         mSync.waitForFrame(prevFrame);
 
-        mConfig.mMaxGeometryChanged = false;
-        mConfig.mMaxTexturesChanged = false;
+        pConfig->mMaxGeometryChanged = false;
+        pConfig->mMaxTexturesChanged = false;
 
-        mScene.mVertexBuffers.resize(mConfig.mMaxGeometry);
-        mScene.mIndexBuffers.resize(mConfig.mMaxGeometry);
-        mScene.mMaterialIndexBuffers.resize(mConfig.mMaxGeometry);
-        mScene.mTextures.resize(mConfig.mMaxTextures);
+        mScene.mVertexBuffers.resize(pConfig->mMaxGeometry);
+        mScene.mIndexBuffers.resize(pConfig->mMaxGeometry);
+        mScene.mMaterialIndexBuffers.resize(pConfig->mMaxGeometry);
+        mScene.mTextures.resize(pConfig->mMaxTextures);
 
         mScene.initGeoemtryDescriptorSets();
 
-        mConfig.mPipelineNeedsRefresh = true;
+        pConfig->mPipelineNeedsRefresh = true;
     }
 
     // Handle pipeline refresh
-    if (mConfig.mPipelineNeedsRefresh) {
-        mConfig.mPipelineNeedsRefresh = false;
+    if (pConfig->mPipelineNeedsRefresh) {
+        pConfig->mPipelineNeedsRefresh = false;
 
         // Calling wait idle, because pipeline recreation is assumed to be a very rare event to happen.
         vkCore::global::device.waitIdle();
@@ -448,8 +447,8 @@ void Context::updateSettings() {
     }
 
     // Handle swapchain refresh
-    if (mConfig.mSwapchainNeedsRefresh) {
-        mConfig.mSwapchainNeedsRefresh = false;
+    if (pConfig->mSwapchainNeedsRefresh) {
+        pConfig->mSwapchainNeedsRefresh = false;
 
         recreateSwapchain();
     }
@@ -504,7 +503,7 @@ void Context::recreateSwapchain() {
     mScene.mCurrentCamera->setSize(screenSize.width, screenSize.height);
 //        pCamera->setSize(screenSize.width, screenSize.height);
 
-    mConfig.mSwapchainNeedsRefresh = false;
+    pConfig->mSwapchainNeedsRefresh = false;
 
 //        KF_LOG_TIME_STOP("Finished re-creating swapchain");
 }
@@ -518,7 +517,7 @@ void Context::initPipelines() {
                                                                  mScene.mGeometryDescriptors.layout.get()};
 
     mRayTracer.createPipeline(descriptorSetLayouts);
-    mConfig.mPipelineNeedsRefresh = false;
+    pConfig->mPipelineNeedsRefresh = false;
 
 //        KF_LOG_TIME_STOP("Finished graphic pipelines initialization");
 }
@@ -533,15 +532,15 @@ void Context::initGui() {
 void Context::recordSwapchainCommandBuffers() {
     mSync.waitForFrame(prevFrame);
 
-    RtPushConstants pushConstants = {mConfig.mClearColor,
+    RtPushConstants pushConstants = {pConfig->mClearColor,
                                      global::frameCount,
-                                     mConfig.mPerPixelSampleRate,
-                                     mConfig.mPathDepth,
+                                     pConfig->mPerPixelSampleRate,
+                                     pConfig->mPathDepth,
                                      static_cast<uint32_t>(mScene.mUseEnvironmentMap),
-                                     static_cast<uint32_t>(mConfig.mRussianRoulette),
-                                     mConfig.mRussianRouletteMinBounces,
-                                     mConfig.mNextEventEstimation,
-                                     mConfig.mNextEventEstimationMinBounces};
+                                     static_cast<uint32_t>(pConfig->mRussianRoulette),
+                                     pConfig->mRussianRouletteMinBounces,
+                                     pConfig->mNextEventEstimation,
+                                     pConfig->mNextEventEstimationMinBounces};
 
     for (size_t imageIndex = 0; imageIndex < mSwapchainCommandBuffers.get().size(); ++imageIndex) {
         vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);

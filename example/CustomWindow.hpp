@@ -6,10 +6,12 @@
 
 class CustomWindow : public kuafu::Window {
 public:
-    CustomWindow(int width, int height, const char *title, uint32_t flags, kuafu::Scene *scene) :
-            kuafu::Window(width, height, title, flags),
-            _scene(scene) {
-    }
+    CustomWindow(int width, int height, const char *title, uint32_t flags
+//                 , kuafu::Scene *scene
+                 ) :
+            kuafu::Window(width, height, title, flags)
+//            , _scene(scene)
+            { }
 
     auto init() -> bool override {
         if (!kuafu::Window::init()) {
@@ -25,7 +27,7 @@ public:
             return false;
         }
 
-        _scene->getCamera()->setSize(mWidth, mHeight);
+//        _scene->getCamera()->setSize(mWidth, mHeight);
 
         // Add your custom event polling and integrate your event system.
         SDL_Event event;
@@ -157,7 +159,7 @@ public:
                         int x;
                         int y;
                         SDL_GetRelativeMouseState(&x, &y);
-                        _scene->getCamera()->processMouse(x, -y);
+//                        _scene->getCamera()->processMouse(x, -y);
                         break;
                     }
                 }
@@ -168,7 +170,7 @@ public:
     }
 
 private:
-    kuafu::Scene *_scene;
+//    kuafu::Scene *_scene;
     bool _mouseVisible = true;
 };
 

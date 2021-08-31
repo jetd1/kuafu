@@ -58,6 +58,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         float ior = 0.f;
         float transmission = 0.f;
         uint32_t illum = 2;
+        ai_int shadingModel;
         m->Get(AI_MATKEY_OPACITY, alpha);
         m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
         m->Get(AI_MATKEY_COLOR_SPECULAR, specular);
@@ -65,6 +66,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         m->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
         m->Get(AI_MATKEY_REFRACTI, ior);
 //      m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION, transmission); // TODO: full glTF
+        m->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
 
         if (alpha < 1e-5 && (fname.ends_with("dae") ||    // TODO: dAE?
                              fname.ends_with("DAE"))) {
@@ -81,6 +83,9 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
             roughness = 0.f;
         else
             roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
+
+        if (shadingModel == aiShadingMode_NoShading || shadingModel == aiShadingMode_Flat)
+            illum = 0;
 
         if (transmission > 0)
             illum = 1;
@@ -126,7 +131,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         materials.push_back({
                                     .kd = {diffuse.r, diffuse.g, diffuse.b},
                                     .diffuseTexPath = std::move(diffuseTexPath),
-                                    .emission = {emission.r, emission.g, emission.b},  // TODO: strength
+                                    .emission = {5 * emission.r, 5 * emission.g, 5 * emission.b},  // TODO: strength
                                     .illum = illum,
                                     .d = alpha,
                                     .shininess = shininess,
