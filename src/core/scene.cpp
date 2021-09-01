@@ -31,6 +31,7 @@
 
 namespace kuafu {
 CameraUBO cameraUBO;
+DirectionalLightUBO directionalLightUBO;
 
 std::shared_ptr<Geometry> triangle = nullptr; ///< A dummy triangle that will be placed in the scene if it empty. This assures the AS creation.
 std::shared_ptr<GeometryInstance> triangleInstance = nullptr;
@@ -294,10 +295,14 @@ void Scene::prepareBuffers() {
     mMaterialIndexBuffers.resize(pConfig->mMaxGeometry);
     mTextures.resize(pConfig->mMaxTextures);
 
-    initCameraBuffer();
+    mCameraUniformBuffer.init();
+    mDirectionalLightUniformBuffer.init();
 }
 
-void Scene::initCameraBuffer() { mCameraUniformBuffer.init();
+
+void Scene::uploadUniformBuffers(uint32_t imageIndex) {
+    uploadCameraBuffer(imageIndex);
+    uploadDirectionalLightBuffer(imageIndex);
 }
 
 void Scene::uploadCameraBuffer(uint32_t imageIndex) {
@@ -322,6 +327,14 @@ void Scene::uploadCameraBuffer(uint32_t imageIndex) {
     }
 
     mCameraUniformBuffer.upload(imageIndex, cameraUBO);
+}
+
+void Scene::uploadDirectionalLightBuffer(uint32_t imageIndex) {
+    if (pDirectionalLight) {
+        directionalLightUBO.direction = {glm::normalize(pDirectionalLight->direction), 0};
+        directionalLightUBO.rgbs = {pDirectionalLight->color, pDirectionalLight->strength};
+    }
+    mDirectionalLightUniformBuffer.upload(imageIndex, directionalLightUBO);
 }
 
 void Scene::uploadEnvironmentMap() {
@@ -488,9 +501,15 @@ void Scene::initSceneDescriptorSets() {
     // Environment map
   mSceneDescriptors.bindings.add(2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eMissKHR);
 
+    // Directional light uniform buffer
+    mSceneDescriptors.bindings.add(3, vk::DescriptorType::eUniformBuffer,
+                                     vk::ShaderStageFlagBits::eRaygenKHR
+                                   | vk::ShaderStageFlagBits::eClosestHitKHR
+                                   | vk::ShaderStageFlagBits::eMissKHR);
+
   mSceneDescriptors.layout = mSceneDescriptors.bindings.initLayoutUnique();
   mSceneDescriptors.pool = mSceneDescriptors.bindings.initPoolUnique(global::maxResources);
-    mSceneDescriptorSets = vkCore::allocateDescriptorSets(mSceneDescriptors.pool.get(), mSceneDescriptors.layout.get());
+  mSceneDescriptorSets = vkCore::allocateDescriptorSets(mSceneDescriptors.pool.get(), mSceneDescriptors.layout.get());
 }
 
 void Scene::initGeoemtryDescriptorSets() {
@@ -564,6 +583,8 @@ void Scene::updateSceneDescriptors() {
     mSceneDescriptors.bindings.writeArray(mSceneDescriptorSets, 1,
                                           mGeometryInstancesBuffer.getDescriptorInfos().data());
     mSceneDescriptors.bindings.write(mSceneDescriptorSets, 2, &environmentMapTextureInfo);
+    mSceneDescriptors.bindings.writeArray(mSceneDescriptorSets, 3,
+                                          mDirectionalLightUniformBuffer._bufferInfos.data());
     mSceneDescriptors.bindings.update();
 }
 

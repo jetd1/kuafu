@@ -6,6 +6,8 @@ struct RayPayLoad
   vec3 weight;
   uint seed;
   uint depth;
+  uint type;     // 0 == view, 1 == shadow, 2 == bounce
+  vec3 shadow_color;
   bool reflective;
   bool refractive;
 };

@@ -9,7 +9,8 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(128);
+    config->setPerPixelSampleRate(32);
+    config->setPathDepth(12);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
@@ -19,9 +20,9 @@ int main() {
 
     kuafu::Kuafu renderer(config, window, camera);
 
-    auto &scene = renderer.getScene();
+//    auto &scene = renderer.getScene();
 
-    loadScene(&renderer, Level::eCornell);
+    loadScene(&renderer, Level::eSpheres);
 
     while (renderer.isRunning()) {
 //        updateScene(&renderer);

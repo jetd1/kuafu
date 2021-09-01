@@ -6,9 +6,11 @@
 #include "base/PushConstants.glsl"
 #include "base/Ray.glsl"
 #include "base/Sampling.glsl"
+#include "base/DirectionalLight.glsl"
 
 layout( location = 0 ) rayPayloadEXT RayPayLoad ray;
 layout( location = 1 ) rayPayloadEXT bool isShadowed;
+layout( location = 2 ) rayPayloadEXT RayPayLoad shadowRay;
 
 layout( binding = 0, set = 0 ) uniform accelerationStructureEXT topLevelAS;
 layout( binding = 1, set = 0, rgba32f ) uniform image2D image;
@@ -110,6 +112,8 @@ void main( )
     ray.emission   = vec3( 1.0 );
     ray.reflective = false;
     ray.refractive = false;
+    ray.type       = 0;             // view ray
+    ray.shadow_color = vec3(0.0);
 
     vec3 weight = vec3( 1.0 );
     vec3 color  = vec3( 0.0 );
@@ -122,6 +126,32 @@ void main( )
 
     for ( ray.depth = 0; ray.depth <= maxPathDepth; ++ray.depth )
     {
+      if (ray.depth > 0) {
+        ray.type = 2;
+      }
+//      // trace shadow ray
+//      if ( ray.depth == 1 )
+//      {
+//        shadowRay = ray;
+//        shadowRay.type = 1;
+//        shadowRay.direction = -dlight.direction.xyz;
+//
+//        traceRayEXT( topLevelAS,          // acceleration structure
+//                     rayFlags,            // rayFlags
+//                     0xFF,                // cullMask
+//                     0,                   // sbtRecordOffset
+//                     0,                   // sbtRecordStride
+//                     0,                   // missIndex
+//                     shadowRay.origin,    // ray origin
+//                     tMin,                // ray min range
+//                     shadowRay.direction, // ray direction
+//                     tMax,                // ray max range
+//                     2 );                 // payload (location = 2)
+//
+//        shadowRay.depth = maxPathDepth + 1;
+//      }
+//
+
       // TODO: kuafu_urgent: Push Constant
       // refractive rays are allowed to bounce more time to have the all effects at lower sample rates
       if ( ray.refractive )
@@ -150,6 +180,7 @@ void main( )
 
       color += ray.emission * weight;
       weight *= ray.weight;
+      color += ray.shadow_color * weight;
 
       // Russian roulette
       // Randomly terminate a path with a probability inversely equal to the throughput

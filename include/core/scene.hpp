@@ -25,6 +25,7 @@
 #include "core/camera.hpp"
 #include "core/geometry.hpp"
 #include "core/config.hpp"
+#include "core/light.hpp"
 
 namespace kuafu {
 class Context;
@@ -123,6 +124,8 @@ public:
 
     inline void markGeometryInstancesChanged() { mUploadGeometryInstancesToBuffer = true; }
 
+    inline void setDirectionalLight(std::shared_ptr<DirectionalLight> light) { pDirectionalLight = light; };
+
 private:
     void initSceneDescriptorSets();
 
@@ -130,9 +133,11 @@ private:
 
     void prepareBuffers();
 
-    void initCameraBuffer();
+    void uploadUniformBuffers(uint32_t imageIndex);
 
     void uploadCameraBuffer(uint32_t imageIndex);
+
+    void uploadDirectionalLightBuffer(uint32_t imageIndex);
 
     void uploadEnvironmentMap();
 
@@ -173,6 +178,9 @@ private:
 
     std::vector<std::shared_ptr<Geometry>> mGeometries;
     std::vector<std::shared_ptr<GeometryInstance>> mGeometryInstances;
+
+    std::shared_ptr<DirectionalLight> pDirectionalLight;
+    vkCore::UniformBuffer<DirectionalLightUBO> mDirectionalLightUniformBuffer;
 
     std::string mEnvironmentMapTexturePath;
     bool mUseEnvironmentMap = false;

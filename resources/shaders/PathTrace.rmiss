@@ -2,6 +2,7 @@
 #extension GL_EXT_ray_tracing : require
 
 #include "base/Ray.glsl"
+#include "base/DirectionalLight.glsl"
 
 layout( location = 0 ) rayPayloadInEXT RayPayLoad ray;
 
@@ -26,8 +27,9 @@ void main( )
   vec3 dir = ray.direction;
   dir.x *= -1.0; // mirror
 
-  // If the ray hits nothing right away
-  if ( ray.depth == 0 )
+
+
+  if ( ray.type == 0 )     // view ray
   {
     if ( useEnvironmentMap )
     {
@@ -38,12 +40,15 @@ void main( )
       ray.emission = clearColor.xyz * clearColor.w;
     }
   }
-  else
+  else if (ray.type == 1)  // shadow ray
+  {
+    ray.emission = dlight.rgbs.xyz * dlight.rgbs.w;
+  }
+  else                     // bounce ray
   {
     if ( ray.reflective )
     {
       ray.reflective = false;
-
       if ( useEnvironmentMap )
       {
         ray.emission = texture( environmentMap, dir ).xyz;

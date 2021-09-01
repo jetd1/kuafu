@@ -33,7 +33,7 @@ void Config::setPathDepth(uint32_t recursionDepth) {
         mPathDepth = recursionDepth;
     } else {
         mPathDepth = mMaxPathDepth;
-//            KF_WARN( "Exceeded maximum path depth of ", mMaxPathDepth, ". Using highest possible value instead." );
+        KF_WARN( "Exceeded maximum path depth of ", mMaxPathDepth, ". Using highest possible value instead." );
     }
 
     mPathDepth = recursionDepth;

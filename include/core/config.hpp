@@ -150,14 +150,14 @@ private:
     std::string mAssetsPath; ///< Where all assets like ~~~models, textures and~~~ shaders are stored.
 
     glm::vec4 mClearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
-    uint32_t mMaxPathDepth = 10;                                     ///< The maximum path depth.
-    uint32_t mPathDepth = 5;                                         ///< The current path depth.
+    uint32_t mMaxPathDepth = 12;                                     ///< The maximum path depth.
+    uint32_t mPathDepth = 6;                                         ///< The current path depth.
     uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.
-    uint32_t mRussianRouletteMinBounces = 3;
+    uint32_t mRussianRouletteMinBounces = 4;
 
     bool mUseDenoiser = false;  // todo
 
-    bool mNextEventEstimation = false;
+    bool mNextEventEstimation = true;            // todo: buggy
     uint32_t mNextEventEstimationMinBounces = 0; // temporary for debugging
 
     float mVariance = 0.0F;

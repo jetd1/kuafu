@@ -297,7 +297,7 @@ if (pConfig->mUpdateVariance)
     uint32_t imageIndex = mSwapchain.getCurrentImageIndex();
     uint32_t maxFramesInFlight = static_cast<uint32_t>(mSync.getMaxFramesInFlight());
 
-    mScene.uploadCameraBuffer(imageIndex % maxFramesInFlight);
+    mScene.uploadUniformBuffers(imageIndex % maxFramesInFlight);
 
     // If the scene is empty add a dummy triangle so that the acceleration structures can be built successfully.
 

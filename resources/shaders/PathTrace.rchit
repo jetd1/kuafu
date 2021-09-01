@@ -4,6 +4,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "base/Camera.glsl"
+#include "base/DirectionalLight.glsl"
 #include "base/Geometry.glsl"
 #include "base/PushConstants.glsl"
 #include "base/Ray.glsl"
@@ -97,72 +98,61 @@ Material getShadingData( inout vec3 localNormal, inout vec3 worldNormal, inout v
   return materials.m[matIndex];
 }
 
-void nextEventEstimation( inout vec3 emission, in vec3 worldPos, in vec3 normal )
+void nextEventEstimation( inout vec3 emission, in Material mat, in vec3 base_bsdf, in vec3 worldPos, in vec3 normal )
 {
   // trace shadow ray
   // Tracing shadow ray only if the light is visible from the surface
   // https://computergraphics.stackexchange.com/questions/7929/how-does-a-path-tracer-with-next-event-estimation-work
-  if ( isNextEventEstimation && emission == vec3( 0.0 ) && ray.depth >= nextEventEstimationMinBounces )
+  if ( isNextEventEstimation && emission == vec3( 0.0 ) )
   {
-    vec3 L;
-    L = vec3( 0.0, 10.0, 0.0 );   // animation
-    L = vec3( -0.7, 8.0, 0.0 );   // sponza
-    L = vec3( 0.0, 0.8, -1.0 );   // cornell
-    L = vec3( -22.0, 6.0, 12.0 ); // spheres
-
-    L                   = normalize( L );
-    float lengthSquared = length( L ) * length( L );
-
-    float cosTheta = dot( normal, L );
+    vec3 lightDirection = -dlight.direction.xyz;
+    float cosTheta = dot( normal, lightDirection );
     if ( cosTheta > 0.0 )
     {
       float tMin = 0.001;
-      float tMax = 2.0;
-      uint flags = gl_RayFlagsTerminateOnFirstHitEXT | gl_RayFlagsOpaqueEXT | gl_RayFlagsSkipClosestHitShaderEXT;
+      uint flags = gl_RayFlagsTerminateOnFirstHitEXT
+                 | gl_RayFlagsOpaqueEXT
+                 | gl_RayFlagsSkipClosestHitShaderEXT;
       isShadowed = true;
 
       float lightDistance = 100000.0;
-      vec3 lightDirection = L - worldPos;
-      lightDistance       = length( lightDirection );
 
-      traceRayEXT( topLevelAS,    // acceleration structure
-                   flags,         // rayFlags
-                   0xFF,          // cullMask
-                   0,             // sbtRecordOffset
-                   0,             // sbtRecordStride
-                   1,             // missIndex
-                   worldPos,      // ray origin
-                   tMin,          // ray min range
-                   L,             // ray direction
-                   lightDistance, // ray max range
-                   1              // payload (location = 1)
+      traceRayEXT( topLevelAS,      // acceleration structure
+                   flags,           // rayFlags
+                   0xFF,            // cullMask
+                   0,               // sbtRecordOffset
+                   0,               // sbtRecordStride
+                   1,               // missIndex
+                   worldPos,        // ray origin
+                   tMin,            // ray min range
+                   lightDirection,  // ray direction
+                   lightDistance,   // ray max range
+                   1                // payload (location = 1)
       );
 
-      if ( isShadowed )
-      {
-        //emission = vec3( 0.0, 1.0, 0.0 ); // * clamp( length( L - ray.origin ), 0.0, 1.0 ) * 5.0;
-        // bsdf = vec3( 0.0, 1.0, 0.0 );
-      }
-      else
-      {
-        //cosTheta = dot( normal, L ); // The steeper the incident direction to the surface is the more important the sample gets
-        //bsdf *= cosTheta;
+      if ( isShadowed ) { }
+      else {
+        vec3 weight = vec3( 0.0 );
+        // Lambertian reflection
+        if ( mat.illum == 0 ) {
+          weight = vec3(cosTheta);
+        } else if ( mat.illum == 1 ) {
+          // Flip the normal if ray is transmitted
+          vec3 n = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT ? -normal : normal;
+          float cosine = mat.ior * cosTheta;
 
-        //const float distance_      = length( L - worldPos );
-        //const float lightConstant  = 1.0;
-        //const float lightLinear    = 0.09;
-        //const float lightQuadratic = 0.032;
-        //float attenuation          = 1.0 / ( lightConstant + lightLinear * distance_ + lightQuadratic * ( distance_ * distance_ ) );
-        //
-        // bsdf *= attenuation;
-        //emission = vec3( 1.0 ) * attenuation;
+          vec3  refracted    = refract( lightDirection, n, mat.ior );
+          float reflectProb = refracted != vec3( 0.0 ) ? Schlick( cosine, mat.ior ) : 1.0;
 
-        float denom = 4.0 * M_PI * lengthSquared;
-        emission    = vec3( 1.0, 1.0, 1.0 ) * cosTheta / denom; // / ( ray.depth * 1.0 ); // * cosTheta;
-                                                                // emission = vec3( 1.0, 1.0, 1.0 ); // / ( ray.depth * 1.0 ); // * cosTheta;
+          weight = vec3(cosTheta) * reflectProb;
+//          weight *= 0;
 
-        //bsdf *= attenuation;
-        //emission = vec3( 0.0, 0.0, 1.0 );
+        } else {
+          weight = vec3(cosTheta);
+//          weight *= 0;
+        }
+
+        ray.shadow_color = dlight.rgbs.xyz * dlight.rgbs.w * weight;
       }
     }
   }
@@ -180,7 +170,7 @@ void main( )
 
   emission = mat.emission.xyz;
 
-  // Stop recursion if a light source is hit.
+  // Stop recursion if a emissive object is hit.
   if ( emission != vec3( 0.0 ) )
   {
     ray.depth = maxPathDepth + 1;
@@ -203,7 +193,8 @@ void main( )
 
   // BSDF (Divide by Pi to ensure energy conversation)
   // @todo path regularization: blur the bsdf for indirect rays (raytracinggems p.251)
-  vec3 bsdf = reflectance / M_PI;
+  vec3 base_bsdf = reflectance / M_PI;
+  vec3 new_bsdf = base_bsdf;
 
   // Metallic reflection
   if ( mat.illum == 2 )
@@ -229,6 +220,7 @@ void main( )
     if ( rnd( ray.seed ) < reflectProb )
     {
       nextDirection = reflect( ray.direction, normal ) + mat.roughness * cosineHemisphereSampling( ray.seed, pdf, normal );
+      ray.reflective  = true;
     }
     else
     {
@@ -241,7 +233,7 @@ void main( )
   {
     nextDirection = cosineHemisphereSampling( ray.seed, pdf, normal );
     cosTheta      = dot( nextDirection, normal ); // The steeper the incident direction to the surface is the more important the sample gets
-    bsdf *= cosTheta;
+    new_bsdf *= cosTheta;
   }
 
   // Add specular highlight
@@ -251,16 +243,16 @@ void main( )
     float spec      = pow( max( dot( normalize( cam.position.xyz - worldPos ), reflectDir ), 0.0 ), mat.emission.w );
     if ( spec > 0.0 )
     {
-      bsdf = ( reflectance + clamp( spec, 0, 1 ) ) / M_PI;
+      new_bsdf = ( reflectance + clamp( spec, 0, 1 ) ) / M_PI;
     }
   }
 
   //pdf = 1 / ( 1.5 * M_PI ); // the smaller the higher the contribution
 
-  nextEventEstimation( emission, worldPos, normal );
+  nextEventEstimation( emission, mat, base_bsdf, worldPos, normal );
 
   ray.origin    = rayOrigin;
   ray.direction = nextDirection;
   ray.emission  = emission;
-  ray.weight    = bsdf / pdf; // divide reflectance by PDF
+  ray.weight    = new_bsdf / pdf; // divide reflectance by PDF
 }

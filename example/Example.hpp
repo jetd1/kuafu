@@ -102,13 +102,20 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(10000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
 //        renderer->getConfig().setClearColor(glm::vec4(0.45F, 0.45F, 0.45F, 0.8F));
-        renderer->getConfig().setClearColor(glm::vec4(0.6F, 0.6F, 0.5F, 1.0F));
+//        renderer->getConfig().setClearColor(glm::vec4(0.6F, 0.6F, 0.5F, 1.0F));
+        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.0F));
         renderer->getConfig().setAccumulatingFrames(true);
 
         renderer->getScene( ).getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
         renderer->getScene( ).getCamera( )->setFront( glm::vec3( 0.0F, 0.0F, -1.F ) );
         renderer->getScene( ).getCamera( )->setUp( glm::vec3( 0.0F, 1.0F, 0.F ) );
 //        renderer->getScene( ).getCamera( )->setFov( 90.0F );
+
+        auto dLight = std::make_shared<kuafu::DirectionalLight>();
+        dLight->direction ={0., -0.1, 1.};
+        dLight->color = {1., 1., 1.};
+        dLight->strength = 10.;
+        renderer->getScene().setDirectionalLight(dLight);
 
         auto cornell = kuafu::loadScene("models/CornellBox.obj", false);
         //auto cornell = kuafu::loadObj( "models/Sphere.obj" );
@@ -174,11 +181,18 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
         renderer->getConfig().setAccumulatingFrames(false);
-//        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
-        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
+        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+//        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.8F));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 19.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+
+        auto dLight = std::make_shared<kuafu::DirectionalLight>();
+        dLight->direction ={3, 3, -1};
+//        dLight->direction ={0., 1, -1};
+        dLight->color = {1., 1., 1.};
+        dLight->strength = 1;
+        renderer->getScene().setDirectionalLight(dLight);
 
 ////        auto lightPlane = kuafu::loadObj("models/plane.obj");
 //        auto lightMaterial = std::make_shared<kuafu::Material>();
@@ -227,11 +241,13 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         mat->illum = 2;
         mat->kd = glm::vec3(0.2F, 0.4F, 1.0F);
         mat->roughness = 0.02F;
+        mat->roughness = 100.0F;
         mat->ior = 1.0F;
         auto sphere3 = kuafu::createSphere(true, mat);
 
-        mat->illum = 2;
-        mat->roughness = 0.2F;
+        mat->illum = 0;
+        mat->roughness = 0.0F;
+//        mat->roughness = 1000.0F;
         mat->ior = 1.0F;
         auto sphere4 = kuafu::createSphere(true, mat);
 
@@ -268,11 +284,9 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 //                 glass
                 });
 
-        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 80.0F, 0.0F));
-//        auto lightPlaneInstance = kuafu::instance(lightPlane, transform);
-
-        transform = glm::scale(glm::mat4(1.0F), glm::vec3(5.0F, 5.0F, 5.0F));
-        transform = glm::rotate(transform, glm::radians(90.F), {0., 1., 0.});
+        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.F));
+        transform = glm::rotate(transform, glm::radians(90.F), {0., -1., 0.});
+        transform = glm::scale(transform, glm::vec3(8.0F, 8.0F, 8.0F));
         auto floorInstance = kuafu::instance(floor, transform);
 
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(-5.0F, 0.0F, 0.0F));
