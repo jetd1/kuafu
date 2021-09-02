@@ -181,6 +181,7 @@ void main( )
       color += ray.emission * weight;
       weight *= ray.weight;
       color += ray.shadow_color * weight;
+      ray.shadow_color = vec3(0.);
 
       // Russian roulette
       // Randomly terminate a path with a probability inversely equal to the throughput

@@ -34,7 +34,7 @@ extern uint32_t geometryIndex;
 extern uint32_t materialIndex;
 extern uint32_t textureIndex;
 const size_t maxResources = 2;
-extern std::vector<Material> materials;
+extern std::vector<NiceMaterial> materials;
 
 namespace keys {
 extern bool eW;

@@ -3,22 +3,10 @@
 
 #include "base/Ray.glsl"
 #include "base/DirectionalLight.glsl"
+#include "base/PushConstants.glsl"
 
 layout( location = 0 ) rayPayloadInEXT RayPayLoad ray;
 
-layout( push_constant ) uniform Constants
-{
-  vec4 clearColor;
-  int frameCount;
-  uint sampleRatePerPixel;
-  uint maxPathDepth;
-  bool useEnvironmentMap;
-
-  uint padding0;
-  uint padding1;
-  uint padding2;
-  uint padding3;
-};
 
 layout( binding = 2, set = 1 ) uniform samplerCube environmentMap;
 
@@ -27,9 +15,7 @@ void main( )
   vec3 dir = ray.direction;
   dir.x *= -1.0; // mirror
 
-
-
-  if ( ray.type == 0 )     // view ray
+  if ( ray.depth == 0 )     // view ray
   {
     if ( useEnvironmentMap )
     {
@@ -39,10 +25,6 @@ void main( )
     {
       ray.emission = clearColor.xyz * clearColor.w;
     }
-  }
-  else if (ray.type == 1)  // shadow ray
-  {
-    ray.emission = dlight.rgbs.xyz * dlight.rgbs.w;
   }
   else                     // bounce ray
   {
@@ -63,11 +45,13 @@ void main( )
       // small contribution from environment
       if ( useEnvironmentMap )
       {
-        ray.emission = texture( environmentMap, dir ).xyz * 0.01;
+        // ray.emission = texture( environmentMap, dir ).xyz * 0.01;
+        ray.emission = texture( environmentMap, dir ).xyz;
       }
       else
       {
-        ray.emission = clearColor.xyz * clearColor.w * 0.01;
+        // ray.emission = clearColor.xyz * clearColor.w * 0.01;
+        ray.emission = clearColor.xyz * clearColor.w;
       }
     }
   }

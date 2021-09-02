@@ -9,20 +9,21 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(32);
+    config->setPerPixelSampleRate(128);
     config->setPathDepth(12);
+//    config->setRussianRoulette(false);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
 
     auto window = std::make_shared<CustomWindow>(
-            width, height, "Test", SDL_WINDOW_RESIZABLE);
+            width, height, "Test", SDL_WINDOW_RESIZABLE, camera);
 
     kuafu::Kuafu renderer(config, window, camera);
 
 //    auto &scene = renderer.getScene();
 
-    loadScene(&renderer, Level::eSpheres);
+    loadScene(&renderer, Level::eNew);
 
     while (renderer.isRunning()) {
 //        updateScene(&renderer);

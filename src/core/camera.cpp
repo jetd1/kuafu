@@ -116,6 +116,22 @@ void Camera::setPose(glm::mat4 pose) {
 
 
 void Camera::processMouse(float xOffset, float yOffset) {
+    float upRot = xOffset * 0.01;
+    float rightRot = yOffset * 0.01;
+
+    glm::mat4 urot = glm::rotate(glm::mat4(1.0), upRot, mDirUp);
+    glm::mat4 rrot = glm::rotate(glm::mat4(1.0), rightRot, mDirRight);
+
+    auto tmp = urot * glm::vec4(mDirFront, 0);
+    mDirFront = {tmp[0], tmp[1],tmp[2]};
+    std::cout << tmp[0] << tmp[1] << tmp[2] << std::endl;
+
+    tmp = rrot * glm::vec4(mDirFront, 0);
+    mDirFront = {tmp[0], tmp[1],tmp[2]};
+
+    tmp = rrot * glm::vec4(mDirUp, 0);
+    mDirUp = {tmp[0], tmp[1],tmp[2]};
+
     mViewNeedsUpdate = true;
     global::frameCount = -1;
 }

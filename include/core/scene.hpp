@@ -170,7 +170,7 @@ private:
     std::vector<vkCore::StorageBuffer<uint32_t>> mIndexBuffers;
     std::vector<vkCore::StorageBuffer<uint32_t>> mMaterialIndexBuffers;
     std::vector<vkCore::StorageBuffer<Vertex>> mVertexBuffers;
-    vkCore::StorageBuffer<MaterialSSBO> mMaterialBuffers;
+    vkCore::StorageBuffer<NiceMaterialSSBO> mMaterialBuffers;
     vkCore::StorageBuffer<GeometryInstanceSSBO> mGeometryInstancesBuffer;
     std::vector<std::shared_ptr<vkCore::Texture>> mTextures;
 

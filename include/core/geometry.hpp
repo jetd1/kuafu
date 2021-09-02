@@ -25,32 +25,26 @@
 #include "core/context/vertex.hpp"
 
 namespace kuafu {
-/// Describes the rendering properties of a mesh.
-///
-/// Property descriptions copied from https://www.loc.gov/preservation/digital/formats/fdd/fdd000508.shtml.
-/// @ingroup BASE
-struct Material {
-    glm::vec3 kd = glm::vec3(0.0F); /// Diffuse color
-    std::string diffuseTexPath = "";
 
-    glm::vec3 emission = glm::vec3(0.0F);
+//// Simplified Blender PrincipledBSDF
+struct NiceMaterial {
+    glm::vec3 diffuseColor = glm::vec3(1.0F); /// Diffuse color
+    float alpha = 1.0F;
 
-    /// Illumination model.
-    /// @todo documentation
-    uint32_t illum = 2;
+    std::string diffuseTexPath;
 
-    /// Specifies a factor for dissolve, how much this material dissolves into the background. A factor of 1.0 is fully opaque. A factor of 0.0 is completely transparent.
-    float d = 1.0F;
-
-    /// Focus of the specular light (aka shininess). Ranges from 0 to 1000, with a high value resulting in a tight, concentrated highlight.
-    float shininess = 0.0F;
-
-    float roughness = 1000.0F;
-
-    /// Optical density (aka index of refraction). Ranges from 0.001 to 10. A value of 1.0 means that light does not bend as it passes through an object.
+    float metallic = 0.0F;
+    float specular = 0.5F;
+    float roughness = 0.5F;
     float ior = 1.4F;
+    float transmission = 0.0F;
 
-    friend bool operator==(const Material &m1, const Material &m2);
+
+    glm::vec3 emission = glm::vec3(1.0F);
+    float emissionStrength = 0.0F;
+
+
+    friend bool operator==(const NiceMaterial &m1, const NiceMaterial &m2);
 };
 
 /// Describes a geometry Kuafu can render.
@@ -59,7 +53,7 @@ struct Material {
 /// @warning geometryIndex must be incremented everytime a new model is created.
 /// @ingroup BASE
 struct Geometry {
-    void setMaterial(const Material &material);
+    void setMaterial(const NiceMaterial &material);
 
     void recalculateNormals();
 
@@ -105,18 +99,22 @@ std::shared_ptr<Geometry> loadObj(std::string_view path, bool dynamic = false);
 /// @return Returns a pointer to a geometry instance.
 /// @ingroup BASE
 std::shared_ptr<GeometryInstance>
-instance(std::shared_ptr<Geometry> geometry, const glm::mat4 &transform = glm::mat4(1.0F));
+instance(const std::shared_ptr<Geometry>& geometry, const glm::mat4 &transform = glm::mat4(1.0F));
 
 /// A wrapper for MeshSSBO matching the buffer alignment requirements.
 /// @ingroup API
-struct MaterialSSBO {
-    glm::vec4 diffuse = glm::vec4(1.0F, 1.0F, 1.0F, -1.0F); ///< vec3 diffuse  + vec1 texture index
-    glm::vec4 emission = glm::vec4(0.0F, 0.0F, 0.0F, 64.0F); ///< vec3 emission + vec1 shininess
+struct NiceMaterialSSBO {
+    glm::vec4 diffuse = glm::vec4(1.0F, 1.0F, 1.0F, 0.0F); ///< vec3 diffuse  + hasTex
+    glm::vec4 emission = glm::vec4(1.0F, 1.0F, 1.0F, 0.0F); ///< vec3 emission + vec1 emission strength
+    float alpha = 1.0F;
+    float metallic = 0.0F;
+    float specular = 0.5F;
+    float roughness = 0.5F;
+    float ior = 1.4F;
+    float transmission = 0.0F;
 
-    uint32_t illum = 0;
-    float dissolve = 1.0F;
-    float roughness = 0.0F;
-    float ior = 1.0F;
+    uint32_t texIdx = 0;
+    uint32_t padding0 = 0;
 };
 
 /// A wrapper for GeometryInstanceSSBO matching the buffer alignment requirements.
@@ -131,14 +129,14 @@ struct GeometryInstanceSSBO {
     uint32_t padding2 = 0;
 };
 
-std::shared_ptr<Geometry> createYZPlane(bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+std::shared_ptr<Geometry> createYZPlane(bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
 
-std::shared_ptr<Geometry> createCube(bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+std::shared_ptr<Geometry> createCube(bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
 
-std::shared_ptr<Geometry> createSphere(bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+std::shared_ptr<Geometry> createSphere(bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
 
 std::shared_ptr<Geometry> createCapsule(
-        float halfHeight = 1., float radius = 1., bool dynamic = true, std::shared_ptr<Material> mat = nullptr);
+        float halfHeight = 1., float radius = 1., bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
 
 
 }

@@ -157,8 +157,8 @@ private:
 
     bool mUseDenoiser = false;  // todo
 
-    bool mNextEventEstimation = true;            // todo: buggy
-    uint32_t mNextEventEstimationMinBounces = 0; // temporary for debugging
+    bool mNextEventEstimation = true;            // TODO: not used!
+    uint32_t mNextEventEstimationMinBounces = 0; // TODO: not used!
 
     float mVariance = 0.0F;
     bool mUpdateVariance = false;

@@ -9,7 +9,6 @@
 #include "base/PushConstants.glsl"
 #include "base/Ray.glsl"
 #include "base/Sampling.glsl"
-#include "base/Shading.glsl"
 
 hitAttributeEXT vec3 attribs;
 
@@ -98,161 +97,195 @@ Material getShadingData( inout vec3 localNormal, inout vec3 worldNormal, inout v
   return materials.m[matIndex];
 }
 
-void nextEventEstimation( inout vec3 emission, in Material mat, in vec3 base_bsdf, in vec3 worldPos, in vec3 normal )
+// TODO: rewrite this using callable shader
+void traceShadowRay( in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 worldPos, in vec3 N )
 {
   // trace shadow ray
   // Tracing shadow ray only if the light is visible from the surface
-  // https://computergraphics.stackexchange.com/questions/7929/how-does-a-path-tracer-with-next-event-estimation-work
-  if ( isNextEventEstimation && emission == vec3( 0.0 ) )
-  {
-    vec3 lightDirection = -dlight.direction.xyz;
-    float cosTheta = dot( normal, lightDirection );
-    if ( cosTheta > 0.0 )
-    {
-      float tMin = 0.001;
-      uint flags = gl_RayFlagsTerminateOnFirstHitEXT
-                 | gl_RayFlagsOpaqueEXT
-                 | gl_RayFlagsSkipClosestHitShaderEXT;
-      isShadowed = true;
+  vec3 L = -dlight.direction.xyz;
+  vec3 V = -ray.direction;
+  ray.shadow_color = vec3(0);
 
-      float lightDistance = 100000.0;
+  if (dlight.direction.w != 0) {
+    vec3 perturb = vec3(rnd(ray.seed), rnd(ray.seed), rnd(ray.seed));
+    L = normalize(L + dlight.direction.w * perturb);
+  }
 
-      traceRayEXT( topLevelAS,      // acceleration structure
-                   flags,           // rayFlags
-                   0xFF,            // cullMask
-                   0,               // sbtRecordOffset
-                   0,               // sbtRecordStride
-                   1,               // missIndex
-                   worldPos,        // ray origin
-                   tMin,            // ray min range
-                   lightDirection,  // ray direction
-                   lightDistance,   // ray max range
-                   1                // payload (location = 1)
-      );
+  float NdotL = dot(N, L);
+  if (NdotL > 0.0) {
+    float tMin = 0.001;
+    float lightDistance = 100000.0;
 
-      if ( isShadowed ) { }
-      else {
-        vec3 weight = vec3( 0.0 );
-        // Lambertian reflection
-        if ( mat.illum == 0 ) {
-          weight = vec3(cosTheta);
-        } else if ( mat.illum == 1 ) {
-          // Flip the normal if ray is transmitted
-          vec3 n = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT ? -normal : normal;
-          float cosine = mat.ior * cosTheta;
+    uint flags = gl_RayFlagsTerminateOnFirstHitEXT
+    | gl_RayFlagsOpaqueEXT
+    | gl_RayFlagsSkipClosestHitShaderEXT;
+    isShadowed = true;
 
-          vec3  refracted    = refract( lightDirection, n, mat.ior );
-          float reflectProb = refracted != vec3( 0.0 ) ? Schlick( cosine, mat.ior ) : 1.0;
+    traceRayEXT(topLevelAS, // acceleration structure
+    flags, // rayFlags
+    0xFF, // cullMask
+    0, // sbtRecordOffset
+    0, // sbtRecordStride
+    1, // missIndex
+    worldPos, // ray origin
+    tMin, // ray min range
+    L, // ray direction
+    lightDistance, // ray max range
+    1// payload (location = 1)
+    );
 
-          weight = vec3(cosTheta) * reflectProb;
-//          weight *= 0;
+    if (!isShadowed) {
 
-        } else {
-          weight = vec3(cosTheta);
-//          weight *= 0;
-        }
+      float a2 =  mat.roughness * mat.roughness;
+      vec3 H      = normalize(L + V);
+      float NdotH = dot(N, H);
+      float HdotV = dot(H, V);
+      float NdotV = dot(N, V);
+      NdotV = max(0.0005, NdotV);
+      float LdotH = dot(L, H);
+      float D     = ggxNormalDistribution(NdotH, a2);
+//      float G     = schlickMaskingTerm(NdotL, NdotV, a2);
+      float G     = GeometricShadowing(NdotL, NdotV, a2);
+      vec3  F     = schlickFresnel(specularColor, LdotH);
+      vec3  ggxTerm = D * G * F / (4 * NdotL * NdotV);
+      float ggxProb = D * NdotH / (4 * LdotH);
 
-        ray.shadow_color = dlight.rgbs.xyz * dlight.rgbs.w * weight;
-      }
+      float diffuseLum   = length(diffuseColor);
+      float specularLum  = length(specularColor);
+
+      float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
+      //      float probDiffuse  = 1 - mat.specular;
+
+            vec3 diffuseWeight  = diffuseColor * NdotL;
+      //      vec3 specularWeight = specularColor * NdotL;
+      //      vec3 diffuseWeight  = vec3(NdotL);
+//      vec3 diffuseWeight  = vec3(NdotL);
+      //      vec3 specularWeight = vec3(NdotL * D * M_PI / NdotH);
+      //      vec3 specularWeight = ggxTerm * NdotL / (M_PI * ggxProb);
+      //      vec3 specularWeight = G * F * LdotH / (M_PI * NdotH * NdotV);
+      //      vec3 specularWeight = vec3(1);
+
+      //      vec3 specularWeight = vec3(NdotL * NdotH * M_PI);
+      //      if (G  / (M_PI * NdotH * NdotV) < 0)
+      //        specularWeight = vec3(0);
+      //      vec3 specularWeight  = vec3(NdotL);
+      //      float pdf = D * NdotH / (4 * HdotV);
+      //      vec3 specularWeight  = pdf * G * F * LdotH / (NdotV * NdotH);
+      vec3 specularWeight  = D * G * F * LdotH / (4 * HdotV * NdotV);
+//            vec3 specularWeight  = G * F * LdotH / (4 * HdotV * NdotV);
+      //      vec3 specularWeight  = vec3(0);
+
+      vec3 weight = diffuseWeight * probDiffuse + specularWeight * (1 - probDiffuse);
+      //      if (weight.x > 1) weight = vec3(10.0);
+
+      ray.shadow_color = dlight.rgbs.xyz * dlight.rgbs.w * weight;
     }
   }
+
+//  ray.shadow_color += clearColor.xyz * clearColor.w * 0.1;    // TODO: we may want this
 }
 
+// By Jet <i@jetd.me>, 2021.
+// Implemented according to blender's PrincipledBSDF
+// https://github.com/blender/blender/blob/master/intern/cycles/kernel/shaders/node_principled_bsdf.osl
 void main( )
 {
-  vec3 localNormal, normal, worldPos;
+  vec3 localNormal, N, worldPos;
   vec2 uv;
-  Material mat = getShadingData( localNormal, normal, worldPos, uv );
-
-  // Colors
-  vec3 reflectance = vec3( 0.0 );
-  vec3 emission    = vec3( 0.0 ); // emittance / emissiveFactor
-
-  emission = mat.emission.xyz;
+  Material mat = getShadingData(localNormal, N, worldPos, uv);
 
   // Stop recursion if a emissive object is hit.
-  if ( emission != vec3( 0.0 ) )
-  {
-    ray.depth = maxPathDepth + 1;
-  }
+  // TODO: change this behavior
+  vec3 emission = mat.emission.rgb * mat.emission.w;
+  if (emission != vec3(0.)) {
 
-  // Retrieve material textures and colors
-  reflectance = mat.diffuse.xyz;
-  if ( mat.diffuse.w != -1.0 )
-  {
-    reflectance *= texture( textures[nonuniformEXT( int( mat.diffuse.w ) )], uv ).xyz;
-  }
+    ray.depth     = maxPathDepth + 1;
+    ray.emission  = mat.emission.xyz * mat.emission.w;
 
-  // Pick a random direction from here and keep going.
-  vec3 rayOrigin = worldPos;
-  vec3 nextDirection;
+  } else {
 
-  // Probability of the new ray (PDF)
-  float pdf;
-  float cosTheta = 1.0;
+    vec3 baseColor = mat.diffuse.xyz;
+    if (mat.diffuse.w != 0)
+      baseColor = texture(textures[nonuniformEXT( mat.texIdx )], uv).xyz;
+    baseColor /= M_PI;
 
-  // BSDF (Divide by Pi to ensure energy conversation)
-  // @todo path regularization: blur the bsdf for indirect rays (raytracinggems p.251)
-  vec3 base_bsdf = reflectance / M_PI;
-  vec3 new_bsdf = base_bsdf;
+    float f = max(mat.ior, 1e-5);
+    float diffuse_weight = (1.0 - clamp(mat.metallic, 0.0, 1.0)) * (1.0 - clamp(mat.transmission, 0.0, 1.0));
+    float final_transmission = clamp(mat.transmission, 0.0, 1.0) * (1.0 - clamp(mat.metallic, 0.0, 1.0));
+    float specular_weight = (1.0 - final_transmission);
+    float a2 =  mat.roughness * mat.roughness;
 
-  // Metallic reflection
-  if ( mat.illum == 2 )
-  {
-    vec3 reflectDir = reflect( ray.direction, normal );
-    nextDirection   = reflectDir + mat.roughness * cosineHemisphereSampling( ray.seed, pdf, normal );
-    ray.reflective  = true;
-  }
-  // @todo Resulting background color is inverted for any 2D surface
-  // Dielectric reflection ( Peter Shirley's "Ray Tracing in one Weekend" Chapter 9 )
-  else if ( mat.illum == 1 )
-  {
-    // Flip the normal if ray is transmitted
-    vec3 temp = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT ? -normal : normal;
+    vec3 bsdf = baseColor;
+    float pdf = 0;
+    vec3 weight = vec3(0.);
 
-    float dot_   = dot( ray.direction, normal );
-    float cosine = dot_ > 0 ? mat.ior * dot_ : -dot_;
-    float ior    = dot_ > 0 ? mat.ior : 1 / mat.ior;
+    vec3 L = vec3(0);
+    vec3 V = ray.direction;
 
-    vec3 refracted    = refract( ray.direction, temp, ior );
-    float reflectProb = refracted != vec3( 0.0 ) ? Schlick( cosine, mat.ior ) : 1.0;
+    vec3 diffuseColor  = diffuse_weight * baseColor;
+    vec3 specularColor = specular_weight * (baseColor * mat.metallic
+                       + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - mat.metallic));
 
-    if ( rnd( ray.seed ) < reflectProb )
-    {
-      nextDirection = reflect( ray.direction, normal ) + mat.roughness * cosineHemisphereSampling( ray.seed, pdf, normal );
-      ray.reflective  = true;
+    float diffuseLum   = length(diffuseColor);
+    float specularLum  = length(specularColor);
+
+    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
+//    float probDiffuse  = clamp(1 - mat.specular, 0, 1);
+//    float probDiffuse  = 0.5;
+    bool chooseDiffuse = rnd(ray.seed) < probDiffuse;
+
+    // Diffuse (Lambertian)
+    if (chooseDiffuse) {
+      L = cosineHemisphereSampling(ray.seed, pdf, N);
+
+      float NdotL = dot(N, L);
+
+      bsdf   = diffuseColor * NdotL;
+      weight = bsdf / pdf;
     }
-    else
-    {
-      nextDirection  = refracted;
-      ray.refractive = true;
+
+    // Specular
+    if (!chooseDiffuse) {
+      V = normalize(-V);
+      float NdotV = dot(N, V);
+
+      if (NdotV > 0) {
+        NdotV = max(NdotV, 0.00005);
+        ray.reflective = true;
+        vec3 H = sampleGGX(ray.seed, a2, N);
+
+        // TODO: the following is incorrect, check this
+        float HdotV = dot(H, V);
+        L = normalize(2.f * HdotV * H - V);
+        float NdotL = dot(N, L);
+        float NdotH = dot(N, H);
+        float LdotH = dot(L, H);
+
+        float D = ggxNormalDistribution(NdotH, a2);
+//        float G = schlickMaskingTerm(NdotL, NdotV, a2);
+        float G = GeometricShadowing(NdotL, NdotV, a2);
+        vec3  F = schlickFresnel(specularColor, LdotH);
+        vec3  ggxTerm = D * G * F / (4 * NdotL * NdotV);
+        float ggxProb = D * NdotH / (4 * LdotH);
+
+        bsdf        = specularColor * NdotL;
+//              pdf         = D * NdotH / (4 * HdotV);    // This should be correct?
+              pdf         = 1 / M_PI;
+
+//        weight = specularColor * NdotL * ggxTerm / ggxProb;
+//        weight = specularColor * G * F * LdotH / (NdotV * NdotH);
+//        weight = G * F * LdotH / (NdotV * NdotH);
+//        weight = specularColor;
+        weight = bsdf / pdf;
+//        weight = D * G * F * LdotH / (4 * HdotV * NdotV * pdf);
+      }
     }
+
+    traceShadowRay(mat, diffuseColor, specularColor, worldPos, N);
+
+    ray.origin    = worldPos;
+    ray.direction = L;
+    ray.emission  = vec3(0.0);
+    ray.weight    = weight;
   }
-  // Lambertian reflection
-  else if ( mat.illum == 0 )
-  {
-    nextDirection = cosineHemisphereSampling( ray.seed, pdf, normal );
-    cosTheta      = dot( nextDirection, normal ); // The steeper the incident direction to the surface is the more important the sample gets
-    new_bsdf *= cosTheta;
-  }
-
-  // Add specular highlight
-  if ( mat.emission.w > 0.0 && mat.illum != 0 )
-  {
-    vec3 reflectDir = reflect( ray.direction, normal );
-    float spec      = pow( max( dot( normalize( cam.position.xyz - worldPos ), reflectDir ), 0.0 ), mat.emission.w );
-    if ( spec > 0.0 )
-    {
-      new_bsdf = ( reflectance + clamp( spec, 0, 1 ) ) / M_PI;
-    }
-  }
-
-  //pdf = 1 / ( 1.5 * M_PI ); // the smaller the higher the contribution
-
-  nextEventEstimation( emission, mat, base_bsdf, worldPos, normal );
-
-  ray.origin    = rayOrigin;
-  ray.direction = nextDirection;
-  ray.emission  = emission;
-  ray.weight    = new_bsdf / pdf; // divide reflectance by PDF
 }

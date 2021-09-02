@@ -9,15 +9,17 @@
 #include <assimp/scene.h>
 
 namespace kuafu {
-bool operator==(const Material &m1, const Material &m2) {
-    return (m1.kd == m2.kd) &&
-           (m1.emission == m2.emission) &&
+bool operator==(const NiceMaterial &m1, const NiceMaterial &m2) {
+    return (m1.diffuseColor == m2.diffuseColor) &&
+           (m1.alpha == m2.alpha) &&
            (m1.diffuseTexPath == m2.diffuseTexPath) &&
-           (m1.illum == m2.illum) &&
-           (m1.d == m2.d) &&
-           (m1.shininess == m2.shininess) &&
+           (m1.transmission == m2.transmission) &&
+           (m1.metallic == m2.metallic) &&
+           (m1.specular == m2.specular) &&
+           (m1.roughness == m2.roughness) &&
            (m1.ior == m2.ior) &&
-           (m1.roughness == m2.roughness);
+           (m1.emission == m2.emission) &&
+           (m1.emissionStrength == m2.emissionStrength);
 }
 
 std::vector<std::shared_ptr<Geometry> > loadScene(
@@ -46,27 +48,27 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
 //    const uint32_t MIP_LEVEL = 3;
 
     std::vector<std::shared_ptr<Geometry>> geometries;
-    std::vector<Material> materials;
+    std::vector<NiceMaterial> materials;
 
     for (uint32_t mat_idx = 0; mat_idx < scene->mNumMaterials; ++mat_idx) {
         auto *m = scene->mMaterials[mat_idx];
-        aiColor3D diffuse{0, 0, 0};
-        aiColor3D specular{0, 0, 0};
-        aiColor3D emission{0, 0, 0};
+        aiColor3D diffuseColor{0, 0, 0};
+        aiColor3D specularColor{0, 0, 0};
+        aiColor3D emissionColor{0, 0, 0};
         float alpha = 1.f;
         float shininess = 0.f;
         float ior = 0.f;
         float transmission = 0.f;
-        uint32_t illum = 2;
-        ai_int shadingModel;
         m->Get(AI_MATKEY_OPACITY, alpha);
-        m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse);
-        m->Get(AI_MATKEY_COLOR_SPECULAR, specular);
-        m->Get(AI_MATKEY_SHININESS, shininess);         // TODO: strength
-        m->Get(AI_MATKEY_COLOR_EMISSIVE, emission);
+        m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+        m->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+        m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);  // TODO: strengh?
+
+        float specular = (specularColor.r + specularColor.g + specularColor.b) / 3;      // TODO
+
+        m->Get(AI_MATKEY_SHININESS, shininess);
         m->Get(AI_MATKEY_REFRACTI, ior);
-//      m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION, transmission); // TODO: full glTF
-        m->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
+//        m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION, transmission); // TODO: full glTF
 
         if (alpha < 1e-5 && (fname.ends_with("dae") ||    // TODO: dAE?
                              fname.ends_with("DAE"))) {
@@ -76,7 +78,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
             alpha = 1.f;
         }
 
-        float roughness;
+        float roughness;                           // TODO
         if (shininess <= 5.f)
             roughness = 1.f;
         else if (shininess >= 1605.f)
@@ -84,11 +86,6 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         else
             roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
 
-        if (shadingModel == aiShadingMode_NoShading || shadingModel == aiShadingMode_Flat)
-            illum = 0;
-
-        if (transmission > 0)
-            illum = 1;
 
 //      std::shared_ptr<SVTexture> baseColorTexture{};
 //      std::shared_ptr<SVTexture> normalTexture{};
@@ -129,14 +126,16 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         }
 
         materials.push_back({
-                                    .kd = {diffuse.r, diffuse.g, diffuse.b},
+                                    .diffuseColor = {diffuseColor.r, diffuseColor.g, diffuseColor.b},
+                                    .alpha = alpha,
                                     .diffuseTexPath = std::move(diffuseTexPath),
-                                    .emission = {5 * emission.r, 5 * emission.g, 5 * emission.b},  // TODO: strength
-                                    .illum = illum,
-                                    .d = alpha,
-                                    .shininess = shininess,
+                                    .metallic = 0.0,                                                 // TODO
+                                    .specular = specular,                                            // TODO
                                     .roughness = roughness,
                                     .ior = ior,
+                                    .transmission = 0.0,                                             // TODO
+                                    .emission = {emissionColor.r, emissionColor.g, emissionColor.b},
+                                    .emissionStrength = 1.,                                           // TODO: strength
                             });
     }
 
@@ -213,7 +212,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         geometry->initialized = false;
         geometry->matIndex = std::vector<uint32_t>(
                 indices.size() / 3, matLocal2GlobalIdx[mesh->mMaterialIndex]);
-        geometry->isOpaque = global::materials[geometry->matIndex.front()].d >= 1.F;
+        geometry->isOpaque = global::materials[geometry->matIndex.front()].alpha >= 1.F;
 
         // Add to ret
         geometries.push_back(std::move(geometry));
@@ -224,16 +223,13 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
 
 
 std::shared_ptr<Geometry> loadObj(std::string_view path, bool dynamic) {
-    return loadScene(path, dynamic).front();
+    auto scene = loadScene(path, dynamic);
+    KF_ASSERT(scene.size() == 1, "complex scene! use loadScene");
+    return scene.front();
 }
 
-void Geometry::setMaterial(const Material &material) {
-    if (material.d < 1.0F) {
-        isOpaque = false;
-    } else {
-        isOpaque = true;
-    }
-
+void Geometry::setMaterial(const NiceMaterial &material) {
+    isOpaque = (material.alpha >= 1);
     global::materials.push_back(material);
     global::materialIndex++;
 
@@ -242,20 +238,19 @@ void Geometry::setMaterial(const Material &material) {
     }
 }
 
-std::shared_ptr<GeometryInstance> instance(std::shared_ptr<Geometry> geometry, const glm::mat4 &transform) {
+std::shared_ptr<GeometryInstance> instance(
+        const std::shared_ptr<Geometry>& geometry, const glm::mat4 &transform) {
     assert(geometry != nullptr);
 
     std::shared_ptr<GeometryInstance> result = std::make_shared<GeometryInstance>();
     result->geometryIndex = geometry->geometryIndex;
     result->transform = transform;
-    // result->transformIT                      = glm::transpose( glm::inverse( transform ) );
 
     return result;
 }
 
-void GeometryInstance::setTransform(const glm::mat4 &transform) {
-    this->transform = transform;
-    //transformIT     = glm::transpose( glm::inverse( transform ) );
+void GeometryInstance::setTransform(const glm::mat4 &t) {
+    this->transform = t;
 }
 
 // From optifuser by Fanbo
@@ -288,7 +283,7 @@ void Geometry::recalculateNormals() {
     }
 }
 
-std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<Material> mat) {
+std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<NiceMaterial> mat) {
     auto ret = std::make_shared<Geometry>();
     ret->vertices = {
             {.pos = {0, 1, 1}, .normal = {1, 0, 0}, .texCoord = {1, 0}},
@@ -310,11 +305,11 @@ std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<Material> 
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->d >= 1.0F);
+    ret->isOpaque = (mat->alpha >= 1.0F);
     return ret;
 }
 
-std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<Material> mat) {
+std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<NiceMaterial> mat) {
     auto ret = std::make_shared<Geometry>();
 
     ret->vertices = {
@@ -367,12 +362,12 @@ std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<Material> mat
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->d >= 1.0F);
+    ret->isOpaque = (mat->alpha >= 1.0F);
     return ret;
 }
 
 // Modified from optifuser by Fanbo
-std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<Material> mat) {
+std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<NiceMaterial> mat) {
     auto ret = std::make_shared<Geometry>();
 
     uint32_t stacks = 50;
@@ -429,7 +424,7 @@ std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<Material> m
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->d >= 1.0F);
+    ret->isOpaque = (mat->alpha >= 1.0F);
 
     ret->recalculateNormals();
 
@@ -439,7 +434,7 @@ std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<Material> m
 // Modified from svulkan2 by Fanbo
 // TODO: avoid copies
 std::shared_ptr<Geometry> createCapsule(
-        float halfLength, float radius, bool dynamic, std::shared_ptr<Material> mat) {
+        float halfLength, float radius, bool dynamic, std::shared_ptr<NiceMaterial> mat) {
     auto ret = std::make_shared<Geometry>();
 
     int segments = 32;
@@ -539,7 +534,7 @@ std::shared_ptr<Geometry> createCapsule(
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->d >= 1.0F);
+    ret->isOpaque = (mat->alpha >= 1.0F);
 
     return ret;
 }

@@ -37,7 +37,7 @@ std::shared_ptr<Geometry> triangle = nullptr; ///< A dummy triangle that will be
 std::shared_ptr<GeometryInstance> triangleInstance = nullptr;
 
 std::vector<GeometryInstanceSSBO> memAlignedGeometryInstances;
-std::vector<MaterialSSBO> memAlignedMaterials;
+std::vector<NiceMaterialSSBO> memAlignedMaterials;
 
 auto Scene::getGeometries() const -> const std::vector<std::shared_ptr<Geometry>> & {
     return mGeometries;
@@ -287,7 +287,7 @@ void Scene::prepareBuffers() {
     mGeometryInstancesBuffer.init(geometryInstances, global::maxResources);
 
     // @todo is this even necessary?
-    std::vector<MaterialSSBO> materials(pConfig->mMaxMaterials);
+    std::vector<NiceMaterialSSBO> materials(pConfig->mMaxMaterials);
     mMaterialBuffers.init(materials, global::maxResources);
 
     mVertexBuffers.resize(pConfig->mMaxGeometry);
@@ -331,7 +331,7 @@ void Scene::uploadCameraBuffer(uint32_t imageIndex) {
 
 void Scene::uploadDirectionalLightBuffer(uint32_t imageIndex) {
     if (pDirectionalLight) {
-        directionalLightUBO.direction = {glm::normalize(pDirectionalLight->direction), 0};
+        directionalLightUBO.direction = {glm::normalize(pDirectionalLight->direction), pDirectionalLight->softness};
         directionalLightUBO.rgbs = {pDirectionalLight->color, pDirectionalLight->strength};
     }
     mDirectionalLightUniformBuffer.upload(imageIndex, directionalLightUBO);
@@ -364,17 +364,21 @@ void Scene::uploadGeometries() {
     // Create all textures of a material
     for (size_t i = 0; i < global::materials.size(); ++i) {
         // Convert to memory aligned struct
-        MaterialSSBO mat2;
-        mat2.diffuse = glm::vec4(global::materials[i].kd, -1.0F);
-        mat2.emission = glm::vec4(global::materials[i].emission, global::materials[i].shininess);
-        mat2.dissolve = global::materials[i].d;
-        mat2.ior = global::materials[i].ior;
-        mat2.illum = global::materials[i].illum;
-        mat2.roughness = global::materials[i].roughness;
+        NiceMaterialSSBO mat2 {
+                .diffuse = {global::materials[i].diffuseColor, 0},
+                .emission = {global::materials[i].emission, global::materials[i].emissionStrength},
+                .alpha = global::materials[i].alpha,
+                .metallic = global::materials[i].metallic,
+                .specular = global::materials[i].specular,
+                .roughness = global::materials[i].roughness,
+                .ior = global::materials[i].ior,
+                .transmission = global::materials[i].transmission
+        };
 
         // Set up texture
         if (!global::materials[i].diffuseTexPath.empty()) {
-            mat2.diffuse.w = static_cast<float>( global::textureIndex );
+            mat2.texIdx = global::textureIndex;
+            mat2.diffuse.w = 1;
 
             auto texture = std::make_shared<vkCore::Texture>();
             texture->init(global::materials[i].diffuseTexPath);
@@ -466,7 +470,7 @@ void Scene::addDummy() {
     triangle->path = "Custom Dummy Triangle";
     triangle->dynamic = true;
 
-    Material mat;
+    NiceMaterial mat;
     triangle->setMaterial(mat);
 
     auto camPos = mCurrentCamera->getPosition();

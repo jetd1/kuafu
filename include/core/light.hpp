@@ -8,6 +8,7 @@ struct DirectionalLight {
     glm::vec3 direction = {0, 0, -1};
     glm::vec3 color = {1, 1, 1};
     float strength = 10.0;     // Don't know the physical meaning just a factor :P
+    float softness = 0.0;      // Don't know the physical meaning just a factor :P
 };
 
 struct PointLight {
@@ -22,7 +23,7 @@ struct Spotlight {
 };
 
 struct DirectionalLightUBO {
-    glm::vec4 direction;    // direction + padding1
+    glm::vec4 direction;    // direction + softness
     glm::vec4 rgbs;         // rgb + strength
 };
 

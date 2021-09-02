@@ -7,10 +7,8 @@
 class CustomWindow : public kuafu::Window {
 public:
     CustomWindow(int width, int height, const char *title, uint32_t flags
-//                 , kuafu::Scene *scene
-                 ) :
-            kuafu::Window(width, height, title, flags)
-//            , _scene(scene)
+                 , std::shared_ptr<kuafu::Camera> camera):
+            kuafu::Window(width, height, title, flags), pCamera(camera)
             { }
 
     auto init() -> bool override {
@@ -19,6 +17,7 @@ public:
         }
 
         SDL_SetRelativeMouseMode(SDL_FALSE);
+//        SDL_SetRelativeMouseMode(SDL_TRUE);
         return true;
     }
 
@@ -159,7 +158,7 @@ public:
                         int x;
                         int y;
                         SDL_GetRelativeMouseState(&x, &y);
-//                        _scene->getCamera()->processMouse(x, -y);
+                        pCamera->processMouse(x, -y);
                         break;
                     }
                 }
@@ -170,7 +169,7 @@ public:
     }
 
 private:
-//    kuafu::Scene *_scene;
+    std::shared_ptr<kuafu::Camera> pCamera;
     bool _mouseVisible = true;
 };
 

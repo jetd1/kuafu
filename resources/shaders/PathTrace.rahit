@@ -37,11 +37,11 @@ void main( )
   Material mat  = materials.m[matIndex];
 
   // Transparency
-  if ( mat.d == 0.0 )
+  if ( mat.alpha == 0.0 )
   {
     ignoreIntersectionEXT;
   }
-  else if ( rnd( ray.seed ) > mat.d )
+  else if ( rnd( ray.seed ) > mat.alpha )
   {
     ignoreIntersectionEXT;
   }
