@@ -11,7 +11,7 @@ int main() {
     config->setAssetsPath("../resources");
     config->setPerPixelSampleRate(128);
     config->setPathDepth(12);
-//    config->setRussianRoulette(false);
+    config->setRussianRoulette(false);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
@@ -23,7 +23,7 @@ int main() {
 
 //    auto &scene = renderer.getScene();
 
-    loadScene(&renderer, Level::eNew);
+    loadScene(&renderer, Level::eCornell);
 
     while (renderer.isRunning()) {
 //        updateScene(&renderer);

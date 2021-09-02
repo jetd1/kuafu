@@ -103,7 +103,7 @@ void traceShadowRay( in Material mat, in vec3 diffuseColor, in vec3 specularColo
   // trace shadow ray
   // Tracing shadow ray only if the light is visible from the surface
   vec3 L = -dlight.direction.xyz;
-  vec3 V = -ray.direction;
+  vec3 V = normalize(-ray.direction);
   ray.shadow_color = vec3(0);
 
   if (dlight.direction.w != 0) {
@@ -122,67 +122,46 @@ void traceShadowRay( in Material mat, in vec3 diffuseColor, in vec3 specularColo
     isShadowed = true;
 
     traceRayEXT(topLevelAS, // acceleration structure
-    flags, // rayFlags
-    0xFF, // cullMask
-    0, // sbtRecordOffset
-    0, // sbtRecordStride
-    1, // missIndex
-    worldPos, // ray origin
-    tMin, // ray min range
-    L, // ray direction
-    lightDistance, // ray max range
-    1// payload (location = 1)
+                flags, // rayFlags
+                0xFF, // cullMask
+                0, // sbtRecordOffset
+                0, // sbtRecordStride
+                1, // missIndex
+                worldPos, // ray origin
+                tMin, // ray min range
+                L, // ray direction
+                lightDistance, // ray max range
+                1// payload (location = 1)
     );
 
     if (!isShadowed) {
 
-      float a2 =  mat.roughness * mat.roughness;
-      vec3 H      = normalize(L + V);
+      float a2    = mat.roughness * mat.roughness;
+      vec3  H     = normalize(L + V);
       float NdotH = dot(N, H);
       float HdotV = dot(H, V);
-      float NdotV = dot(N, V);
-      NdotV = max(0.0005, NdotV);
+      float NdotV = max(dot(N, V), 1e-6);
       float LdotH = dot(L, H);
       float D     = ggxNormalDistribution(NdotH, a2);
-//      float G     = schlickMaskingTerm(NdotL, NdotV, a2);
       float G     = GeometricShadowing(NdotL, NdotV, a2);
       vec3  F     = schlickFresnel(specularColor, LdotH);
-      vec3  ggxTerm = D * G * F / (4 * NdotL * NdotV);
-      float ggxProb = D * NdotH / (4 * LdotH);
 
       float diffuseLum   = length(diffuseColor);
       float specularLum  = length(specularColor);
 
-      float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
-      //      float probDiffuse  = 1 - mat.specular;
+//      float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
+      float probDiffuse  = 1.0;
 
-            vec3 diffuseWeight  = diffuseColor * NdotL;
-      //      vec3 specularWeight = specularColor * NdotL;
-      //      vec3 diffuseWeight  = vec3(NdotL);
-//      vec3 diffuseWeight  = vec3(NdotL);
-      //      vec3 specularWeight = vec3(NdotL * D * M_PI / NdotH);
-      //      vec3 specularWeight = ggxTerm * NdotL / (M_PI * ggxProb);
-      //      vec3 specularWeight = G * F * LdotH / (M_PI * NdotH * NdotV);
-      //      vec3 specularWeight = vec3(1);
+      vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
+      vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
 
-      //      vec3 specularWeight = vec3(NdotL * NdotH * M_PI);
-      //      if (G  / (M_PI * NdotH * NdotV) < 0)
-      //        specularWeight = vec3(0);
-      //      vec3 specularWeight  = vec3(NdotL);
-      //      float pdf = D * NdotH / (4 * HdotV);
-      //      vec3 specularWeight  = pdf * G * F * LdotH / (NdotV * NdotH);
-      vec3 specularWeight  = D * G * F * LdotH / (4 * HdotV * NdotV);
-//            vec3 specularWeight  = G * F * LdotH / (4 * HdotV * NdotV);
-      //      vec3 specularWeight  = vec3(0);
-
-      vec3 weight = diffuseWeight * probDiffuse + specularWeight * (1 - probDiffuse);
-      //      if (weight.x > 1) weight = vec3(10.0);
+      vec3 weight = rnd(ray.seed) < probDiffuse ?
+                    diffuseWeight * probDiffuse
+                  : specularWeight * (1 - probDiffuse);
 
       ray.shadow_color = dlight.rgbs.xyz * dlight.rgbs.w * weight;
     }
   }
-
-//  ray.shadow_color += clearColor.xyz * clearColor.w * 0.1;    // TODO: we may want this
 }
 
 // By Jet <i@jetd.me>, 2021.
@@ -219,8 +198,12 @@ void main( )
     float pdf = 0;
     vec3 weight = vec3(0.);
 
+    vec3 V = normalize(-ray.direction);
+    bool isInside = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT;
+    N = isInside ? -N : N;
     vec3 L = vec3(0);
-    vec3 V = ray.direction;
+
+    float NdotV = dot(N, V);
 
     vec3 diffuseColor  = diffuse_weight * baseColor;
     vec3 specularColor = specular_weight * (baseColor * mat.metallic
@@ -229,55 +212,77 @@ void main( )
     float diffuseLum   = length(diffuseColor);
     float specularLum  = length(specularColor);
 
-    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
-//    float probDiffuse  = clamp(1 - mat.specular, 0, 1);
-//    float probDiffuse  = 0.5;
+//    if (diffuseLum == 0 && specularLum == 0) {
+//
+//    }
+
+//    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
+    float probDiffuse  = 1.0;   // TODO: improve this
     bool chooseDiffuse = rnd(ray.seed) < probDiffuse;
 
     // Diffuse (Lambertian)
     if (chooseDiffuse) {
       L = cosineHemisphereSampling(ray.seed, pdf, N);
-
-      float NdotL = dot(N, L);
-
-      bsdf   = diffuseColor * NdotL;
-      weight = bsdf / pdf;
+      float NdotL = clamp(dot(N, L), 0, 1);
+      weight = diffuseColor * NdotL * M_PI  / probDiffuse;
     }
 
     // Specular
     if (!chooseDiffuse) {
-      V = normalize(-V);
-      float NdotV = dot(N, V);
+      bool refracted = false;
 
-      if (NdotV > 0) {
-        NdotV = max(NdotV, 0.00005);
-        ray.reflective = true;
+//      bool tryTransmit = rnd(ray.seed) < final_transmission;
+      bool tryTransmit = false;
+
+      // Transmission ?
+      if (tryTransmit) {
+        // Flip the normal if ray is transmitted
+        vec3 _N = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT ? -N : N;
+
+        float cosine = NdotV > 0 ? mat.ior * NdotV : -NdotV;
+        float ior    = NdotV > 0 ? mat.ior : 1 / mat.ior;
+
+        vec3 refractedL   = refract( V, _N, ior );
+        float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( cosine, mat.ior ) : 1.0;
+
+        if (rnd(ray.seed) >= reflectProb) {
+          L  = refractedL;
+          ray.refractive = true;
+          refracted = true;
+          float NdotL = dot(_N, L);
+
+          // TODO: the following is incorrect, check
+//          bsdf        = specularColor * NdotL;
+//          bsdf        = specularColor;
+//          bsdf        = baseColor * NdotL;
+          bsdf        = baseColor;
+          pdf         = 1 / M_PI;
+          weight = bsdf / pdf;
+        }
+      }
+
+      if (!refracted) {
         vec3 H = sampleGGX(ray.seed, a2, N);
-
-        // TODO: the following is incorrect, check this
         float HdotV = dot(H, V);
-        L = normalize(2.f * HdotV * H - V);
-        float NdotL = dot(N, L);
-        float NdotH = dot(N, H);
-        float LdotH = dot(L, H);
+        L = 2 * HdotV * H - V;
 
-        float D = ggxNormalDistribution(NdotH, a2);
-//        float G = schlickMaskingTerm(NdotL, NdotV, a2);
-        float G = GeometricShadowing(NdotL, NdotV, a2);
-        vec3  F = schlickFresnel(specularColor, LdotH);
-        vec3  ggxTerm = D * G * F / (4 * NdotL * NdotV);
-        float ggxProb = D * NdotH / (4 * LdotH);
+        float k = a2 / 2;
+        float NoV = max(dot(N, V), 1e-7);
+        float NoL = dot(N, L);
+        float NoH = max(dot(N, H), 1e-7);
+        float VoH = max(dot(V, H), 1e-7);
 
-        bsdf        = specularColor * NdotL;
-//              pdf         = D * NdotH / (4 * HdotV);    // This should be correct?
-              pdf         = 1 / M_PI;
-
-//        weight = specularColor * NdotL * ggxTerm / ggxProb;
-//        weight = specularColor * G * F * LdotH / (NdotV * NdotH);
-//        weight = G * F * LdotH / (NdotV * NdotH);
-//        weight = specularColor;
-        weight = bsdf / pdf;
-//        weight = D * G * F * LdotH / (4 * HdotV * NdotV * pdf);
+        if(NoL >= 0) {
+          ray.reflective = true;
+          float G = GeometricShadowing(NoV, NoL, a2);
+          vec3 F = schlickFresnel(specularColor, VoH);
+          weight = M_PI * F * G * VoH / (NoH * NoV * (1 - probDiffuse));
+//          weight = M_PI * specularColor;
+        }
+        else {
+//          weight = specularColor;
+          weight = vec3(0);
+        }
       }
     }
 

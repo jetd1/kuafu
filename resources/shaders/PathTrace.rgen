@@ -129,28 +129,6 @@ void main( )
       if (ray.depth > 0) {
         ray.type = 2;
       }
-//      // trace shadow ray
-//      if ( ray.depth == 1 )
-//      {
-//        shadowRay = ray;
-//        shadowRay.type = 1;
-//        shadowRay.direction = -dlight.direction.xyz;
-//
-//        traceRayEXT( topLevelAS,          // acceleration structure
-//                     rayFlags,            // rayFlags
-//                     0xFF,                // cullMask
-//                     0,                   // sbtRecordOffset
-//                     0,                   // sbtRecordStride
-//                     0,                   // missIndex
-//                     shadowRay.origin,    // ray origin
-//                     tMin,                // ray min range
-//                     shadowRay.direction, // ray direction
-//                     tMax,                // ray max range
-//                     2 );                 // payload (location = 2)
-//
-//        shadowRay.depth = maxPathDepth + 1;
-//      }
-//
 
       // TODO: kuafu_urgent: Push Constant
       // refractive rays are allowed to bounce more time to have the all effects at lower sample rates
@@ -182,6 +160,9 @@ void main( )
       weight *= ray.weight;
       color += ray.shadow_color * weight;
       ray.shadow_color = vec3(0.);
+
+      if (weight == vec3(0.))
+        break;
 
       // Russian roulette
       // Randomly terminate a path with a probability inversely equal to the throughput

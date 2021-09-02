@@ -106,7 +106,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
 //        renderer->getConfig().setClearColor(glm::vec4(0.45F, 0.45F, 0.45F, 0.8F));
 //        renderer->getConfig().setClearColor(glm::vec4(0.6F, 0.6F, 0.5F, 1.0F));
-        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.0F));
+        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.2F));
         renderer->getConfig().setAccumulatingFrames(true);
 
         renderer->getScene( ).getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
@@ -183,8 +183,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
         renderer->getConfig().setAccumulatingFrames(false);
-        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
-//        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.2));
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.2));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
@@ -193,16 +192,9 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         dLight->direction ={1, 1, -1};
 //        dLight->direction ={1., 0.1, -0.5};
         dLight->color = {1., 1., 1.};
-        dLight->strength = 3;
+        dLight->strength = 2;
         dLight->softness = 0.05;
         renderer->getScene().setDirectionalLight(dLight);
-
-////        auto lightPlane = kuafu::loadObj("models/plane.obj");
-//        auto lightMaterial = std::make_shared<kuafu::NiceMaterial>();
-//        lightMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
-//        lightMaterial->diffuseColor = glm::vec3(1.0, 0.2, 0.2);
-////        lightPlane->setMaterial(lightMaterial);
-//        auto lightPlane = kuafu::createYZPlane(true, lightMaterial);
 
         auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
 //        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
@@ -214,37 +206,39 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
         auto mat = std::make_shared<kuafu::NiceMaterial>();
-        mat->diffuseColor = glm::vec3(0.875, 0.553, 0.221);
+        mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
         mat->specular = 0.0F;
-        mat->roughness = 0.2F;
         mat->metallic = 1.0F;
+//        mat->metallic = 0.0F;
+        mat->roughness = 0.07F;
+        mat->ior = 1.4F;
+        mat->alpha = 1.0F;
+        mat->transmission = 0.0F;
+//        mat->transmission = 1.0F;
         auto sphere = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.875, 0.553, 0.221);
-        mat->specular = 0.5F;
-        mat->roughness = 0.25;
-        mat->metallic = 0.5F;
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.2F;
+        mat->transmission = 0.0F;
         auto sphere1 = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.875, 0.553, 0.221);
-        mat->specular = 0.5F;
-        mat->roughness = 0.50F;
-        mat->metallic = 0.5F;
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.4F;
         auto sphere2 = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.875, 0.553, 0.221);
-        mat->specular = 0.5F;
-        mat->roughness = 0.75F;
-        mat->metallic = 0.5F;
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.6F;
         auto sphere3 = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.875, 0.553, 0.221);
-        mat->specular = 0.5F;
-        mat->roughness = 0.9F;
-        mat->metallic = 0.5F;
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.8F;
         auto sphere4 = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(1.0, 1.0, 1.0);
+        mat->diffuseColor = glm::vec3(1);
         mat->specular = 1.0F;
         mat->roughness = 0.0F;
         mat->metallic = 1.0F;
