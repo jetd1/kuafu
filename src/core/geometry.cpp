@@ -58,7 +58,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         float alpha = 1.f;
         float shininess = 0.f;
         float ior = 0.f;
-        float transmission = 0.f;
+//        float transmission = 0.f;
         m->Get(AI_MATKEY_OPACITY, alpha);
         m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
         m->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
@@ -97,7 +97,8 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         if (m->GetTextureCount(aiTextureType_DIFFUSE) > 0 &&
             m->GetTexture(aiTextureType_DIFFUSE, 0, &tpath) == AI_SUCCESS) {
             KF_INFO("Trying to load texture {}", tpath.C_Str());
-            if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {
+//            if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {
+            if (scene->GetEmbeddedTexture(tpath.C_Str())) {
                 KF_ERROR("embedded texture not supported");
             } else {
                 std::string p = std::string(tpath.C_Str());

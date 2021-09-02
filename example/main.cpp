@@ -4,8 +4,8 @@
 #include "core/context/global.hpp"
 
 int main() {
-    const int width = 640;
-    const int height = 640;
+    const int width = 800;
+    const int height = 600;
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");

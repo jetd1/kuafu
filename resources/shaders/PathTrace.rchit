@@ -296,7 +296,8 @@ void main( )
         float ior = isInside ? 1 / f : f;
         float _dot = isInside ? NdotV * ior: NdotV;
 
-        vec3 refractedL  = refract(-V, N, 1 / ior);
+        vec3 refractedL  = refract(-V, N, 1 / f);                      // TODO: check if this
+//        vec3 refractedL  = refract(-V, N, 1 / ior);                  //  or this is correct
         float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( _dot, mat.ior ) : 1.0;
         //        float reflectProb = 0;
 
