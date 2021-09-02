@@ -6,7 +6,6 @@
 #include "base/PushConstants.glsl"
 #include "base/Ray.glsl"
 #include "base/Sampling.glsl"
-#include "base/DirectionalLight.glsl"
 
 layout( location = 0 ) rayPayloadEXT RayPayLoad ray;
 layout( location = 1 ) rayPayloadEXT bool isShadowed;

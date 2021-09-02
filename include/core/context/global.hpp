@@ -34,6 +34,7 @@ extern uint32_t geometryIndex;
 extern uint32_t materialIndex;
 extern uint32_t textureIndex;
 const size_t maxResources = 2;
+const size_t maxPointLights = 4;
 extern std::vector<NiceMaterial> materials;
 
 namespace keys {

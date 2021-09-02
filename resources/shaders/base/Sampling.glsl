@@ -69,10 +69,8 @@ vec3 cosineHemisphereSampling3( inout uint seed, inout float pdf, in vec3 normal
   return dir;
 }
 
-vec3 uniformSphereSampling( inout uint seed, inout float pdf, in vec3 normal )
+vec3 uniformSphereSampling( inout uint seed )
 {
-  pdf = 1.0 / ( 2.0 * M_PI ); // is it though?
-
   vec3 inUnitSphere = vec3( 0.0 );
   do
   {
@@ -85,11 +83,9 @@ vec3 uniformSphereSampling( inout uint seed, inout float pdf, in vec3 normal )
 }
 
 // A rejection method ( "Ray Tracing in one Weekend" p. 22)
-vec3 uniformHemisphereSampling( inout uint seed, inout float pdf, in vec3 normal )
+vec3 uniformHemisphereSampling( inout uint seed, in vec3 normal )
 {
-  vec3 inUnitSphere = uniformSphereSampling( seed, pdf, normal );
-
-  pdf = 1.0 / M_PI; // is it though?
+  vec3 inUnitSphere = uniformSphereSampling( seed );
 
   // In the same hemisphere as the normal
   if ( dot( inUnitSphere, normal ) > 0.0 )

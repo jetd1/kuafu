@@ -124,13 +124,13 @@ void Camera::processMouse(float xOffset, float yOffset) {
 
     auto tmp = urot * glm::vec4(mDirFront, 0);
     mDirFront = {tmp[0], tmp[1],tmp[2]};
-    std::cout << tmp[0] << tmp[1] << tmp[2] << std::endl;
+//    std::cout << tmp[0] << tmp[1] << tmp[2] << std::endl;
 
     tmp = rrot * glm::vec4(mDirFront, 0);
-    mDirFront = {tmp[0], tmp[1],tmp[2]};
+//    mDirFront = {tmp[0], tmp[1],tmp[2]};
 
     tmp = rrot * glm::vec4(mDirUp, 0);
-    mDirUp = {tmp[0], tmp[1],tmp[2]};
+//    mDirUp = {tmp[0], tmp[1],tmp[2]};
 
     mViewNeedsUpdate = true;
     global::frameCount = -1;

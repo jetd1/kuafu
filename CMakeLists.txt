@@ -39,7 +39,5 @@ add_library(kuafu SHARED ${RENDERER_SRC})
 target_link_libraries(kuafu vulkan assimp ktx SDL2)
 target_precompile_headers(kuafu PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp")
 
-add_compile_definitions(KF_ASSETS_PATH="${PROJECT_SOURCE_DIR}/assets/")
-#add_compile_definitions(KF_PATH_TO_LIBRARY="${PROJECT_SOURCE_DIR}/build/bin/${BUILD_PATH}/")
 add_compile_definitions(KF_GLSLC_PATH="/usr/bin/glslc")
 include(${PROJECT_SOURCE_DIR}/example/CMakeLists.txt)

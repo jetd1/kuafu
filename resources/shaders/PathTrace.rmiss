@@ -2,7 +2,6 @@
 #extension GL_EXT_ray_tracing : require
 
 #include "base/Ray.glsl"
-#include "base/DirectionalLight.glsl"
 #include "base/PushConstants.glsl"
 
 layout( location = 0 ) rayPayloadInEXT RayPayLoad ray;

@@ -126,10 +126,19 @@ public:
 
     inline void setDirectionalLight(std::shared_ptr<DirectionalLight> light) { pDirectionalLight = light; };
 
+    inline void addPointLight(const std::shared_ptr<PointLight>& light) {
+        if (pPointLights.size() >= global::maxPointLights)
+            KF_WARN("Reached max point light number. The light will not be added!");
+        else
+            pPointLights.push_back(light);
+    };
+
+    inline void removePointLight(const std::shared_ptr<PointLight>& light) { throw std::runtime_error("not implemented"); };
+
 private:
     void initSceneDescriptorSets();
 
-    void initGeoemtryDescriptorSets();
+    void initGeometryDescriptorSets();
 
     void prepareBuffers();
 
@@ -137,7 +146,7 @@ private:
 
     void uploadCameraBuffer(uint32_t imageIndex);
 
-    void uploadDirectionalLightBuffer(uint32_t imageIndex);
+    void uploadLightBuffers(uint32_t imageIndex);
 
     void uploadEnvironmentMap();
 
@@ -181,6 +190,9 @@ private:
 
     std::shared_ptr<DirectionalLight> pDirectionalLight;
     vkCore::UniformBuffer<DirectionalLightUBO> mDirectionalLightUniformBuffer;
+
+    std::vector<std::shared_ptr<PointLight>> pPointLights;
+    vkCore::UniformBuffer<PointLightsUBO> mPointLightsUniformBuffer;
 
     std::string mEnvironmentMapTexturePath;
     bool mUseEnvironmentMap = false;

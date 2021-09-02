@@ -32,6 +32,7 @@
 namespace kuafu {
 CameraUBO cameraUBO;
 DirectionalLightUBO directionalLightUBO;
+PointLightsUBO pointLightsUBO;
 
 std::shared_ptr<Geometry> triangle = nullptr; ///< A dummy triangle that will be placed in the scene if it empty. This assures the AS creation.
 std::shared_ptr<GeometryInstance> triangleInstance = nullptr;
@@ -297,12 +298,13 @@ void Scene::prepareBuffers() {
 
     mCameraUniformBuffer.init();
     mDirectionalLightUniformBuffer.init();
+    mPointLightsUniformBuffer.init();
 }
 
 
 void Scene::uploadUniformBuffers(uint32_t imageIndex) {
     uploadCameraBuffer(imageIndex);
-    uploadDirectionalLightBuffer(imageIndex);
+    uploadLightBuffers(imageIndex);
 }
 
 void Scene::uploadCameraBuffer(uint32_t imageIndex) {
@@ -329,12 +331,22 @@ void Scene::uploadCameraBuffer(uint32_t imageIndex) {
     mCameraUniformBuffer.upload(imageIndex, cameraUBO);
 }
 
-void Scene::uploadDirectionalLightBuffer(uint32_t imageIndex) {
+void Scene::uploadLightBuffers(uint32_t imageIndex) {
     if (pDirectionalLight) {
         directionalLightUBO.direction = {glm::normalize(pDirectionalLight->direction), pDirectionalLight->softness};
         directionalLightUBO.rgbs = {pDirectionalLight->color, pDirectionalLight->strength};
     }
     mDirectionalLightUniformBuffer.upload(imageIndex, directionalLightUBO);
+
+    for (size_t i = 0; i < global::maxPointLights; i++) {
+        if (i < pPointLights.size()) {
+            KF_ASSERT(pPointLights[i] != nullptr, "Invalid point light!");
+            pointLightsUBO.posr[i] = {pPointLights[i]->position, pPointLights[i]->radius};
+            pointLightsUBO.rgbs[i] = {pPointLights[i]->color, pPointLights[i]->strength};
+        } else
+            pointLightsUBO.rgbs[i][3] = 0.0;
+    }
+    mPointLightsUniformBuffer.upload(imageIndex, pointLightsUBO);
 }
 
 void Scene::uploadEnvironmentMap() {
@@ -506,17 +518,17 @@ void Scene::initSceneDescriptorSets() {
   mSceneDescriptors.bindings.add(2, vk::DescriptorType::eCombinedImageSampler, vk::ShaderStageFlagBits::eMissKHR);
 
     // Directional light uniform buffer
-    mSceneDescriptors.bindings.add(3, vk::DescriptorType::eUniformBuffer,
-                                     vk::ShaderStageFlagBits::eRaygenKHR
-                                   | vk::ShaderStageFlagBits::eClosestHitKHR
-                                   | vk::ShaderStageFlagBits::eMissKHR);
+    mSceneDescriptors.bindings.add(3, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eClosestHitKHR);
+
+    // Point lights uniform buffer
+    mSceneDescriptors.bindings.add(4, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eClosestHitKHR);
 
   mSceneDescriptors.layout = mSceneDescriptors.bindings.initLayoutUnique();
   mSceneDescriptors.pool = mSceneDescriptors.bindings.initPoolUnique(global::maxResources);
   mSceneDescriptorSets = vkCore::allocateDescriptorSets(mSceneDescriptors.pool.get(), mSceneDescriptors.layout.get());
 }
 
-void Scene::initGeoemtryDescriptorSets() {
+void Scene::initGeometryDescriptorSets() {
   mGeometryDescriptors.bindings.reset();
 
     // Vertex buffers
@@ -589,6 +601,8 @@ void Scene::updateSceneDescriptors() {
     mSceneDescriptors.bindings.write(mSceneDescriptorSets, 2, &environmentMapTextureInfo);
     mSceneDescriptors.bindings.writeArray(mSceneDescriptorSets, 3,
                                           mDirectionalLightUniformBuffer._bufferInfos.data());
+    mSceneDescriptors.bindings.writeArray(mSceneDescriptorSets, 4,
+                                          mPointLightsUniformBuffer._bufferInfos.data());
     mSceneDescriptors.bindings.update();
 }
 

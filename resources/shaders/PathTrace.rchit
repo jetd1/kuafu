@@ -4,7 +4,7 @@
 #extension GL_EXT_nonuniform_qualifier : enable
 
 #include "base/Camera.glsl"
-#include "base/DirectionalLight.glsl"
+#include "base/Light.glsl"
 #include "base/Geometry.glsl"
 #include "base/PushConstants.glsl"
 #include "base/Ray.glsl"
@@ -97,32 +97,95 @@ Material getShadingData( inout vec3 localNormal, inout vec3 worldNormal, inout v
   return materials.m[matIndex];
 }
 
+
 // By Jet <i@jetd.me>, 2021.
 // Implemented according to blender's PrincipledBSDF
 //
 // TODO: rewrite this using callable shader
-void traceShadowRay(in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor, in vec3 worldPos, in vec3 N )
-{
-  // trace shadow ray
-  // Tracing shadow ray only if the light is visible from the surface
-  vec3 L = -dlight.direction.xyz;
-  vec3 V = normalize(-ray.direction);
-  ray.shadow_color = vec3(0);
+vec3 calcDirectComtribution(
+    in vec3 L, in vec3 V, in vec3 N, in vec3 lightEmission,
+    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
 
-  if (dlight.direction.w != 0) {
-    vec3 perturb = vec3(rnd(ray.seed), rnd(ray.seed), rnd(ray.seed));
-    L = normalize(L + dlight.direction.w * perturb);
+  //      vec3 weight;
+  vec3 weight = vec3(0.);
+
+  if (transmissionColor != vec3(0.0)) {   // TODO: reconcile refrac and fancy spec
+    bool isInside = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT;
+    if (isInside) {                       // perfect refration
+      // so the light cannot have any direct contribution
+      // TODO: change to a better model
+      weight = vec3(0);
+
+    } else {                             // try to calc fancy spec (different from the indirect part!)
+      float NdotV = dot(N, V);
+      float f = max(mat.ior, 1e-5);
+      vec3 refractedL  = refract(-V, N, 1 / f);
+      float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( NdotV, f ) : 1.0;
+      //          float reflectProb = 1.0;
+
+      if (rnd(ray.seed) <= reflectProb) {                   // spec!
+
+        float a2    = mat.roughness * mat.roughness;
+        vec3  H     = normalize(L + V);
+        float NdotL = dot(N, L);
+        float NdotH = dot(N, H);
+        float HdotV = dot(H, V);
+        float NdotV = max(dot(N, V), 1e-6);
+        float LdotH = dot(L, H);
+        float D     = ggxNormalDistribution(NdotH, a2);
+        float G     = GeometricShadowing(NdotL, NdotV, a2);
+        vec3  F     = schlickFresnel(transmissionColor, LdotH);
+
+        weight = D * F * G * HdotV / NdotH * NdotV;
+
+      } else {                                              // refrac! no contribution!
+
+        weight = vec3(0);
+
+      }
+
+    }
+
+  } else {
+    float a2    = mat.roughness * mat.roughness;
+    vec3  H     = normalize(L + V);
+    float NdotL = dot(N, L);
+    float NdotH = dot(N, H);
+    float HdotV = dot(H, V);
+    float NdotV = max(dot(N, V), 1e-6);
+    float LdotH = dot(L, H);
+    float D     = ggxNormalDistribution(NdotH, a2);
+    float G     = GeometricShadowing(NdotL, NdotV, a2);
+    vec3  F     = schlickFresnel(specularColor, LdotH);
+
+    float diffuseLum   = length(diffuseColor);
+    float specularLum  = length(specularColor);
+
+    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
+
+    vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
+    vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
+
+    weight = rnd(ray.seed) < probDiffuse ? diffuseWeight * probDiffuse : specularWeight * (1 - probDiffuse);
   }
 
+  return lightEmission * weight;
+}
+
+// By Jet <i@jetd.me>, 2021.
+// Implemented according to blender's PrincipledBSDF
+//
+// TODO: rewrite this using callable shader
+vec3 traceShadowRay(in vec3 worldPos, in vec3 L, in vec3 V, in vec3 N, in float maxDist, in vec3 lightEmission,
+    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+  isShadowed = true;
   float NdotL = dot(N, L);
   if (NdotL > 0.0) {
     float tMin = 0.001;
-    float lightDistance = 100000.0;
 
     uint flags = gl_RayFlagsTerminateOnFirstHitEXT
     | gl_RayFlagsOpaqueEXT
     | gl_RayFlagsSkipClosestHitShaderEXT;
-    isShadowed = true;
 
     traceRayEXT(topLevelAS, // acceleration structure
                 flags, // rayFlags
@@ -133,76 +196,57 @@ void traceShadowRay(in Material mat, in vec3 diffuseColor, in vec3 specularColor
                 worldPos, // ray origin
                 tMin, // ray min range
                 L, // ray direction
-                lightDistance, // ray max range
+                maxDist, // ray max range
                 1// payload (location = 1)
     );
+  }
+  return isShadowed ? vec3(0) : calcDirectComtribution(L, V, N, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+}
 
-    if (!isShadowed) {
-//      vec3 weight;
-      vec3 weight = vec3(0.);
+vec3 traceDirectionalLight(
+    in vec3 worldPos, in vec3 N,
+    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+  vec3 L = -dlight.direction.xyz;
+  vec3 V = normalize(-ray.direction);
 
-      if (transmissionColor != vec3(0.0)) {   // TODO: reconcile refrac and fancy spec
-        bool isInside = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT;
-        if (isInside) {                       // perfect refration
-                                              // so the light cannot have any direct contribution
-                                              // TODO: change to a better model
-          weight = vec3(0);
+  if (dlight.direction.w != 0) {
+    vec3 perturb = vec3(rnd(ray.seed), rnd(ray.seed), rnd(ray.seed));
+    L = normalize(L + dlight.direction.w * perturb);
+  }
 
-        } else {                             // try to calc fancy spec (different from the indirect part!)
-          float NdotV = dot(N, V);
-          float f = max(mat.ior, 1e-5);
-          vec3 refractedL  = refract(-V, N, 1 / f);
-          float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( NdotV, f ) : 1.0;
-//          float reflectProb = 1.0;
+  float maxDist = 1e6;
+  vec3 lightEmission = dlight.rgbs.xyz * dlight.rgbs.w;
 
-          if (rnd(ray.seed) <= reflectProb) {                   // spec!
+  return traceShadowRay(worldPos, L, V, N, maxDist, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+}
 
-            float a2    = mat.roughness * mat.roughness;
-            vec3  H     = normalize(L + V);
-            float NdotH = dot(N, H);
-            float HdotV = dot(H, V);
-            float NdotV = max(dot(N, V), 1e-6);
-            float LdotH = dot(L, H);
-            float D     = ggxNormalDistribution(NdotH, a2);
-            float G     = GeometricShadowing(NdotL, NdotV, a2);
-            vec3  F     = schlickFresnel(transmissionColor, LdotH);
+vec3 tracePointLights(
+    in vec3 worldPos, in vec3 N,
+    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
 
-            weight = D * F * G * HdotV / NdotH * NdotV;
+  vec3 ret = vec3(0);
 
-          } else {                                              // refrac! no contribution!
+  for (uint i = 0; i < MAX_POINT_LIGHTS; ++i)
+    if (plights.rgbs[i].w > 0) {
+      vec3 V = normalize(-ray.direction);
 
-            weight = vec3(0);
-
-          }
-
-        }
-
-      } else {
-        float a2    = mat.roughness * mat.roughness;
-        vec3  H     = normalize(L + V);
-        float NdotH = dot(N, H);
-        float HdotV = dot(H, V);
-        float NdotV = max(dot(N, V), 1e-6);
-        float LdotH = dot(L, H);
-        float D     = ggxNormalDistribution(NdotH, a2);
-        float G     = GeometricShadowing(NdotL, NdotV, a2);
-        vec3  F     = schlickFresnel(specularColor, LdotH);
-
-        float diffuseLum   = length(diffuseColor);
-        float specularLum  = length(specularColor);
-
-        float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
-
-        vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
-        vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
-
-        weight = rnd(ray.seed) < probDiffuse ? diffuseWeight * probDiffuse : specularWeight * (1 - probDiffuse);
+      vec3 lpos = plights.posr[i].xyz;
+      if (plights.posr[i].w != 0) {
+        vec3 perturb = uniformSphereSampling(ray.seed);
+        lpos += plights.posr[i].w * normalize(perturb);    // TODO: this should be incorrect, back surface?
       }
 
-      ray.shadow_color = dlight.rgbs.xyz * dlight.rgbs.w * weight;
+      vec3 L = lpos - worldPos;
+      float d = length(L) + 1e-3;
+      L = normalize(L);
+      vec3 lightEmission = plights.rgbs[i].xyz * plights.rgbs[i].w / d / d;
+
+      ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
     }
-  }
+
+  return ret;
 }
+
 
 // By Jet <i@jetd.me>, 2021.
 // Implemented according to blender's PrincipledBSDF
@@ -312,7 +356,9 @@ void main( )
       }
     }
 
-    traceShadowRay(mat, diffuseColor, specularColor, transmissionColor, worldPos, N);
+    ray.shadow_color =
+        traceDirectionalLight(worldPos, N, mat, diffuseColor, specularColor, transmissionColor)
+      + tracePointLights(worldPos, N, mat, diffuseColor, specularColor, transmissionColor);
 
     ray.origin    = worldPos;
     ray.direction = L;

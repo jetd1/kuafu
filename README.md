@@ -1,6 +1,6 @@
 # Kuafu: A Real-Time Ray Tracing Renderer
 
-Kuafu is real-time ray tracing renderer implemented using Vulkan. Kuafu supports physically based materials (PrincipledBSDF) and various realistic lighting models. The project is developed as a rendering backend for the high-performance simulator [SAPIEN](https://sapien.ucsd.edu/).
+Kuafu is real-time ray tracing renderer implemented using Vulkan. Kuafu supports physically based materials (PrincipledBSDF) and various realistic light settings. The project is developed as a rendering backend for the high-performance simulator [SAPIEN](https://sapien.ucsd.edu/).
 
 ![Kuafu Rendering Quality](./docs/assets/kuafu.png)
 
@@ -15,6 +15,60 @@ TODO
 ```bash
 mkdir build && cd build && cmake .. && make example -j && ./example;
 ```
+
+
+# Features & TODOs
+
+- Physically based materials (PrincipledBSDF / Disney PBR)
+  - [x] Diffuse
+  - [x] Specular
+  - [x] Roughness
+    - [ ] Oren–Nayar reflectance
+  - [x] Transmission
+    - [ ] Refraction w/ roughness
+    - [ ] Caustics 
+    - [ ] Align behavior with Blender
+    - [ ] Beer's Law & Fresnel
+  - [x] Emission
+    - [ ] Align behavior with Blender
+  - [ ] Check numerical issues
+    
+
+- Realistic Lights
+  - [x] Directional Light (Sun / Distant)
+  - [x] Point Light
+  - [ ] Spot Light
+  - [ ] Active Light
+  - [x] Area Light
+    - [ ] Shadow ray traced area light
+  - [x] Environment Map
+    - [ ] Load from images
+
+    
+- Pipeline
+  - [x] Image download
+    - [ ] Lazy image downloads
+    - [ ] Fix validation error when downloading
+  - [ ] Depth download
+  - [ ] Segmentation download
+  - [ ] Offscreen rendering
+  - [ ] Online shader compilation
+    - [ ] Remove GLSLC requirements
+
+
+- Import / Export
+  - [x] Assimp scene loader
+  - [ ] Load full glTF
+    - [ ] Load blender glTF
+    - [ ] Load `.blend`
+  - [ ] Check `.obj` appearance with blender
+
+
+- Viewer
+  - [ ] Improve mouse control
+  - [ ] Fix segfault when resizing in SAPIEN
+
+
 
 # Acknowledgement
 

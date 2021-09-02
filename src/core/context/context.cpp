@@ -199,7 +199,7 @@ void Context::init() {
     // Descriptor sets and layouts
     mRayTracer.initDescriptorSet();
     mScene.initSceneDescriptorSets();
-    mScene.initGeoemtryDescriptorSets();
+    mScene.initGeometryDescriptorSets();
 
     // Default environment map to assure start up.
     mScene.setEnvironmentMap("");
@@ -430,7 +430,7 @@ void Context::updateSettings() {
         mScene.mMaterialIndexBuffers.resize(pConfig->mMaxGeometry);
         mScene.mTextures.resize(pConfig->mMaxTextures);
 
-        mScene.initGeoemtryDescriptorSets();
+        mScene.initGeometryDescriptorSets();
 
         pConfig->mPipelineNeedsRefresh = true;
     }
