@@ -10,7 +10,7 @@ int main() {
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
     config->setPerPixelSampleRate(128);
-    config->setPathDepth(12);
+    config->setPathDepth(6);
     config->setRussianRoulette(false);
 
     auto camera = std::make_shared<CustomCamera>(

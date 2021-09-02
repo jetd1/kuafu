@@ -22,7 +22,7 @@ vec3 transformLocalToWorld( vec3 direction, vec3 normal )
   return direction.x * tangent + direction.y * bitangent + direction.z * normal;
 }
 
-vec3 cosineHemisphereSampling( inout uint seed, inout float pdf, in vec3 normal )
+vec3 cosineHemisphereSampling( inout uint seed, in vec3 normal )
 {
   // cosine distributed sampling
   float u0 = rnd( seed );
@@ -30,9 +30,6 @@ vec3 cosineHemisphereSampling( inout uint seed, inout float pdf, in vec3 normal 
   float sq = sqrt( 1.0 - u1 );
 
   vec3 direction = vec3( cos( 2 * M_PI * u0 ) * sq, sin( 2 * M_PI * u0 ) * sq, sqrt( u1 ) );
-
-  // PDF of cosine distributed hemisphere sampling
-  pdf = 1.0 / M_PI;
 
   return transformLocalToWorld( direction, normal );
 }

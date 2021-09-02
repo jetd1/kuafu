@@ -97,8 +97,11 @@ Material getShadingData( inout vec3 localNormal, inout vec3 worldNormal, inout v
   return materials.m[matIndex];
 }
 
+// By Jet <i@jetd.me>, 2021.
+// Implemented according to blender's PrincipledBSDF
+//
 // TODO: rewrite this using callable shader
-void traceShadowRay( in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 worldPos, in vec3 N )
+void traceShadowRay(in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor, in vec3 worldPos, in vec3 N )
 {
   // trace shadow ray
   // Tracing shadow ray only if the light is visible from the surface
@@ -135,29 +138,66 @@ void traceShadowRay( in Material mat, in vec3 diffuseColor, in vec3 specularColo
     );
 
     if (!isShadowed) {
+//      vec3 weight;
+      vec3 weight = vec3(0.);
 
-      float a2    = mat.roughness * mat.roughness;
-      vec3  H     = normalize(L + V);
-      float NdotH = dot(N, H);
-      float HdotV = dot(H, V);
-      float NdotV = max(dot(N, V), 1e-6);
-      float LdotH = dot(L, H);
-      float D     = ggxNormalDistribution(NdotH, a2);
-      float G     = GeometricShadowing(NdotL, NdotV, a2);
-      vec3  F     = schlickFresnel(specularColor, LdotH);
+      if (transmissionColor != vec3(0.0)) {   // TODO: reconcile refrac and fancy spec
+        bool isInside = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT;
+        if (isInside) {                       // perfect refration
+                                              // so the light cannot have any direct contribution
+                                              // TODO: change to a better model
+          weight = vec3(0);
 
-      float diffuseLum   = length(diffuseColor);
-      float specularLum  = length(specularColor);
+        } else {                             // try to calc fancy spec (different from the indirect part!)
+          float NdotV = dot(N, V);
+          float f = max(mat.ior, 1e-5);
+          vec3 refractedL  = refract(-V, N, 1 / f);
+          float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( NdotV, f ) : 1.0;
+//          float reflectProb = 1.0;
 
-      float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
-//      float probDiffuse  = 1.0;
+          if (rnd(ray.seed) <= reflectProb) {                   // spec!
 
-      vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
-      vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
+            float a2    = mat.roughness * mat.roughness;
+            vec3  H     = normalize(L + V);
+            float NdotH = dot(N, H);
+            float HdotV = dot(H, V);
+            float NdotV = max(dot(N, V), 1e-6);
+            float LdotH = dot(L, H);
+            float D     = ggxNormalDistribution(NdotH, a2);
+            float G     = GeometricShadowing(NdotL, NdotV, a2);
+            vec3  F     = schlickFresnel(transmissionColor, LdotH);
 
-      vec3 weight = rnd(ray.seed) < probDiffuse ?
-                    diffuseWeight * probDiffuse
-                  : specularWeight * (1 - probDiffuse);
+            weight = D * F * G * HdotV / NdotH * NdotV;
+
+          } else {                                              // refrac! no contribution!
+
+            weight = vec3(0);
+
+          }
+
+        }
+
+      } else {
+        float a2    = mat.roughness * mat.roughness;
+        vec3  H     = normalize(L + V);
+        float NdotH = dot(N, H);
+        float HdotV = dot(H, V);
+        float NdotV = max(dot(N, V), 1e-6);
+        float LdotH = dot(L, H);
+        float D     = ggxNormalDistribution(NdotH, a2);
+        float G     = GeometricShadowing(NdotL, NdotV, a2);
+        vec3  F     = schlickFresnel(specularColor, LdotH);
+
+        float diffuseLum   = length(diffuseColor);
+        float specularLum  = length(specularColor);
+
+        float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
+
+        vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
+        vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
+
+        weight = rnd(ray.seed) < probDiffuse ? diffuseWeight * probDiffuse : specularWeight * (1 - probDiffuse);
+      }
 
       ray.shadow_color = dlight.rgbs.xyz * dlight.rgbs.w * weight;
     }
@@ -194,8 +234,6 @@ void main( )
     float specular_weight = (1.0 - final_transmission);
     float a2 =  mat.roughness * mat.roughness;
 
-    vec3 bsdf = baseColor;
-    float pdf = 0;
     vec3 weight = vec3(0.);
 
     vec3 V = normalize(-ray.direction);
@@ -208,61 +246,33 @@ void main( )
     vec3 diffuseColor      = diffuse_weight * baseColor;
     vec3 specularColor     = specular_weight * (baseColor * mat.metallic
                            + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - mat.metallic));
-    vec3 transmissionColor = baseColor;
+//    vec3 transmissionColor = baseColor;
+    vec3 transmissionColor = final_transmission * baseColor;        // TODO: what is transmission color?
 
     float diffuseLum   = length(diffuseColor);
     float specularLum  = length(specularColor);
 
-//    if (diffuseLum == 0 && specularLum == 0) {
-//
-//    }
-
     float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
+
+    if (diffuseLum == 0 && specularLum == 0)
+        probDiffuse = 0;
+    probDiffuse *= specular_weight;    // Prevent undersamping of refrac
 //    float probDiffuse  = 1.0;
     bool chooseDiffuse = rnd(ray.seed) < probDiffuse;
 
     // Diffuse (Lambertian)
     if (chooseDiffuse) {
-      L = cosineHemisphereSampling(ray.seed, pdf, N);
+      L = cosineHemisphereSampling(ray.seed, N);
       float NdotL = clamp(dot(N, L), 0, 1);
-      weight = diffuseColor * NdotL * M_PI  / probDiffuse;
+      weight = M_PI * diffuseColor * NdotL  / probDiffuse;
     }
 
     // Specular
     if (!chooseDiffuse) {
-      bool refracted = false;
 
-//      bool tryTransmit = rnd(ray.seed) < final_transmission;
-      bool tryTransmit = false;
-
-      // Transmission ?
-      if (tryTransmit) {
-        // Flip the normal if ray is transmitted
-        vec3 _N = gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT ? -N : N;
-
-        float cosine = NdotV > 0 ? mat.ior * NdotV : -NdotV;
-        float ior    = NdotV > 0 ? mat.ior : 1 / mat.ior;
-
-        vec3 refractedL   = refract( V, _N, ior );
-        float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( cosine, mat.ior ) : 1.0;
-
-        if (rnd(ray.seed) >= reflectProb) {
-          L  = refractedL;
-          ray.refractive = true;
-          refracted = true;
-          float NdotL = dot(_N, L);
-
-          // TODO: the following is incorrect, check
-//          bsdf        = specularColor * NdotL;
-//          bsdf        = specularColor;
-//          bsdf        = baseColor * NdotL;
-          bsdf        = baseColor;
-          pdf         = 1 / M_PI;
-          weight = bsdf / pdf;
-        }
-      }
-
-      if (!refracted) {
+      // Do fancy specular
+//      if (rnd(ray.seed) < specular_weight) {
+      if (final_transmission == 0) {                          // TODO: reconcile refrac and fancy spec
         vec3 H = sampleGGX(ray.seed, a2, N);
         float HdotV = dot(H, V);
         L = 2 * HdotV * H - V;
@@ -274,20 +284,34 @@ void main( )
         float VoH = max(dot(V, H), 1e-7);
 
         if(NoL >= 0) {
-          ray.reflective = true;
           float G = GeometricShadowing(NoV, NoL, a2);
           vec3 F = schlickFresnel(specularColor, VoH);
           weight = M_PI * F * G * VoH / (NoH * NoV * (1 - probDiffuse));
-//          weight = M_PI * specularColor;
         }
-        else {
-//          weight = specularColor;
+        else
           weight = vec3(0);
+
+      } else {   // Do refraction and less fancy reflection
+
+        float ior = isInside ? 1 / f : f;
+        float _dot = isInside ? NdotV * ior: NdotV;
+
+        vec3 refractedL  = refract(-V, N, 1 / ior);
+        float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( _dot, mat.ior ) : 1.0;
+        //        float reflectProb = 0;
+
+        if (rnd(ray.seed) >= reflectProb) {   // perfect refration
+          ray.refractive = true;
+          L = refractedL;
+          weight = M_PI * transmissionColor / (1 - probDiffuse);
+        } else {                             // perfect reflection    // TODO: change the to fresnel-based
+          L = reflect(-V, N);
+          weight = M_PI * transmissionColor / (1 - probDiffuse);
         }
       }
     }
 
-    traceShadowRay(mat, diffuseColor, specularColor, worldPos, N);
+    traceShadowRay(mat, diffuseColor, specularColor, transmissionColor, worldPos, N);
 
     ray.origin    = worldPos;
     ray.direction = L;

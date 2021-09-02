@@ -16,45 +16,16 @@ void main( )
   dir.x *= -1.0; // mirror
 
   if ( ray.depth == 0 )     // view ray
-  {
     if ( useEnvironmentMap )
-    {
-      ray.emission = texture( environmentMap, dir ).xyz * 0.8F;  // TODO: kuafu_urgent: make sense?
-    }
+      ray.emission = texture( environmentMap, dir ).xyz * 0.8F;    // TODO: kuafu_urgent: make sense?
     else
-    {
       ray.emission = clearColor.xyz * clearColor.w;
-    }
-  }
+
   else                     // bounce ray
-  {
-    if ( ray.reflective )
-    {
-      ray.reflective = false;
       if ( useEnvironmentMap )
-      {
         ray.emission = texture( environmentMap, dir ).xyz;
-      }
       else
-      {
         ray.emission = clearColor.xyz * clearColor.w;
-      }
-    }
-    else
-    {
-      // small contribution from environment
-      if ( useEnvironmentMap )
-      {
-        // ray.emission = texture( environmentMap, dir ).xyz * 0.01;
-        ray.emission = texture( environmentMap, dir ).xyz;
-      }
-      else
-      {
-        // ray.emission = clearColor.xyz * clearColor.w * 0.01;
-        ray.emission = clearColor.xyz * clearColor.w;
-      }
-    }
-  }
 
   // End the path
   ray.depth = maxPathDepth + 1;

@@ -183,7 +183,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
         renderer->getConfig().setAccumulatingFrames(false);
-        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.2));
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
@@ -206,6 +206,16 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
         auto mat = std::make_shared<kuafu::NiceMaterial>();
+        mat->diffuseColor = glm::vec3(0.8F, 0.80F, 0.6F);
+        mat->specular = 0.0F;
+        mat->metallic = 0.0F;
+        mat->roughness = 0.7F;
+        mat->ior = 1.4F;
+//        mat->ior = 5.0F;
+        mat->alpha = 1.0F;
+        mat->transmission = 1.0F;
+        auto sphere0 = kuafu::createSphere(true, mat);
+
         mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
         mat->specular = 0.0F;
         mat->metallic = 1.0F;
@@ -244,19 +254,35 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         mat->metallic = 1.0F;
         auto glass = kuafu::createYZPlane(true, mat);
 
-        auto obj = kuafu::loadScene("/home/jet/uvs.dae", true).front();
+        mat->diffuseColor = glm::vec3(1);
+        mat->specular = 0.0F;
+        mat->metallic = 0.0F;
+        mat->roughness = 0.0F;
+        mat->ior = 1.4F;
+        mat->alpha = 1.0F;
+        mat->transmission = 1.0F;
+//        auto cube = kuafu::createCube(true, mat);
+        auto cube = kuafu::createCapsule(1, 1, true, mat);
+
+
+//        auto obj = kuafu::loadScene("/home/jet/uvs.dae", true).front();
 
         renderer->getScene().setGeometries(
                 {
-                    floor, sphere,
+                    floor, sphere0, sphere,
                  sphere1, sphere2, sphere3, sphere4, glass,
-                 obj
+//                 obj,
+                 cube
                 });
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.F));
         transform = glm::rotate(transform, glm::radians(90.F), {0., -1., 0.});
         transform = glm::scale(transform, glm::vec3(12.0F, 12.0F, 12.0F));
         auto floorInstance = kuafu::instance(floor, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-4.0F, 3.0F, 1.0F));
+        transform = glm::scale(transform, glm::vec3(2));
+        auto sphereInstance0 = kuafu::instance(sphere0, transform);
 
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(-5.0F, 0.0F, 0.0F));
 //        transform = glm::scale(transform, glm::vec3(0.5));
@@ -279,16 +305,23 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::scale(transform, glm::vec3(5.0F, 5.0F, 5.0F));
         auto glassInstance = kuafu::instance(glass, transform);
 
-        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 4.0F, -0.5F));
+//        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 4.0F, -0.5F));
+//        auto objInstance = kuafu::instance(obj, transform);
 
-        auto objInstance = kuafu::instance(obj, transform);
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -4.0F, 1.0F));
+        transform = glm::scale(transform, glm::vec3(1));
+        auto cubeInstance = kuafu::instance(cube, transform);
+
 
         renderer->getScene().setGeometryInstances(
                 {
-                    floorInstance, sphereInstance,
+                    floorInstance,
+                    sphereInstance0,
+                    sphereInstance,
                  sphereInstance1, sphereInstance2, sphereInstance3,
                  sphereInstance4, glassInstance,
-                 objInstance
+//                 objInstance,
+                 cubeInstance
                 });
     } else if (scene == Level::eMirrors) {
         renderer->reset();

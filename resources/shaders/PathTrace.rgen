@@ -110,7 +110,6 @@ void main( )
     ray.origin     = origin.xyz;
     ray.weight     = vec3( 0.0 );
     ray.emission   = vec3( 1.0 );
-    ray.reflective = false;
     ray.refractive = false;
     ray.type       = 0;             // view ray
     ray.shadow_color = vec3(0.0);
