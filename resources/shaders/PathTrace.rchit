@@ -149,8 +149,8 @@ void traceShadowRay( in Material mat, in vec3 diffuseColor, in vec3 specularColo
       float diffuseLum   = length(diffuseColor);
       float specularLum  = length(specularColor);
 
-//      float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
-      float probDiffuse  = 1.0;
+      float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
+//      float probDiffuse  = 1.0;
 
       vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
       vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
@@ -205,9 +205,10 @@ void main( )
 
     float NdotV = dot(N, V);
 
-    vec3 diffuseColor  = diffuse_weight * baseColor;
-    vec3 specularColor = specular_weight * (baseColor * mat.metallic
-                       + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - mat.metallic));
+    vec3 diffuseColor      = diffuse_weight * baseColor;
+    vec3 specularColor     = specular_weight * (baseColor * mat.metallic
+                           + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - mat.metallic));
+    vec3 transmissionColor = baseColor;
 
     float diffuseLum   = length(diffuseColor);
     float specularLum  = length(specularColor);
@@ -216,8 +217,8 @@ void main( )
 //
 //    }
 
-//    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
-    float probDiffuse  = 1.0;   // TODO: improve this
+    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
+//    float probDiffuse  = 1.0;
     bool chooseDiffuse = rnd(ray.seed) < probDiffuse;
 
     // Diffuse (Lambertian)

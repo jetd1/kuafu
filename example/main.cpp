@@ -23,7 +23,7 @@ int main() {
 
 //    auto &scene = renderer.getScene();
 
-    loadScene(&renderer, Level::eCornell);
+    loadScene(&renderer, Level::eSpheres);
 
     while (renderer.isRunning()) {
 //        updateScene(&renderer);
