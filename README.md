@@ -1,10 +1,16 @@
 # Kuafu: A Real-Time Ray Tracing Renderer
 
-Kuafu is real-time ray tracing renderer implemented using Vulkan. Kuafu supports physically based materials (PrincipledBSDF) and various realistic light settings. The project is developed as a rendering backend for the high-performance simulator [SAPIEN](https://sapien.ucsd.edu/).
+Kuafu is real-time ray tracing renderer implemented using Vulkan. Kuafu supports physically based materials (PrincipledBSDF) and various realistic light settings. The project is developed as a rendering backend for the high-performance simulator [SAPIEN](https://sapien.ucsd.edu/). It can also serve as a standalone renderer / scene builder.
 
-![Kuafu Rendering Quality](./docs/assets/kuafu.png)
+![Kuafu Rendering Quality (example: eSpheres)](./docs/assets/kuafu.png)
 
 The name [Kuafu](https://en.wikipedia.org/wiki/Kuafu) ([夸父](https://zh.wikipedia.org/wiki/%E5%A4%B8%E7%88%B6)) is from the Chinese mythology Kuafu chasing the Sun (夸父追日).
+
+*New: Active Light Sensing Support Now Added*
+
+Kuafu now features full active light sensing support. A Demo simulating Intel RealSense D415:
+
+![Active Light Sensing Demo (example: eActive)](./docs/assets/kuafu_active.png)
 
 # Compilation
 
@@ -37,8 +43,8 @@ mkdir build && cd build && cmake .. && make example -j && ./example;
 - Realistic Lights
   - [x] Directional Light (Sun / Distant)
   - [x] Point Light
-  - [ ] Spot Light
-  - [ ] Active Light
+  - [x] Spot Light
+  - [x] Active Light
   - [x] Area Light
     - [ ] Shadow ray traced area light
   - [x] Environment Map

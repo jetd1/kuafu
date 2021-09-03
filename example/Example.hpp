@@ -7,7 +7,8 @@ enum class Level {
     eMirrors,
     eSponza,
     eNew,
-    eObj
+    eObj,
+    eActive
 };
 
 inline Level currentLevel;
@@ -188,8 +189,9 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(false);
-        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.3));
+        renderer->getConfig().setAccumulatingFrames(true);
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.2));
+//        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
@@ -197,39 +199,55 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto dLight = std::make_shared<kuafu::DirectionalLight>();
         dLight->direction ={-2, -1, -1};
 //        dLight->direction ={1., 0.1, -0.5};
-        dLight->color = {1., 0.8, 0.6};
-        dLight->strength = 5;
+        dLight->color = {1., 0.9, 0.7};
+        dLight->strength = 8;
         dLight->softness = 0.5;
         renderer->getScene().setDirectionalLight(dLight);
 
-        auto pLight = std::make_shared<kuafu::PointLight>();
-        pLight->position ={0, 0, 4};
-        pLight->color = {1., 0.5, 0.5};
-        pLight->strength = 100;
-        pLight->radius = 0.5;
-        renderer->getScene().addPointLight(pLight);
+//        auto pLight = std::make_shared<kuafu::PointLight>();
+//        pLight->position ={0, 0, 4};
+//        pLight->color = {1., 0.5, 0.5};
+//        pLight->strength = 100;
+//        pLight->radius = 0.5;
+//        renderer->getScene().addPointLight(pLight);
 
-        pLight = std::make_shared<kuafu::PointLight>();
-        pLight->position ={-6, 0, 3};
-        pLight->color = {0.5, 0.5, 1.0};
-        pLight->strength = 100;
-        pLight->radius = 0.5;
-        renderer->getScene().addPointLight(pLight);
+//        pLight = std::make_shared<kuafu::PointLight>();
+//        pLight->position ={-6, 0, 3};
+//        pLight->color = {0.5, 0.5, 1.0};
+//        pLight->strength = 100;
+//        pLight->radius = 0.5;
+//        renderer->getScene().addPointLight(pLight);
+//
+//        pLight = std::make_shared<kuafu::PointLight>();
+//        pLight->position ={2, 5, 5};
+//        pLight->color = {0.5, 1.0, 0.0};
+//        pLight->strength = 100;
+//        pLight->radius = 0.5;
+//        renderer->getScene().addPointLight(pLight);
 
-        pLight = std::make_shared<kuafu::PointLight>();
-        pLight->position ={2, 5, 5};
-        pLight->color = {0.5, 1.0, 0.0};
-        pLight->strength = 100;
-        pLight->radius = 0.5;
-        renderer->getScene().addPointLight(pLight);
+//        auto aLight = std::make_shared<kuafu::ActiveLight>();
+////        aLight->position ={0, 0, 7};
+////        aLight->direction ={0, 0, -1};
+//        aLight->fov = glm::radians(150.F);
+//        auto pos = glm::lookAt(glm::vec3{-3., -3., 8.}, {0., 0., 0.}, {-1., 0.5, 0});
+//        aLight->viewMat = pos;
+//
+//        aLight->color = {1., 1., 1.};
+//        aLight->strength = 1000;
+//        aLight->softness = 1;
+//        aLight->texPath = "../resources/d415-pattern-sq.png";
+////        aLight->texPath = "../resources/py2.png";
+////        aLight->texPath = "";
+//        renderer->getScene().addActiveLight(aLight);
 
         auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
 //        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
-        floorMaterial->diffuseColor = glm::vec3(1.0, 1.0, 1.0);
+        floorMaterial->diffuseColor = glm::vec3(0.8);
         floorMaterial->specular = 0.5;
         floorMaterial->metallic = 0;
+//        floorMaterial->metallic = 0.9;
         floorMaterial->transmission = 0;
-        floorMaterial->roughness = 0.5;
+        floorMaterial->roughness = 0.1;
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
         auto mat = std::make_shared<kuafu::NiceMaterial>();
@@ -242,7 +260,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         mat->alpha = 1.0F;
         mat->transmission = 1.0F;
 //        auto sphere0 = kuafu::createSphere(true, mat);
-//        auto sphere0 = kuafu::createCube(true, mat);
+        auto sphere0 = kuafu::createCube(true, mat);
 
         mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
         mat->specular = 0.0F;
@@ -297,7 +315,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().setGeometries(
                 {
                     floor,
-//                    sphere0,
+                    sphere0,
                     sphere,
                  sphere1, sphere2, sphere3, sphere4, glass,
 //                 obj,
@@ -309,9 +327,9 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::scale(transform, glm::vec3(12.0F, 12.0F, 12.0F));
         auto floorInstance = kuafu::instance(floor, transform);
 
-//        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-1.F, -2.0F, 4.F));
-//        transform = glm::scale(transform, glm::vec3(2));
-//        auto sphereInstance0 = kuafu::instance(sphere0, transform);
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-1.F, -2.0F, 4.F));
+        transform = glm::scale(transform, glm::vec3(2));
+        auto sphereInstance0 = kuafu::instance(sphere0, transform);
 
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(-5.0F, 0.0F, 0.0F));
 //        transform = glm::scale(transform, glm::vec3(0.5));
@@ -344,7 +362,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().setGeometryInstances(
                 {
                     floorInstance,
-//                    sphereInstance0,
+                    sphereInstance0,
                     sphereInstance,
                  sphereInstance1, sphereInstance2, sphereInstance3,
                  sphereInstance4, glassInstance,
@@ -366,6 +384,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::rotate(transform, glm::radians(-90.f), glm::vec3{0, 0, 1});
         transform = glm::rotate(transform, glm::radians(-20.f), glm::vec3{1, 0, 0});
         transform = glm::scale(transform, glm::vec3(3));
+
         addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, mat);
 
 
@@ -544,6 +563,179 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().setGeometryInstances({floorInstance});
         for (auto& g: scene)
             renderer->getScene().submitGeometryInstance(instance(g, glm::mat4(1.0F)));
+
+    } else if (scene == Level::eActive) {
+        renderer->reset();
+        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
+        renderer->getConfig().setGeometryInstanceLimit(15000);
+        renderer->getConfig().setTextureLimit(100); // Will give a warning.
+        renderer->getConfig().setAccumulatingFrames(true);
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
+
+        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+
+
+        auto aLight = std::make_shared<kuafu::ActiveLight>();
+//        aLight->position ={0, 0, 7};
+//        aLight->direction ={0, 0, -1};
+        aLight->fov = glm::radians(150.F);
+        auto pos = glm::lookAt(glm::vec3{-3., -3., 8.}, {0., 0., 0.}, {-1., 0.5, 0});
+        aLight->viewMat = pos;
+
+        aLight->color = {1., 1., 1.};
+        aLight->strength = 1000;
+        aLight->softness = 1;
+        aLight->texPath = "../resources/d415-pattern-sq.png";
+//        aLight->texPath = "../resources/py2.png";
+//        aLight->texPath = "";
+        renderer->getScene().addActiveLight(aLight);
+
+        auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
+//        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
+        floorMaterial->diffuseColor = glm::vec3(0.8);
+        floorMaterial->specular = 0.5;
+//        floorMaterial->metallic = 0;
+        floorMaterial->metallic = 0.9;
+        floorMaterial->transmission = 0;
+        floorMaterial->roughness = 0.1;
+        auto floor = kuafu::createYZPlane(true, floorMaterial);
+
+        auto mat = std::make_shared<kuafu::NiceMaterial>();
+        mat->diffuseColor = glm::vec3(1.0F, 0.7F, 0.7F);
+        mat->specular = 0.0F;
+        mat->metallic = 0.0F;
+        mat->roughness = 0.0F;
+        mat->ior = 1.45F;
+//        mat->ior = 5.0F;
+        mat->alpha = 1.0F;
+        mat->transmission = 1.0F;
+//        auto sphere0 = kuafu::createSphere(true, mat);
+//        auto sphere0 = kuafu::createCube(true, mat);
+
+        mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+//        mat->metallic = 0.0F;
+        mat->roughness = 0.07F;
+        mat->ior = 1.4F;
+        mat->alpha = 1.0F;
+        mat->transmission = 0.0F;
+//        mat->transmission = 1.0F;
+        auto sphere = kuafu::createSphere(true, mat);
+
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.2F;
+        mat->transmission = 0.0F;
+        auto sphere1 = kuafu::createSphere(true, mat);
+
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.4F;
+        auto sphere2 = kuafu::createSphere(true, mat);
+
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.6F;
+        auto sphere3 = kuafu::createSphere(true, mat);
+
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.8F;
+        auto sphere4 = kuafu::createSphere(true, mat);
+
+        mat->diffuseColor = glm::vec3(0.9);
+        mat->specular = 1.0F;
+        mat->roughness = 0.0F;
+        mat->metallic = 1.0F;
+        auto glass = kuafu::createYZPlane(true, mat);
+
+        mat->diffuseColor = glm::vec3(1);
+        mat->specular = 0.0F;
+        mat->metallic = 0.0F;
+        mat->roughness = 0.0F;
+        mat->ior = 1.4F;
+        mat->alpha = 1.0F;
+        mat->transmission = 1.0F;
+//        auto cube = kuafu::createCube(true, mat);
+        auto cube = kuafu::createCapsule(2, 1, true, mat);
+
+        renderer->getScene().setGeometries(
+                {
+                        floor,
+//                    sphere0,
+                        sphere,
+                        sphere1, sphere2, sphere3, sphere4, glass,
+//                 obj,
+                        cube
+                });
+
+        auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, -1.F));
+        transform = glm::rotate(transform, glm::radians(90.F), {0., -1., 0.});
+        transform = glm::scale(transform, glm::vec3(12.0F, 12.0F, 12.0F));
+        auto floorInstance = kuafu::instance(floor, transform);
+
+//        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-1.F, -2.0F, 4.F));
+//        transform = glm::scale(transform, glm::vec3(2));
+//        auto sphereInstance0 = kuafu::instance(sphere0, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-5.0F, 0.0F, 0.0F));
+//        transform = glm::scale(transform, glm::vec3(0.5));
+        auto sphereInstance = kuafu::instance(sphere, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-2.5F, 0.0F, 0.0F));
+        auto sphereInstance1 = kuafu::instance(sphere1, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
+        auto sphereInstance2 = kuafu::instance(sphere2, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(2.5F, 0.0F, 0.0F));
+        auto sphereInstance3 = kuafu::instance(sphere3, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(5.0F, 0.0F, 0.0F));
+        auto sphereInstance4 = kuafu::instance(sphere4, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(7.0F, 0.0F, 0.0F));
+        transform = glm::rotate(transform, glm::radians(180.F), {0., 1., 0.});
+        transform = glm::scale(transform, glm::vec3(8.F));
+        auto glassInstance = kuafu::instance(glass, transform);
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-4.5F, -4.0F, 0.5F));
+        transform = glm::rotate(transform, glm::radians(-45.F), {0., 0., 1.});
+        transform = glm::rotate(transform, glm::radians(45.F), {1., 1., 0.});
+        transform = glm::scale(transform, glm::vec3(1));
+        auto cubeInstance = kuafu::instance(cube, transform);
+
+
+        renderer->getScene().setGeometryInstances(
+                {
+                        floorInstance,
+//                    sphereInstance0,
+                        sphereInstance,
+                        sphereInstance1, sphereInstance2, sphereInstance3,
+                        sphereInstance4, glassInstance,
+//                 objInstance,
+                        cubeInstance
+                });
+
+
+        mat->diffuseColor = glm::vec3(0.2F, 0.2F, 0.2F);
+        mat->specular = 0.0F;
+        mat->metallic = 1.0F;
+        mat->roughness = 0.05F;
+        mat->ior = 1.45F;
+//        mat->ior = 5.0F;
+        mat->alpha = 1.0F;
+        mat->transmission = 0.0F;
+
+        transform = glm::translate(glm::mat4(1.0F), glm::vec3(-2.0F, 5.0F, 2.F));
+        transform = glm::rotate(transform, glm::radians(-90.f), glm::vec3{0, 0, 1});
+        transform = glm::rotate(transform, glm::radians(-20.f), glm::vec3{1, 0, 0});
+        transform = glm::scale(transform, glm::vec3(3));
+
+        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, mat);
+
 
     }
 }

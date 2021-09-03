@@ -33,9 +33,11 @@ extern std::string assetsPath;
 extern uint32_t geometryIndex;
 extern uint32_t materialIndex;
 extern uint32_t textureIndex;
+extern std::vector<NiceMaterial> materials;
+
 const size_t maxResources = 2;
 const size_t maxPointLights = 4;
-extern std::vector<NiceMaterial> materials;
+const size_t maxActiveLights = 4;
 
 namespace keys {
 extern bool eW;

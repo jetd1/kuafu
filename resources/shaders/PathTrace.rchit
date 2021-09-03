@@ -99,10 +99,8 @@ Material getShadingData( inout vec3 localNormal, inout vec3 worldNormal, inout v
 
 
 // By Jet <i@jetd.me>, 2021.
-// Implemented according to blender's PrincipledBSDF
 //
-// TODO: rewrite this using callable shader
-vec3 calcDirectComtribution(
+vec3 calcDirectContribution(
     in vec3 L, in vec3 V, in vec3 N, in vec3 lightEmission,
     in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
 
@@ -173,9 +171,7 @@ vec3 calcDirectComtribution(
 }
 
 // By Jet <i@jetd.me>, 2021.
-// Implemented according to blender's PrincipledBSDF
 //
-// TODO: rewrite this using callable shader
 vec3 traceShadowRay(in vec3 worldPos, in vec3 L, in vec3 V, in vec3 N, in float maxDist, in vec3 lightEmission,
     in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
   isShadowed = true;
@@ -200,9 +196,11 @@ vec3 traceShadowRay(in vec3 worldPos, in vec3 L, in vec3 V, in vec3 N, in float 
                 1// payload (location = 1)
     );
   }
-  return isShadowed ? vec3(0) : calcDirectComtribution(L, V, N, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+  return isShadowed ? vec3(0) : calcDirectContribution(L, V, N, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
 }
 
+// By Jet <i@jetd.me>, 2021.
+//
 vec3 traceDirectionalLight(
     in vec3 worldPos, in vec3 N,
     in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
@@ -220,6 +218,8 @@ vec3 traceDirectionalLight(
   return traceShadowRay(worldPos, L, V, N, maxDist, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
 }
 
+// By Jet <i@jetd.me>, 2021.
+//
 vec3 tracePointLights(
     in vec3 worldPos, in vec3 N,
     in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
@@ -242,6 +242,59 @@ vec3 tracePointLights(
       vec3 lightEmission = plights.rgbs[i].xyz * plights.rgbs[i].w / d / d;
 
       ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+    }
+
+  return ret;
+}
+
+// By Jet <i@jetd.me>, 2021.
+//
+vec3 traceActiveLights(
+  in vec3 worldPos, in vec3 N,
+  in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+
+  vec3 ret = vec3(0);
+
+  for (uint i = 0; i < MAX_ACTIVE_LIGHTS; ++i)
+    if (alights.front[i].w > 0) {
+//      ret += vec3(1.);
+      vec3 V = normalize(-ray.direction);
+
+      float softness = alights.sftp[i].x;
+      vec3 lpos = alights.position[i].xyz;
+
+      if (softness != 0) {                    // TODO: this should be incorrect, sample in fov?
+        vec3 perturb = uniformSphereSampling(ray.seed);
+        lpos += softness * normalize(perturb);
+      }
+
+      vec3 L = lpos - worldPos;
+      float d = length(L) + 1e-3;
+      L = normalize(L);
+
+      float fov = alights.sftp[i].y;
+      vec3 alightDir = normalize(alights.front[i].xyz);
+      float halfAngle = clamp(fov, 0, M_PI) / 2;
+      float cos_ = dot(alightDir, -L);
+
+      if (cos_ > cos(halfAngle)) {               // TODO: attenuation / softness
+        int texID = int(alights.sftp[i].z);
+        vec3 color = alights.rgbs[i].xyz;
+
+        if (texID >= 0) {     // load texture *in addition* to base color
+          mat4 view = alights.viewMat[i];
+          mat4 proj = alights.projMat[i];
+
+          vec4 texCoord = proj * view * vec4(worldPos, 1);
+          texCoord /= texCoord.w;
+          vec2 uv = texCoord.xy * 0.5 + 0.5;                      // TODO: softness in texture?
+
+          color *= texture(textures[nonuniformEXT(texID)], uv).xyz;
+        }
+
+        vec3 lightEmission = color * alights.rgbs[i].w / d / d;
+        ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+      }
     }
 
   return ret;
@@ -358,7 +411,8 @@ void main( )
 
     ray.shadow_color =
         traceDirectionalLight(worldPos, N, mat, diffuseColor, specularColor, transmissionColor)
-      + tracePointLights(worldPos, N, mat, diffuseColor, specularColor, transmissionColor);
+      + tracePointLights(worldPos, N, mat, diffuseColor, specularColor, transmissionColor)
+      + traceActiveLights(worldPos, N, mat, diffuseColor, specularColor, transmissionColor);
 
     ray.origin    = worldPos;
     ray.direction = L;

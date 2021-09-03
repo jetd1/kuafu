@@ -1,5 +1,4 @@
-#ifndef KEYS_HPP
-#define KEYS_HPP
+#pragma once
 
 namespace Key {
     bool eW;
@@ -14,4 +13,3 @@ namespace Key {
     bool eL;
 } // namespace Key
 
-#endif // KEYS_HPP

@@ -9,8 +9,8 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(128);
-    config->setPathDepth(6);
+    config->setPerPixelSampleRate(512);
+    config->setPathDepth(12);
     config->setRussianRoulette(false);
 
     auto camera = std::make_shared<CustomCamera>(
@@ -23,7 +23,12 @@ int main() {
 
 //    auto &scene = renderer.getScene();
 
-    loadScene(&renderer, Level::eSpheres);
+    loadScene(&renderer, Level::eActive);
+
+//    glm::mat4 m = glm::mat4(1.0);
+//    m[3][0] = 17;
+//    camera->setPose(m);
+
 
     while (renderer.isRunning()) {
 //        updateScene(&renderer);

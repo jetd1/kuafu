@@ -1,6 +1,4 @@
-#ifndef CUSTOM_CAMERA_HPP
-#define CUSTOM_CAMERA_HPP
-
+#pragma once
 #include "Keys.hpp"
 #include "kuafu.hpp"
 
@@ -45,4 +43,3 @@ public:
     }
 };
 
-#endif // CUSTOM_CAMERA_HPP

@@ -1,6 +1,4 @@
-#ifndef CUSTOM_WINDOW_HPP
-#define CUSTOM_WINDOW_HPP
-
+#pragma once
 #include "Keys.hpp"
 #include "kuafu.hpp"
 
@@ -173,4 +171,3 @@ private:
     bool _mouseVisible = true;
 };
 
-#endif // CUSTOM_WINDOW_HPP

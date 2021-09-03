@@ -132,8 +132,18 @@ public:
         else
             pPointLights.push_back(light);
     };
-
     inline void removePointLight(const std::shared_ptr<PointLight>& light) { throw std::runtime_error("not implemented"); };
+
+    inline void addActiveLight(const std::shared_ptr<ActiveLight>& light) {
+        if (pActiveLights.size() >= global::maxActiveLights)
+            KF_WARN("Reached max active light number. The light will not be added!");
+        else {
+            pActiveLights.push_back(light);
+            mUploadGeometries = true;          // uploads light texture inside uploadGeometries()
+        }
+    };
+    inline void removeActiveLight(const std::shared_ptr<ActiveLight>& light) { throw std::runtime_error("not implemented"); };
+
 
 private:
     void initSceneDescriptorSets();
@@ -193,6 +203,9 @@ private:
 
     std::vector<std::shared_ptr<PointLight>> pPointLights;
     vkCore::UniformBuffer<PointLightsUBO> mPointLightsUniformBuffer;
+
+    std::vector<std::shared_ptr<ActiveLight>> pActiveLights;
+    vkCore::UniformBuffer<ActiveLightsUBO> mActiveLightsUniformBuffer;
 
     std::string mEnvironmentMapTexturePath;
     bool mUseEnvironmentMap = false;

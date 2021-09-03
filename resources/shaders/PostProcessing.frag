@@ -4,13 +4,11 @@ layout( location = 0 ) out vec4 fragColor;
 
 layout( set = 0, binding = 0 ) uniform sampler2D pathTracingOutput;
 
-layout( push_constant ) uniform PushConstants
-{
+layout( push_constant ) uniform PushConstants {
   float aspectRatio;
 };
 
-void main( )
-{
+void main( ) {
   vec2 uv = outUV;
 
   // Apply gamma correction

@@ -297,8 +297,6 @@ if (pConfig->mUpdateVariance)
     uint32_t imageIndex = mSwapchain.getCurrentImageIndex();
     uint32_t maxFramesInFlight = static_cast<uint32_t>(mSync.getMaxFramesInFlight());
 
-    mScene.uploadUniformBuffers(imageIndex % maxFramesInFlight);
-
     // If the scene is empty add a dummy triangle so that the acceleration structures can be built successfully.
 
     // Move dummy behind camera
@@ -318,7 +316,7 @@ if (pConfig->mUpdateVariance)
         mScene.updateSceneDescriptors();
     }
 
-    if (mScene.mUploadGeometries) {
+    if (mScene.mUploadGeometries) {                // will upload active light tex in this step
         mScene.uploadGeometries();
         mScene.updateGeoemtryDescriptors();
     }
@@ -337,6 +335,8 @@ if (pConfig->mUpdateVariance)
                               vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
                               vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate);
     }
+
+    mScene.uploadUniformBuffers(imageIndex % maxFramesInFlight);
 
     // Increment frame counter for jitter cam.
     if (pConfig->mAccumulateFrames)

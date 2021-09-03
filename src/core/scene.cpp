@@ -33,6 +33,7 @@ namespace kuafu {
 CameraUBO cameraUBO;
 DirectionalLightUBO directionalLightUBO;
 PointLightsUBO pointLightsUBO;
+ActiveLightsUBO activeLightsUBO;
 
 std::shared_ptr<Geometry> triangle = nullptr; ///< A dummy triangle that will be placed in the scene if it empty. This assures the AS creation.
 std::shared_ptr<GeometryInstance> triangleInstance = nullptr;
@@ -299,6 +300,7 @@ void Scene::prepareBuffers() {
     mCameraUniformBuffer.init();
     mDirectionalLightUniformBuffer.init();
     mPointLightsUniformBuffer.init();
+    mActiveLightsUniformBuffer.init();
 }
 
 
@@ -347,11 +349,30 @@ void Scene::uploadLightBuffers(uint32_t imageIndex) {
             pointLightsUBO.rgbs[i][3] = 0.0;
     }
     mPointLightsUniformBuffer.upload(imageIndex, pointLightsUBO);
+
+    for (size_t i = 0; i < global::maxActiveLights; i++) {
+        if (i < pActiveLights.size()) {
+            KF_ASSERT(pActiveLights[i] != nullptr, "Invalid point light!");
+
+            auto& viewMat = pActiveLights[i]->viewMat;
+            auto viewMatInv = glm::inverse(viewMat);
+            activeLightsUBO.viewMat[i] = viewMat;
+            activeLightsUBO.projMat[i] = glm::perspective(
+                    pActiveLights[i]->fov, 1.F, 0.01F, 1000.0F);
+            activeLightsUBO.front[i] = {-viewMatInv[2][0], -viewMatInv[2][1], -viewMatInv[2][2], 1};
+            activeLightsUBO.rgbs[i] = {pActiveLights[i]->color, pActiveLights[i]->strength};
+            activeLightsUBO.position[i] = {viewMatInv[3][0], viewMatInv[3][1], viewMatInv[3][2], 0};
+
+            activeLightsUBO.sftp[i] = {pActiveLights[i]->softness, pActiveLights[i]->fov, pActiveLights[i]->texID, 0};
+        } else
+            activeLightsUBO.front[i][3] = 0;         // if front[i].w = 0, no light
+    }
+    mActiveLightsUniformBuffer.upload(imageIndex, activeLightsUBO);
 }
 
 void Scene::uploadEnvironmentMap() {
   mUploadEnvironmentMap = false;
-    if (!mUseEnvironmentMap || mEnvironmentMapTexturePath == "") {
+    if (!mUseEnvironmentMap || mEnvironmentMapTexturePath.empty()) {
       mEnvironmentMap.init("");
         return;
     }
@@ -398,6 +419,19 @@ void Scene::uploadGeometries() {
         }
 
         memAlignedMaterials.push_back(mat2);
+    }
+
+    // upload active light textures
+    for (auto& light: pActiveLights) {
+        if (!light->texPath.empty()) {
+            light->texID = global::textureIndex;
+
+            auto texture = std::make_shared<vkCore::Texture>();
+            texture->init(light->texPath);
+            mTextures[global::textureIndex++] = texture;
+        } else {
+            light->texID = -1;
+        }
     }
 
     // upload materials
@@ -523,7 +557,10 @@ void Scene::initSceneDescriptorSets() {
     // Point lights uniform buffer
     mSceneDescriptors.bindings.add(4, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eClosestHitKHR);
 
-  mSceneDescriptors.layout = mSceneDescriptors.bindings.initLayoutUnique();
+    // Active lights uniform buffer
+    mSceneDescriptors.bindings.add(5, vk::DescriptorType::eUniformBuffer, vk::ShaderStageFlagBits::eClosestHitKHR);
+
+    mSceneDescriptors.layout = mSceneDescriptors.bindings.initLayoutUnique();
   mSceneDescriptors.pool = mSceneDescriptors.bindings.initPoolUnique(global::maxResources);
   mSceneDescriptorSets = vkCore::allocateDescriptorSets(mSceneDescriptors.pool.get(), mSceneDescriptors.layout.get());
 }
@@ -603,6 +640,8 @@ void Scene::updateSceneDescriptors() {
                                           mDirectionalLightUniformBuffer._bufferInfos.data());
     mSceneDescriptors.bindings.writeArray(mSceneDescriptorSets, 4,
                                           mPointLightsUniformBuffer._bufferInfos.data());
+    mSceneDescriptors.bindings.writeArray(mSceneDescriptorSets, 5,
+                                          mActiveLightsUniformBuffer._bufferInfos.data());
     mSceneDescriptors.bindings.update();
 }
 
