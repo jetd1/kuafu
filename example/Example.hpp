@@ -751,7 +751,8 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
 //        addScene(renderer->getScene(), "/home/jet/Downloads/toc.glb");
-        addScene(renderer->getScene(), "/home/jet/Downloads/test.glb");
+//        addScene(renderer->getScene(), "/home/jet/Downloads/test.glb");
+        addScene(renderer->getScene(), "/home/jet/Downloads/model.blend");
     }
 }
 

@@ -57,34 +57,30 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
     for (uint32_t mat_idx = 0; mat_idx < scene->mNumMaterials; ++mat_idx) {
         auto *m = scene->mMaterials[mat_idx];
         aiColor3D diffuseColor{0, 0, 0};
-        aiColor3D specularColor{0, 0, 0};
         aiColor3D emissionColor{0, 0, 0};
         float alpha = 1.f;
         float ior = 1.4f;
+        float specular = .5f;
         float transmission = 0.f;
         float metallic = 0.f;
         float roughness = 0.f;
-        m->Get(AI_MATKEY_OPACITY, alpha);
-        m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
-        m->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
-        m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);
-        m->Get(AI_MATKEY_REFRACTI, ior);
-        m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION_FACTOR, transmission);
-        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metallic);
-        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughness);
+        float emissionStrength = 1.f;
 
-        float specular = (specularColor.r + specularColor.g + specularColor.b) / 3;
+        m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+        m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);
+        m->Get(AI_MATKEY_SPECULAR_FACTOR, specular);
+        m->Get(AI_MATKEY_OPACITY, alpha);
+        m->Get(AI_MATKEY_REFRACTI, ior);
+        m->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission);
+        m->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+        m->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+        m->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissionStrength);
 
         if (alpha < 1e-5 && utils::hasExtension(fname, ".dae")) {
             KF_WARN("The DAE file " + path.string() +
                     " is fully transparent. This is probably "
                     "due to modeling error. Setting opacity to 1 instead.");
             alpha = 1.f;
-        }
-
-        if (specular == 0 && utils::hasExtension(fname, {".gltf", ".glb"})) {
-            KF_WARN("Specular is set to 0.5 for the glTF file " + path.string());
-            specular = 0.5f;
         }
 
         if (roughness == 0 && !utils::hasExtension(fname, {".gltf", ".glb"})) {
@@ -144,7 +140,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
                                     .ior = ior,
                                     .transmission = transmission,
                                     .emission = {emissionColor.r, emissionColor.g, emissionColor.b},
-                                    .emissionStrength = 1.,
+                                    .emissionStrength = emissionStrength,
                             });
     }
 
