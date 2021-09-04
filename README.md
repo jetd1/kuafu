@@ -19,7 +19,7 @@ TODO
 # Examples
 
 ```bash
-mkdir build && cd build && cmake .. && make example -j && ./example;
+mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
 ```
 
 

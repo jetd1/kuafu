@@ -256,8 +256,6 @@ auto Scene::findGeometry(std::string_view path) const -> std::shared_ptr<Geometr
             return geometry;
         }
     }
-
-    KF_INFO("Could not find geometry in scene.");
     return nullptr;
 }
 

@@ -34,6 +34,7 @@
 #define STB_IMAGE_STATIC
 #include <stb/stb_image.h>
 #include <vulkan/vulkan.hpp>
+#include <filesystem>
 
 // Requires compiler with support for C++17.
 
@@ -209,11 +210,14 @@ namespace vkCore
 
     std::string fileNameOut = fileName + ".spv";
 
-    // Calls glslc to compile the glsl file into spir-v.
-    std::stringstream command;
-    command << glslcPath << " " << shaderPath << " -o " << pathToFile << fileNameOut << " --target-env=vulkan1.2";
+    if (std::filesystem::exists(glslcPath)) {
+        VK_CORE_LOG("glslc found, trying to recompile shaders from source.");
+        std::stringstream command;
+        command << glslcPath << " " << shaderPath << " -o " << pathToFile << fileNameOut << " --target-env=vulkan1.2";
 
-    std::system( command.str( ).c_str( ) );
+        std::system( command.str( ).c_str( ) );
+    } else
+        VK_CORE_LOG("No glslc found, trying to use precompiled shaders.");
 
     // Read the file and retrieve the source.
     std::string pathToShaderSourceFile = pathToFile + fileNameOut;
@@ -221,7 +225,7 @@ namespace vkCore
 
     if ( !file.is_open( ) )
     {
-      VK_CORE_THROW( "Failed to open shader source file ", pathToShaderSourceFile );
+      VK_CORE_THROW( "Failed to open shader .spv: ", pathToShaderSourceFile );
     }
 
     size_t fileSize = static_cast<size_t>( file.tellg( ) );
@@ -2934,7 +2938,8 @@ namespace vkCore
     ///
     /// @param
     inline void download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
-                  void *data, size_t size, vk::Offset3D offset, vk::Extent3D extent) {
+                  void *data, size_t size, vk::Offset3D offset, vk::Extent3D extent,
+                  const std::vector<vk::Semaphore>& waitSemaphores = { }) {
         vk::ImageAspectFlags aspect;
         uint32_t formatSize;
 
@@ -3027,7 +3032,7 @@ namespace vkCore
                                        {aspect, 0, 0, 1}, offset, extent);
         commandBuffer.get(0).copyImageToBuffer(_image, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer.get(), copyRegion);
         commandBuffer.end();
-        commandBuffer.submitToQueue(global::graphicsQueue);  // wait idle inside
+        commandBuffer.submitToQueue(global::graphicsQueue, {}, waitSemaphores);  // wait idle inside
 
         void *mapped;
         auto result = vkCore::global::device.mapMemory(
@@ -3037,13 +3042,14 @@ namespace vkCore
     }
 
     inline void download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
-                  void *data, size_t size) {
-        download(_image, _format, _layout, _extent, data, size, {0, 0, 0}, _extent);
+                  void *data, size_t size, const std::vector<vk::Semaphore>& waitSemaphores = { }) {
+        download(_image, _format, _layout, _extent, data, size, {0, 0, 0}, _extent, waitSemaphores);
     }
 
     template <typename DataType>
     inline std::vector<DataType> download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
-                                   vk::Offset3D offset, vk::Extent3D extent) {
+                                   vk::Offset3D offset, vk::Extent3D extent,
+                                   const std::vector<vk::Semaphore>& waitSemaphores = { }) {
 //        if (!isFormatCompatible<DataType>(_format)) {
 //            throw std::runtime_error("Download failed: incompatible format");
 //        }
@@ -3072,13 +3078,14 @@ namespace vkCore
         }
         size_t size = formatSize * extent.width * extent.height * extent.depth;
         std::vector<DataType> data(size / sizeof(DataType));
-        download(_image, _format, _layout, _extent, data.data(), size, offset, extent);
+        download(_image, _format, _layout, _extent, data.data(), size, offset, extent, waitSemaphores);
         return data;
     }
 
     template <typename DataType>
-    inline std::vector<DataType> download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent) {
-        return download<DataType>(_image, _format, _layout, _extent, {0, 0, 0}, _extent);
+    inline std::vector<DataType> download(vk::Image _image, vk::Format _format, vk::ImageLayout _layout, vk::Extent3D _extent,
+                                          const std::vector<vk::Semaphore>& waitSemaphores = { }) {
+        return download<DataType>(_image, _format, _layout, _extent, {0, 0, 0}, _extent, waitSemaphores);
     }
 
 }

@@ -47,7 +47,7 @@ public:
 
     [[nodiscard]] bool isRunning() const;
 
-    [[nodiscard]] const std::vector<uint8_t> &downloadLatestFrame() const;
+    [[nodiscard]] std::vector<uint8_t> downloadLatestFrame();
 
     void setWindow(std::shared_ptr<Window> other);
 

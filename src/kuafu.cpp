@@ -31,8 +31,6 @@ Kuafu::Kuafu(std::shared_ptr<Config> config,
              std::shared_ptr<Window> window,
              std::shared_ptr<Camera> camera,
              std::shared_ptr<Gui> gui) {
-    KF_INFO("Starting Kuafu.");
-
     pWindow = window ? window
             : std::make_shared<Window>();
     mContext.pWindow = pWindow;
@@ -72,8 +70,8 @@ void Kuafu::run() {
     mContext.render();
 }
 
-const std::vector<uint8_t> &Kuafu::downloadLatestFrame() const {
-    return mContext.mLatestFrame;
+std::vector<uint8_t> Kuafu::downloadLatestFrame() {
+    return mContext.downloadLatestFrame();
 }
 
 void Kuafu::setWindow(std::shared_ptr<Window> window) {

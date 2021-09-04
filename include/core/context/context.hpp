@@ -61,7 +61,6 @@ namespace kuafu {
 
         Scene mScene;
         std::shared_ptr<Config> pConfig;
-        std::vector<uint8_t> mLatestFrame;   // TODO: kuafu_urgent: optimize this
 
         /// Used to set the GUI that will be used.
         ///
@@ -97,6 +96,9 @@ namespace kuafu {
 
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         void submitFrame();
+
+        /// Submits the swapchain command buffers to a queue and presents an image on the screen.
+        std::vector<uint8_t> downloadLatestFrame();
 
 
     public:

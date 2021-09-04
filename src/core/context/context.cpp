@@ -361,16 +361,6 @@ void Context::submitFrame() {
     // This will mark the current image to be in use by this frame.
     mSync.getImageInFlight(imageIndex_t) = mSync.getInFlightFence(currentFrame);
 
-    // Download every frame
-    // TODO: get this into command buffer
-    mLatestFrame = vkCore::download<uint8_t>(
-            mSwapchain.getImage(imageIndex),
-            mSurface.getFormat(), vk::ImageLayout::ePresentSrcKHR,
-            vk::Extent3D{mSurface.getExtent(), 1});
-
-//        mSwapchain.setImageLayout(imageIndex,
-//                                  vk::ImageLayout::eTransferSrcOptimal, vk::ImageLayout::ePresentSrcKHR);
-
     vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);
 
     // Reset the signaled state of the current frame's fence to the unsignaled one.
@@ -382,7 +372,7 @@ void Context::submitFrame() {
     vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 
     auto waitSemaphore = mSync.getImageAvailableSemaphore(currentFrame);
-    auto signaleSemaphore = mSync.getFinishedRenderSemaphore(currentFrame);
+    auto finishedRenderSemaphore = mSync.getFinishedRenderSemaphore(currentFrame);
 
     vk::SubmitInfo submitInfo(1,                   // waitSemaphoreCount
                               &waitSemaphore,      // pWaitSemaphores
@@ -390,13 +380,13 @@ void Context::submitFrame() {
                               1,                   // commandBufferCount
                               &cmdBuf,             // pCommandBuffers
                               1,                   // signalSemaphoreCount
-                              &signaleSemaphore); // pSignalSemaphores
+                              &finishedRenderSemaphore); // pSignalSemaphores
 
     vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence_t);
 
     // Tell the presentation engine that the current image is ready.
     vk::PresentInfoKHR presentInfo(1,                          // waitSemaphoreCount
-                                   &signaleSemaphore,          // pWaitSemaphores
+                                   &finishedRenderSemaphore,          // pWaitSemaphores
                                    1,                          // swapchainCount
                                    &vkCore::global::swapchain, // pSwapchains
                                    &imageIndex,                // pImageIndices
@@ -417,6 +407,15 @@ void Context::submitFrame() {
     prevFrame = currentFrame;
     currentFrame = (currentFrame + 1) % mSync.getMaxFramesInFlight();
 }
+
+
+std::vector<uint8_t> Context::downloadLatestFrame() {
+    return vkCore::download<uint8_t>(
+            mSwapchain.getImage(prevFrame),
+            mSurface.getFormat(), vk::ImageLayout::ePresentSrcKHR,
+            vk::Extent3D{mSurface.getExtent(), 1});
+}
+
 
 void Context::updateSettings() {
     if (pConfig->mMaxGeometryChanged || pConfig->mMaxTexturesChanged) {
@@ -458,14 +457,13 @@ void Context::render() {
     update();
 
     if (pWindow->minimized()) {
-        KF_WARN("pWindow->minimized()");
+        KF_INFO("Window minimized!");
         return;
     }
 
     if (pWindow->changed()) {
-        KF_WARN("pWindow->changed()");
+        KF_INFO("Window size changed!");
         mScene.mCurrentCamera->mProjNeedsUpdate = true;
-//            pCamera->mProjNeedsUpdate = true;
         return;
     }
 
@@ -540,7 +538,7 @@ void Context::recordSwapchainCommandBuffers() {
                                      static_cast<uint32_t>(pConfig->mRussianRoulette),
                                      pConfig->mRussianRouletteMinBounces,
                                      pConfig->mNextEventEstimation,
-                                     pConfig->mNextEventEstimationMinBounces};
+                                     pConfig->mNextEventEstimationMinBounces};   // TODO: remove unused
 
     for (size_t imageIndex = 0; imageIndex < mSwapchainCommandBuffers.get().size(); ++imageIndex) {
         vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);
@@ -570,6 +568,9 @@ void Context::recordSwapchainCommandBuffers() {
                                       descriptorSets.data(),
                                       0,
                                       nullptr);
+//
+//            mSwapchain.setImageLayout(
+//                    imageIndex, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
 
             // rt
             mRayTracer.trace(cmdBuf, mSwapchain.getImage(imageIndex), mSwapchain.getExtent());

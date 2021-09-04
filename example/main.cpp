@@ -9,8 +9,8 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(512);
-    config->setPathDepth(12);
+    config->setPerPixelSampleRate(8);
+    config->setPathDepth(3);
     config->setRussianRoulette(false);
 
     auto camera = std::make_shared<CustomCamera>(
@@ -21,18 +21,17 @@ int main() {
 
     kuafu::Kuafu renderer(config, window, camera);
 
-//    auto &scene = renderer.getScene();
+    loadScene(&renderer, Level::eSpheres);     // eActive, eCornell
 
-    loadScene(&renderer, Level::eActive);
-
-//    glm::mat4 m = glm::mat4(1.0);
-//    m[3][0] = 17;
-//    camera->setPose(m);
-
-
+    size_t counter = 0;
     while (renderer.isRunning()) {
 //        updateScene(&renderer);
         renderer.run();
+
+//        if (counter % 100 == 0)
+//            auto ret = renderer.downloadLatestFrame();
+
+        counter++;
     }
 
     return 0;
