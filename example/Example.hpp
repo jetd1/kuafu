@@ -56,7 +56,7 @@ inline void addScene(
         kuafu::Scene& scene,
         std::string_view path,
         glm::mat4 transform = glm::mat4(1.0F),
-        std::shared_ptr<kuafu::NiceMaterial> mat = nullptr) {
+        kuafu::NiceMaterial* mat = nullptr) {
     auto model = scene.findGeometry(path);
     if (model == nullptr) {
         auto models = kuafu::loadScene(path, true);
@@ -242,73 +242,73 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 ////        aLight->texPath = "";
 //        renderer->getScene().addActiveLight(aLight);
 
-        auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
-//        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
-        floorMaterial->diffuseColor = glm::vec3(0.8);
-        floorMaterial->specular = 0.5;
-        floorMaterial->metallic = 0;
-//        floorMaterial->metallic = 0.9;
-        floorMaterial->transmission = 0;
-        floorMaterial->roughness = 0.1;
+        kuafu::NiceMaterial floorMaterial;
+//        floorMaterial.emission = glm::vec3(1.0, 0.2, 0.2);
+        floorMaterial.diffuseColor = glm::vec3(0.8);
+        floorMaterial.specular = 0.5;
+        floorMaterial.metallic = 0;
+//        floorMaterial.metallic = 0.9;
+        floorMaterial.transmission = 0;
+        floorMaterial.roughness = 0.1;
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
-        auto mat = std::make_shared<kuafu::NiceMaterial>();
-        mat->diffuseColor = glm::vec3(1.0F, 0.7F, 0.7F);
-        mat->specular = 0.0F;
-        mat->metallic = 0.0F;
-        mat->roughness = 0.0F;
-        mat->ior = 1.45F;
-//        mat->ior = 5.0F;
-        mat->alpha = 1.0F;
-        mat->transmission = 1.0F;
+        kuafu::NiceMaterial mat;
+        mat.diffuseColor = glm::vec3(1.0F, 0.7F, 0.7F);
+        mat.specular = 0.0F;
+        mat.metallic = 0.0F;
+        mat.roughness = 0.0F;
+        mat.ior = 1.45F;
+//        mat.ior = 5.0F;
+        mat.alpha = 1.0F;
+        mat.transmission = 1.0F;
 //        auto sphere0 = kuafu::createSphere(true, mat);
         auto sphere0 = kuafu::createCube(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-//        mat->metallic = 0.0F;
-        mat->roughness = 0.07F;
-        mat->ior = 1.4F;
-        mat->alpha = 1.0F;
-        mat->transmission = 0.0F;
+        mat.diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+//        mat.metallic = 0.0F;
+        mat.roughness = 0.07F;
+        mat.ior = 1.4F;
+        mat.alpha = 1.0F;
+        mat.transmission = 0.0F;
 //        mat->transmission = 1.0F;
         auto sphere = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.2F;
-        mat->transmission = 0.0F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.2F;
+        mat.transmission = 0.0F;
         auto sphere1 = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.4F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.4F;
         auto sphere2 = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.6F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.6F;
         auto sphere3 = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.8F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.8F;
         auto sphere4 = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.9);
-        mat->specular = 1.0F;
-        mat->roughness = 0.0F;
-        mat->metallic = 1.0F;
+        mat.diffuseColor = glm::vec3(0.9);
+        mat.specular = 1.0F;
+        mat.roughness = 0.0F;
+        mat.metallic = 1.0F;
         auto glass = kuafu::createYZPlane(true, mat);
 
-        mat->diffuseColor = glm::vec3(1);
-        mat->specular = 0.0F;
-        mat->metallic = 0.0F;
-        mat->roughness = 0.0F;
-        mat->ior = 1.4F;
-        mat->alpha = 1.0F;
-        mat->transmission = 1.0F;
+        mat.diffuseColor = glm::vec3(1);
+        mat.specular = 0.0F;
+        mat.metallic = 0.0F;
+        mat.roughness = 0.0F;
+        mat.ior = 1.4F;
+        mat.alpha = 1.0F;
+        mat.transmission = 1.0F;
 //        auto cube = kuafu::createCube(true, mat);
         auto cube = kuafu::createCapsule(2, 1, true, mat);
 
@@ -373,21 +373,21 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
                 });
 
 
-        mat->diffuseColor = glm::vec3(0.2F, 0.2F, 0.2F);
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.05F;
-        mat->ior = 1.45F;
-//        mat->ior = 5.0F;
-        mat->alpha = 1.0F;
-        mat->transmission = 0.0F;
+        mat.diffuseColor = glm::vec3(0.2F, 0.2F, 0.2F);
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.05F;
+        mat.ior = 1.45F;
+//        mat.ior = 5.0F;
+        mat.alpha = 1.0F;
+        mat.transmission = 0.0F;
 
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(-2.0F, 5.0F, 2.F));
         transform = glm::rotate(transform, glm::radians(-90.f), glm::vec3{0, 0, 1});
         transform = glm::rotate(transform, glm::radians(-20.f), glm::vec3{1, 0, 0});
         transform = glm::scale(transform, glm::vec3(3));
 
-        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, mat);
+        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, &mat);
 
 
     } else if (scene == Level::eMirrors) {
@@ -485,17 +485,17 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         dLight->softness = 0.1;
         renderer->getScene().setDirectionalLight(dLight);
 
-        auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
-        floorMaterial->diffuseColor = glm::vec3(1, 1, 1);
+        kuafu::NiceMaterial floorMaterial;
+        floorMaterial.diffuseColor = glm::vec3(1, 1, 1);
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
-        auto mat = std::make_shared<kuafu::NiceMaterial>();
-        mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.2F;
-        mat->ior = 1.4F;
-        mat->alpha = 10.F;
+        kuafu::NiceMaterial mat;;
+        mat.diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.2F;
+        mat.ior = 1.4F;
+        mat.alpha = 10.F;
         auto cap0 = kuafu::createCapsule(0.08, 0.05, true, mat);
         auto cap1 = kuafu::createCapsule(0.1, 0.1, true, mat);
         auto cap2 = kuafu::createCapsule(0.2, 0.2, true, mat);
@@ -538,16 +538,16 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
         renderer->getScene().getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
 
-        auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
-        floorMaterial->diffuseColor = glm::vec3(1.0, 0.3, 0.3);
+        kuafu::NiceMaterial floorMaterial;
+        floorMaterial.diffuseColor = glm::vec3(1.0, 0.3, 0.3);
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
-        auto mat = std::make_shared<kuafu::NiceMaterial>();
-        mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
-        mat->specular = 100.0F;
-        mat->roughness = 10.;
-        mat->ior = 10.0F;
-        mat->alpha = 1.0;
+        kuafu::NiceMaterial mat;
+        mat.diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat.specular = 100.0F;
+        mat.roughness = 10.;
+        mat.ior = 10.0F;
+        mat.alpha = 1.0;
 
         auto scene = kuafu::loadScene(
                 "/zdata/ssource/ICCV2021_Diagnosis/description/xarm_description/meshes/optical_table/visual/optical_table.dae", true);
@@ -593,73 +593,73 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 //        aLight->texPath = "";
         renderer->getScene().addActiveLight(aLight);
 
-        auto floorMaterial = std::make_shared<kuafu::NiceMaterial>();
+        kuafu::NiceMaterial floorMaterial;
 //        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
-        floorMaterial->diffuseColor = glm::vec3(0.8);
-        floorMaterial->specular = 0.5;
-//        floorMaterial->metallic = 0;
-        floorMaterial->metallic = 0.9;
-        floorMaterial->transmission = 0;
-        floorMaterial->roughness = 0.1;
+        floorMaterial.diffuseColor = glm::vec3(0.8);
+        floorMaterial.specular = 0.5;
+//        floorMaterial.metallic = 0;
+        floorMaterial.metallic = 0.9;
+        floorMaterial.transmission = 0;
+        floorMaterial.roughness = 0.1;
         auto floor = kuafu::createYZPlane(true, floorMaterial);
 
-        auto mat = std::make_shared<kuafu::NiceMaterial>();
-        mat->diffuseColor = glm::vec3(1.0F, 0.7F, 0.7F);
-        mat->specular = 0.0F;
-        mat->metallic = 0.0F;
-        mat->roughness = 0.0F;
-        mat->ior = 1.45F;
-//        mat->ior = 5.0F;
-        mat->alpha = 1.0F;
-        mat->transmission = 1.0F;
+        kuafu::NiceMaterial mat;
+        mat.diffuseColor = glm::vec3(1.0F, 0.7F, 0.7F);
+        mat.specular = 0.0F;
+        mat.metallic = 0.0F;
+        mat.roughness = 0.0F;
+        mat.ior = 1.45F;
+//        mat.ior = 5.0F;
+        mat.alpha = 1.0F;
+        mat.transmission = 1.0F;
 //        auto sphere0 = kuafu::createSphere(true, mat);
 //        auto sphere0 = kuafu::createCube(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-//        mat->metallic = 0.0F;
-        mat->roughness = 0.07F;
-        mat->ior = 1.4F;
-        mat->alpha = 1.0F;
-        mat->transmission = 0.0F;
-//        mat->transmission = 1.0F;
+        mat.diffuseColor = glm::vec3(0.7F, 0.40F, 0.1F);
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+//        mat.metallic = 0.0F;
+        mat.roughness = 0.07F;
+        mat.ior = 1.4F;
+        mat.alpha = 1.0F;
+        mat.transmission = 0.0F;
+//        mat.transmission = 1.0F;
         auto sphere = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.2F;
-        mat->transmission = 0.0F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.2F;
+        mat.transmission = 0.0F;
         auto sphere1 = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.4F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.4F;
         auto sphere2 = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.6F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.6F;
         auto sphere3 = kuafu::createSphere(true, mat);
 
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.8F;
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.8F;
         auto sphere4 = kuafu::createSphere(true, mat);
 
-        mat->diffuseColor = glm::vec3(0.9);
-        mat->specular = 1.0F;
-        mat->roughness = 0.0F;
-        mat->metallic = 1.0F;
+        mat.diffuseColor = glm::vec3(0.9);
+        mat.specular = 1.0F;
+        mat.roughness = 0.0F;
+        mat.metallic = 1.0F;
         auto glass = kuafu::createYZPlane(true, mat);
 
-        mat->diffuseColor = glm::vec3(1);
-        mat->specular = 0.0F;
-        mat->metallic = 0.0F;
-        mat->roughness = 0.0F;
-        mat->ior = 1.4F;
-        mat->alpha = 1.0F;
-        mat->transmission = 1.0F;
+        mat.diffuseColor = glm::vec3(1);
+        mat.specular = 0.0F;
+        mat.metallic = 0.0F;
+        mat.roughness = 0.0F;
+        mat.ior = 1.4F;
+        mat.alpha = 1.0F;
+        mat.transmission = 1.0F;
 //        auto cube = kuafu::createCube(true, mat);
         auto cube = kuafu::createCapsule(2, 1, true, mat);
 
@@ -722,21 +722,21 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
                 });
 
 
-        mat->diffuseColor = glm::vec3(0.2F, 0.2F, 0.2F);
-        mat->specular = 0.0F;
-        mat->metallic = 1.0F;
-        mat->roughness = 0.05F;
-        mat->ior = 1.45F;
-//        mat->ior = 5.0F;
-        mat->alpha = 1.0F;
-        mat->transmission = 0.0F;
+        mat.diffuseColor = glm::vec3(0.2F, 0.2F, 0.2F);
+        mat.specular = 0.0F;
+        mat.metallic = 1.0F;
+        mat.roughness = 0.05F;
+        mat.ior = 1.45F;
+//        mat.ior = 5.0F;
+        mat.alpha = 1.0F;
+        mat.transmission = 0.0F;
 
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(-2.0F, 5.0F, 2.F));
         transform = glm::rotate(transform, glm::radians(-90.f), glm::vec3{0, 0, 1});
         transform = glm::rotate(transform, glm::radians(-20.f), glm::vec3{1, 0, 0});
         transform = glm::scale(transform, glm::vec3(3));
 
-        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, mat);
+        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, &mat);
 
 
     } else if (scene == Level::eGLTF) {

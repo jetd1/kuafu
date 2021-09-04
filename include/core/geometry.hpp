@@ -128,14 +128,14 @@ struct GeometryInstanceSSBO {
     uint32_t padding2 = 0;
 };
 
-std::shared_ptr<Geometry> createYZPlane(bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
+std::shared_ptr<Geometry> createYZPlane(bool dynamic = true, NiceMaterial mat = {});
 
-std::shared_ptr<Geometry> createCube(bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
+std::shared_ptr<Geometry> createCube(bool dynamic = true, NiceMaterial mat = {});
 
-std::shared_ptr<Geometry> createSphere(bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
+std::shared_ptr<Geometry> createSphere(bool dynamic = true, NiceMaterial mat = {});
 
 std::shared_ptr<Geometry> createCapsule(
-        float halfHeight = 1., float radius = 1., bool dynamic = true, std::shared_ptr<NiceMaterial> mat = nullptr);
+        float halfHeight = 1., float radius = 1., bool dynamic = true, NiceMaterial mat = {});
 
 
 }

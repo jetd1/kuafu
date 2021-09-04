@@ -291,7 +291,7 @@ void Geometry::recalculateNormals() {
     }
 }
 
-std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<NiceMaterial> mat) {
+std::shared_ptr<Geometry> createYZPlane(bool dynamic, NiceMaterial mat) {
     auto ret = std::make_shared<Geometry>();
     ret->vertices = {
             {.pos = {0, 1, 1}, .normal = {1, 0, 0}, .texCoord = {1, 0}},
@@ -303,20 +303,19 @@ std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<NiceMateri
             0, 1, 2,
             0, 2, 3
     };
-    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
 
-    kuafu::global::materials.push_back(*mat);  // copy
-    ++kuafu::global::materialIndex;            // TODO: check existing dup mat
-
-    ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->alpha >= 1.0F);
+    ret->isOpaque = (mat.alpha >= 1.0F);
+    ret->geometryIndex = kuafu::global::geometryIndex++;
+    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex++);
+    kuafu::global::materials.push_back(std::move(mat));      // TODO: check existing dup mat
+
     return ret;
 }
 
-std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<NiceMaterial> mat) {
+std::shared_ptr<Geometry> createCube(bool dynamic, NiceMaterial mat) {
     auto ret = std::make_shared<Geometry>();
 
     ret->vertices = {
@@ -359,21 +358,20 @@ std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<NiceMaterial>
             12, 22, 13,
             15, 23, 16
     };
-    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
-
-    kuafu::global::materials.push_back(*mat);  // copy
-    ++kuafu::global::materialIndex;            // TODO: check existing dup mat
 
     ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->alpha >= 1.0F);
+    ret->isOpaque = (mat.alpha >= 1.0F);
+    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex++);
+    kuafu::global::materials.push_back(std::move(mat));       // TODO: check existing dup mat
+
     return ret;
 }
 
 // Modified from optifuser by Fanbo
-std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<NiceMaterial> mat) {
+std::shared_ptr<Geometry> createSphere(bool dynamic, NiceMaterial mat) {
     auto ret = std::make_shared<Geometry>();
 
     uint32_t stacks = 50;
@@ -421,15 +419,13 @@ std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<NiceMateria
         ret->indices.push_back(right);
     }
 
-    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
-    kuafu::global::materials.push_back(*mat);  // copy
-    ++kuafu::global::materialIndex;            // TODO: check existing dup mat
-
     ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->alpha >= 1.0F);
+    ret->isOpaque = (mat.alpha >= 1.0F);
+    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex++);
+    kuafu::global::materials.push_back(std::move(mat));          // TODO: check existing dup mat
 
     ret->recalculateNormals();
 
@@ -439,7 +435,7 @@ std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<NiceMateria
 // Modified from svulkan2 by Fanbo
 // TODO: avoid copies
 std::shared_ptr<Geometry> createCapsule(
-        float halfLength, float radius, bool dynamic, std::shared_ptr<NiceMaterial> mat) {
+        float halfLength, float radius, bool dynamic, NiceMaterial mat) {
     auto ret = std::make_shared<Geometry>();
 
     int segments = 32;
@@ -530,15 +526,13 @@ std::shared_ptr<Geometry> createCapsule(
         for (int j = 0; j < 3; ++j)
             ret->indices[3 * i + j] = indices[i][j];
 
-    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex);
-    kuafu::global::materials.push_back(*mat);  // copy
-    ++kuafu::global::materialIndex;            // TODO: check existing dup mat
-
-    ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
-    ret->isOpaque = (mat->alpha >= 1.0F);
+    ret->isOpaque = (mat.alpha >= 1.0F);
+    ret->geometryIndex = kuafu::global::geometryIndex++;
+    ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex++);
+    kuafu::global::materials.push_back(std::move(mat));          // TODO: check existing dup mat
 
     return ret;
 }
