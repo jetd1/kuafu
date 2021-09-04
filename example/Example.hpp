@@ -8,7 +8,8 @@ enum class Level {
     eSponza,
     eNew,
     eObj,
-    eActive
+    eActive,
+    eGLTF
 };
 
 inline Level currentLevel;
@@ -738,6 +739,19 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, mat);
 
 
+    } else if (scene == Level::eGLTF) {
+        renderer->reset();
+        renderer->getConfig().setGeometryLimit(1000);
+        renderer->getConfig().setGeometryInstanceLimit(1000);
+        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
+        renderer->getConfig().setAccumulatingFrames(true);
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0));
+
+        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+
+//        addScene(renderer->getScene(), "/home/jet/Downloads/toc.glb");
+        addScene(renderer->getScene(), "/home/jet/Downloads/test.glb");
     }
 }
 

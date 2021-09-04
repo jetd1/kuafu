@@ -7,6 +7,7 @@
 #include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <kuafu_utils.hpp>
 
 namespace kuafu {
 bool operator==(const NiceMaterial &m1, const NiceMaterial &m2) {
@@ -50,47 +51,55 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
     std::vector<std::shared_ptr<Geometry>> geometries;
     std::vector<NiceMaterial> materials;
 
+    // Known issue:
+    //   1. Blender 2.93 still do not export Specular, Transmission, IOR
+
     for (uint32_t mat_idx = 0; mat_idx < scene->mNumMaterials; ++mat_idx) {
         auto *m = scene->mMaterials[mat_idx];
         aiColor3D diffuseColor{0, 0, 0};
         aiColor3D specularColor{0, 0, 0};
         aiColor3D emissionColor{0, 0, 0};
         float alpha = 1.f;
-        float shininess = 0.f;
-        float ior = 0.f;
-//        float transmission = 0.f;
+        float ior = 1.4f;
+        float transmission = 0.f;
+        float metallic = 0.f;
+        float roughness = 0.f;
         m->Get(AI_MATKEY_OPACITY, alpha);
         m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
         m->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
-        m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);  // TODO: strengh?
-
-        float specular = (specularColor.r + specularColor.g + specularColor.b) / 3;      // TODO
-
-        m->Get(AI_MATKEY_SHININESS, shininess);
+        m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);
         m->Get(AI_MATKEY_REFRACTI, ior);
-//        m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION, transmission); // TODO: full glTF
+        m->Get(AI_MATKEY_GLTF_MATERIAL_TRANSMISSION_FACTOR, transmission);
+        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metallic);
+        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughness);
 
-        if (alpha < 1e-5 && (fname.ends_with("dae") ||    // TODO: dAE?
-                             fname.ends_with("DAE"))) {
+        float specular = (specularColor.r + specularColor.g + specularColor.b) / 3;
+
+        if (alpha < 1e-5 && utils::hasExtension(fname, ".dae")) {
             KF_WARN("The DAE file " + path.string() +
                     " is fully transparent. This is probably "
-                    "due to modeling error. Setting opacity to 1 instead...");
+                    "due to modeling error. Setting opacity to 1 instead.");
             alpha = 1.f;
         }
 
-        float roughness;                           // TODO
-        if (shininess <= 5.f)
-            roughness = 1.f;
-        else if (shininess >= 1605.f)
-            roughness = 0.f;
-        else
-            roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
+        if (specular == 0 && utils::hasExtension(fname, {".gltf", ".glb"})) {
+            KF_WARN("Specular is set to 0.5 for the glTF file " + path.string());
+            specular = 0.5f;
+        }
 
-
-//      std::shared_ptr<SVTexture> baseColorTexture{};
-//      std::shared_ptr<SVTexture> normalTexture{};
-//      std::shared_ptr<SVTexture> roughnessTexture{};
-//      std::shared_ptr<SVTexture> metallicTexture{};
+        if (roughness == 0 && !utils::hasExtension(fname, {".gltf", ".glb"})) {
+            float shininess = -1;
+            m->Get(AI_MATKEY_SHININESS, shininess);
+            if (shininess > 0) {
+                KF_WARN("Unable to load roughness from " + path.string() + ". Calculating using shininess.");
+                if (shininess <= 5.f)
+                    roughness = 1.f;
+                else if (shininess >= 1605.f)
+                    roughness = 0.f;
+                else
+                    roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
+            }
+        }
 
         aiString tpath;
         std::string diffuseTexPath;
@@ -98,7 +107,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
             m->GetTexture(aiTextureType_DIFFUSE, 0, &tpath) == AI_SUCCESS) {
 //            if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {
             if (scene->GetEmbeddedTexture(tpath.C_Str())) {
-                KF_ERROR("embedded texture not supported");
+                KF_WARN("embedded texture not supported");
             } else {
                 std::string p = std::string(tpath.C_Str());
                 if (!std::filesystem::path(p).is_absolute())
@@ -129,13 +138,13 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
                                     .diffuseColor = {diffuseColor.r, diffuseColor.g, diffuseColor.b},
                                     .alpha = alpha,
                                     .diffuseTexPath = std::move(diffuseTexPath),
-                                    .metallic = 0.0,                                                 // TODO
-                                    .specular = specular,                                            // TODO
+                                    .metallic = metallic,
+                                    .specular = specular,
                                     .roughness = roughness,
                                     .ior = ior,
-                                    .transmission = 0.0,                                             // TODO
+                                    .transmission = transmission,
                                     .emission = {emissionColor.r, emissionColor.g, emissionColor.b},
-                                    .emissionStrength = 1.,                                           // TODO: strength
+                                    .emissionStrength = 1.,
                             });
     }
 
@@ -208,7 +217,6 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         geometry->dynamic = dynamic;
         geometry->vertices = vertices;
         geometry->indices = indices;
-        geometry->subMeshCount = 1;
         geometry->initialized = false;
         geometry->matIndex = std::vector<uint32_t>(
                 indices.size() / 3, matLocal2GlobalIdx[mesh->mMaterialIndex]);
@@ -301,7 +309,6 @@ std::shared_ptr<Geometry> createYZPlane(bool dynamic, std::shared_ptr<NiceMateri
     ++kuafu::global::materialIndex;            // TODO: check existing dup mat
 
     ret->geometryIndex = kuafu::global::geometryIndex++;
-    ret->subMeshCount = 1;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
@@ -358,7 +365,6 @@ std::shared_ptr<Geometry> createCube(bool dynamic, std::shared_ptr<NiceMaterial>
     ++kuafu::global::materialIndex;            // TODO: check existing dup mat
 
     ret->geometryIndex = kuafu::global::geometryIndex++;
-    ret->subMeshCount = 1;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
@@ -420,7 +426,6 @@ std::shared_ptr<Geometry> createSphere(bool dynamic, std::shared_ptr<NiceMateria
     ++kuafu::global::materialIndex;            // TODO: check existing dup mat
 
     ret->geometryIndex = kuafu::global::geometryIndex++;
-    ret->subMeshCount = 1;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
@@ -530,7 +535,6 @@ std::shared_ptr<Geometry> createCapsule(
     ++kuafu::global::materialIndex;            // TODO: check existing dup mat
 
     ret->geometryIndex = kuafu::global::geometryIndex++;
-    ret->subMeshCount = 1;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;

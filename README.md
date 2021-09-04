@@ -27,9 +27,12 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
 
 - Physically based materials (PrincipledBSDF / Disney PBR)
   - [x] Diffuse
+    - [x] Diffuse texture
   - [x] Specular
+    - [ ] Specular texture
   - [x] Roughness
     - [ ] Oren–Nayar reflectance
+    - [ ] Roughness Metallic texture
   - [x] Transmission
     - [ ] Refraction w/ roughness
     - [ ] Caustics 
@@ -38,6 +41,7 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
   - [x] Emission
     - [ ] Align behavior with Blender
   - [ ] Check numerical issues
+  - [ ] Normals texture
     
 
 - Realistic Lights
@@ -55,6 +59,7 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
   - [x] Image download
     - [ ] Lazy image downloads
     - [ ] Fix validation error when downloading
+  - [ ] Async rendering
   - [ ] Separate scene from Renderer
   - [ ] Depth download
   - [ ] Segmentation download
@@ -65,9 +70,12 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
 
 - Import / Export
   - [x] Assimp scene loader
-  - [ ] Load full glTF
-    - [ ] Load blender glTF
-    - [ ] Load `.blend`
+  - [ ] Embedded materials
+  - [ ] Async loading
+  - [x] Load full glTF
+    - [x] Check with blender glTF
+      - Note: Blender (2.93) does not export Specular, IOR and Transmission
+  - [ ] Load `.blend`
   - [ ] Check `.obj` appearance with blender
 
 

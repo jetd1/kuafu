@@ -61,10 +61,9 @@ struct Geometry {
     std::vector<uint32_t> indices;  ///< Contains all indices of the geometry.
     std::vector<uint32_t> matIndex; ///< Contains all sub-meshes and their respective materials.
     uint32_t geometryIndex = 0;     ///< A unique index required by the acceleration structures.
-    size_t subMeshCount = 0;
-    std::string path = "";    ///< The model's path, relative to the path to assets.
+    std::string path;         ///< The model's path, relative to the path to assets.
     bool initialized = false; ///< Keeps track of whether or not the geometry was initialized.
-    bool dynamic = false; ///< Keeps track of whether or not the geometry is dynamic or static.
+    bool dynamic = false;     ///< Keeps track of whether or not the geometry is dynamic or static. // TODO: use this field
     bool isOpaque = true;
 };
 

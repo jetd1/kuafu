@@ -21,7 +21,7 @@ int main() {
 
     kuafu::Kuafu renderer(config, window, camera);
 
-    loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell
+    loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell, eGLTF
 
     size_t counter = 0;
     while (renderer.isRunning()) {

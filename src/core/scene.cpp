@@ -375,8 +375,7 @@ void Scene::uploadEnvironmentMap() {
         return;
     }
 
-    auto ext = std::filesystem::path(mEnvironmentMapTexturePath).extension();
-    if (kuafu::utils::iequals(ext, ".ktx")) {
+    if (utils::hasExtension(mEnvironmentMapTexturePath, ".ktx")) {
       mEnvironmentMap.init(mEnvironmentMapTexturePath);
         return;
     }
