@@ -12,6 +12,7 @@ enum class Level {
 };
 
 inline Level currentLevel;
+auto dLight = std::make_shared<kuafu::DirectionalLight>();
 
 inline auto getRandomUniquePosition(float min, float max) -> glm::vec3 {
     static std::vector<glm::vec3> positions;
@@ -196,7 +197,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
-        auto dLight = std::make_shared<kuafu::DirectionalLight>();
+//        auto dLight = std::make_shared<kuafu::DirectionalLight>();
         dLight->direction ={-2, -1, -1};
 //        dLight->direction ={1., 0.1, -0.5};
         dLight->color = {1., 0.9, 0.7};
@@ -740,35 +741,24 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
     }
 }
 
-void updateScene(kuafu::Kuafu *renderer) {
-    if (Key::eB) {
-        for (int i = 0; i < 100; ++i) {
-            addBox(renderer);
-        }
+void updateScene(kuafu::Kuafu& renderer) {
+//    if (currentLevel == Level::eAnimations) {
+//        auto instance = renderer.getScene().getGeometryInstance(0);
+//
+//        if (instance != nullptr) {
+//            instance->setTransform(
+//                    glm::rotate(instance->transform, kuafu::Time::getDeltaTime() * 0.1F, glm::vec3(0.0F, 1.0F, 0.0F)));
+//        }
+//    } else if (currentLevel == Level::eMirrors) {
+//        auto instances = renderer.getScene( ).getGeometryInstances( );
+//        for ( auto instance : instances )
+//        {
+//          instance->setTransform( glm::rotate( instance->transform, kuafu::Time::getDeltaTime( ) * 0.1F, glm::vec3( 0.0F, 1.0F, 0.0F ) ) );
+//        }
+//    }
 
-        Key::eB = false;
-    }
-
-    if (Key::eL) {
-        for (int i = 0; i < 100; ++i) {
-            addSphere(renderer);
-        }
-
-        Key::eL = false;
-    }
-
-    if (currentLevel == Level::eAnimations) {
-        auto instance = renderer->getScene().getGeometryInstance(0);
-
-        if (instance != nullptr) {
-            instance->setTransform(
-                    glm::rotate(instance->transform, kuafu::Time::getDeltaTime() * 0.1F, glm::vec3(0.0F, 1.0F, 0.0F)));
-        }
-    } else if (currentLevel == Level::eMirrors) {
-        auto instances = renderer->getScene( ).getGeometryInstances( );
-        for ( auto instance : instances )
-        {
-          instance->setTransform( glm::rotate( instance->transform, kuafu::Time::getDeltaTime( ) * 0.1F, glm::vec3( 0.0F, 1.0F, 0.0F ) ) );
-        }
-    }
+//    if (currentLevel == Level::eSpheres) {
+//        dLight->direction += glm::vec3{0.01, 0, 0};
+//        kuafu::global::frameCount = -1;
+//    }
 }

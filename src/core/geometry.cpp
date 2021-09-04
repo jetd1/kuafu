@@ -96,7 +96,6 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         std::string diffuseTexPath;
         if (m->GetTextureCount(aiTextureType_DIFFUSE) > 0 &&
             m->GetTexture(aiTextureType_DIFFUSE, 0, &tpath) == AI_SUCCESS) {
-            KF_INFO("Trying to load texture {}", tpath.C_Str());
 //            if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {
             if (scene->GetEmbeddedTexture(tpath.C_Str())) {
                 KF_ERROR("embedded texture not supported");

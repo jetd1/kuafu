@@ -55,11 +55,12 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
   - [x] Image download
     - [ ] Lazy image downloads
     - [ ] Fix validation error when downloading
+  - [ ] Separate scene from Renderer
   - [ ] Depth download
   - [ ] Segmentation download
   - [ ] Offscreen rendering
-  - [ ] Online shader compilation
-    - [ ] Remove GLSLC requirements
+  - [x] Online shader compilation
+    - [ ] (Maybe) Use libgls
 
 
 - Import / Export
@@ -72,7 +73,7 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
 
 - Viewer
   - [ ] Improve mouse control
-  - [ ] Fix segfault when resizing in SAPIEN
+  - [ ] Fix segfault / vk Exceptions when resizing in SAPIEN
 
 
 

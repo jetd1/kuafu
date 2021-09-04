@@ -21,11 +21,11 @@ int main() {
 
     kuafu::Kuafu renderer(config, window, camera);
 
-    loadScene(&renderer, Level::eSpheres);     // eActive, eCornell
+    loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell
 
     size_t counter = 0;
     while (renderer.isRunning()) {
-//        updateScene(&renderer);
+        updateScene(renderer);
         renderer.run();
 
 //        if (counter % 100 == 0)

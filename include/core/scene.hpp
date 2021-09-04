@@ -139,7 +139,7 @@ public:
             KF_WARN("Reached max active light number. The light will not be added!");
         else {
             pActiveLights.push_back(light);
-            mUploadGeometries = true;          // uploads light texture inside uploadGeometries()
+            markGeometriesChanged();          // uploads light texture inside uploadGeometries()
         }
     };
     inline void removeActiveLight(const std::shared_ptr<ActiveLight>& light) { throw std::runtime_error("not implemented"); };

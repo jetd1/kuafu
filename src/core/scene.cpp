@@ -76,7 +76,7 @@ void Scene::submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryIns
     }
 
     mGeometryInstances.push_back(geometryInstance);
-    mUploadGeometryInstancesToBuffer = true;
+    markGeometryInstancesChanged();
 }
 
 void Scene::setGeometryInstances(const std::vector<std::shared_ptr<GeometryInstance>> &geometryInstances) {
@@ -87,7 +87,7 @@ void Scene::setGeometryInstances(const std::vector<std::shared_ptr<GeometryInsta
         submitGeometryInstance(geometryInstance);
     }
 
-    mUploadGeometryInstancesToBuffer = true;
+    markGeometryInstancesChanged();
 }
 
 void Scene::removeGeometryInstance(std::shared_ptr<GeometryInstance> geometryInstance) {
@@ -111,14 +111,14 @@ void Scene::removeGeometryInstance(std::shared_ptr<GeometryInstance> geometryIns
         }
     }
 
-    mUploadGeometryInstancesToBuffer = true;
+    markGeometryInstancesChanged();
 }
 
 void Scene::clearGeometryInstances() {
     // Only allow clearing the scene if there is no dummy element.
     if (!mDummy) {
         mGeometryInstances.clear();
-        mUploadGeometryInstancesToBuffer = true;
+        markGeometryInstancesChanged();
     }
 }
 
@@ -126,7 +126,7 @@ void Scene::popGeometryInstance() {
     // Only allow clearing the scene if the scene is not empty and does not contain a dummy element.
     if (!mGeometryInstances.empty() && !mDummy) {
         mGeometryInstances.erase(mGeometryInstances.end() - 1);
-        mUploadGeometryInstancesToBuffer = true;
+        markGeometryInstancesChanged();
     }
 }
 
@@ -140,7 +140,7 @@ void Scene::submitGeometry(std::shared_ptr<Geometry> geometry) {
     }
 
     mGeometries.push_back(geometry);
-    mUploadGeometries = true;
+    markGeometriesChanged();
 }
 
 void Scene::setGeometries(const std::vector<std::shared_ptr<Geometry>> &geometries) {
@@ -151,7 +151,7 @@ void Scene::setGeometries(const std::vector<std::shared_ptr<Geometry>> &geometri
         submitGeometry(geometry);
     }
 
-    mUploadGeometries = true;
+    markGeometriesChanged();
 }
 
 void Scene::removeGeometry(std::shared_ptr<Geometry> geometry) {
@@ -184,7 +184,7 @@ void Scene::removeGeometry(std::shared_ptr<Geometry> geometry) {
         }
     }
 
-    mUploadGeometryInstancesToBuffer = true;
+    markGeometryInstancesChanged();
 
     std::vector<std::shared_ptr<Geometry>> temp(mGeometries);
     mGeometries.clear();
@@ -199,7 +199,7 @@ void Scene::removeGeometry(std::shared_ptr<Geometry> geometry) {
     }
 
     --global::geometryIndex;
-    mUploadGeometries = true; // @todo Might not be necessary.
+    markGeometriesChanged(); // @todo Might not be necessary.
 
     // Update geometry indices for geometry instances.
     std::vector<std::shared_ptr<GeometryInstance>> temp2(mGeometryInstances);
@@ -216,7 +216,7 @@ void Scene::removeGeometry(std::shared_ptr<Geometry> geometry) {
         }
     }
 
-    mUploadGeometryInstancesToBuffer = true;
+    markGeometryInstancesChanged();
 }
 
 void Scene::removeGeometry(uint32_t geometryIndex) {
@@ -240,8 +240,8 @@ void Scene::clearGeometries() {
     // Reset texture counter.
     global::textureIndex = 0;
 
-    mUploadGeometries = true;
-    mUploadGeometryInstancesToBuffer = true;
+    markGeometriesChanged();
+    markGeometryInstancesChanged();
 }
 
 void Scene::popGeometry() {
