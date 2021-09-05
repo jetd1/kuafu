@@ -66,6 +66,8 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
   - [ ] Offscreen rendering
   - [x] Online shader compilation
     - [ ] (Maybe) Use libgls
+  - [x] Hide render
+    - [ ] As an instance property
 
 
 - Import / Export
@@ -77,7 +79,6 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
       - Note: Blender (2.93) does not export Specular, IOR and Transmission
   - [ ] Load `.blend`
   - [ ] Check `.obj` appearance with blender
-  - [ ] Look into incorrect shadow of "tennis"
 
 
 - Viewer
