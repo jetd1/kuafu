@@ -360,6 +360,10 @@ void Scene::uploadLightBuffers(uint32_t imageIndex) {
             activeLightsUBO.position[i] = {viewMatInv[3][0], viewMatInv[3][1], viewMatInv[3][2], 0};
 
             activeLightsUBO.sftp[i] = {pActiveLights[i]->softness, pActiveLights[i]->fov, pActiveLights[i]->texID, 0};
+
+            if (pActiveLights[i]->softness > 0)
+                global::logger->warn("FIXME: softness of active light is incorrectly implemented!");  // FIXME
+
         } else
             activeLightsUBO.front[i][3] = 0;         // if front[i].w = 0, no light
     }

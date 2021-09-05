@@ -47,6 +47,36 @@ void RayTracer::destroy() {
     mBlas.clear();
 }
 
+
+auto RayTracer::createDummyBlas() const -> Blas {
+
+    vk::AccelerationStructureGeometryTrianglesDataKHR trianglesData(
+            Vertex::getVertexPositionFormat(),
+            nullptr,
+            sizeof(Vertex),
+            0,
+            vk::IndexType::eUint32,
+            nullptr,
+            {});
+
+    vk::AccelerationStructureGeometryKHR asGeom(
+            vk::GeometryTypeKHR::eTriangles,
+            trianglesData,
+            vk::GeometryFlagBitsKHR::eOpaque);
+
+    vk::AccelerationStructureBuildRangeInfoKHR offset(0,
+                                                      0,
+                                                      0,
+                                                      0);
+
+    Blas blas;
+    blas.asGeometry.push_back(asGeom);
+    blas.asBuildRangeInfo.push_back(offset);
+
+    return blas;
+}
+
+
 auto RayTracer::modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
                             const vkCore::StorageBuffer<uint32_t> &indexBuffer, bool opaque) const -> Blas {
     // Using index 0, because there are no copies of these buffers.
@@ -117,20 +147,19 @@ void RayTracer::createBottomLevelAS(std::vector<vkCore::StorageBuffer<Vertex>> &
 
     mBlas.reserve(vertexBuffers.size());
 
-    for (size_t i = 0; i < vertexBuffers.size(); ++i) {
-        if (geometries.size() > i) {
-            if (geometries[i] != nullptr) {
-                auto blas = modelToBlas(vertexBuffers[i], indexBuffers[i], geometries[i]->isOpaque);
-                mBlas.push_back(blas);
-            }
-        }
-    }
+    for (size_t i = 0; i < vertexBuffers.size(); ++i)
+        if (geometries.size() > i)
+            if (geometries[i])
+                mBlas.push_back(geometries[i]->hideRender ? createDummyBlas()
+                                : modelToBlas(vertexBuffers[i], indexBuffers[i], geometries[i]->isOpaque));
 
     buildBlas(vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction |
               vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace);
 }
 
 void RayTracer::buildBlas(vk::BuildAccelerationStructureFlagsKHR flags) {
+    KF_DEBUG("Rebuilding BLAS... This is very heavy!");
+
     uint32_t blasCount = static_cast<uint32_t>(mBlas.size());
 
     bool doCompaction = (flags & vk::BuildAccelerationStructureFlagBitsKHR::eAllowCompaction) ==
@@ -335,7 +364,8 @@ void RayTracer::buildBlas(vk::BuildAccelerationStructureFlagsKHR flags) {
             as.destroy();
         }
 
-//            KF_VERBOSE("BLAS: Compaction Results: ", totalOriginalSize, " -> ", totalCompactSize, " | Total: ", totalOriginalSize - totalCompactSize);
+        KF_DEBUG("BLAS: Compaction Results: {} -> {} | Total: {}",
+                 totalOriginalSize, totalCompactSize, totalOriginalSize - totalCompactSize);
     }
 }
 
@@ -549,7 +579,7 @@ void RayTracer::createPipeline(const std::vector<vk::DescriptorSetLayout> &descr
                                             pushConstantRanges.data());                          // pPushConstantRanges
 
     _layout = vkCore::global::device.createPipelineLayoutUnique(layoutInfo);
-//        KF_ASSERT(_layout.get(), "Failed to create pipeline layout for path tracing pipeline.");
+    KF_ASSERT(_layout.get(), "Failed to create pipeline layout for path tracing pipeline.");
 
     std::array<vk::PipelineShaderStageCreateInfo, 5> shaderStages;
     shaderStages[0] = vkCore::getPipelineShaderStageCreateInfo(vk::ShaderStageFlagBits::eRaygenKHR, rgen.get());

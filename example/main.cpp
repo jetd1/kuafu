@@ -2,10 +2,12 @@
 #include "Example.hpp"
 #include "CustomWindow.hpp"
 #include "core/context/global.hpp"
+#include <spdlog/spdlog.h>
 
 int main() {
     const int width = 800;
     const int height = 600;
+    kuafu::global::logger->set_level(spdlog::level::debug);
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");

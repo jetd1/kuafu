@@ -89,6 +89,10 @@ public:
 
     auto getDescriptorSet(size_t index) -> vk::DescriptorSet { return _descriptorSets[index]; }
 
+    /// Used to create a empty blas.
+    /// @return Returns a dummy bottom level acceleration structure.
+    auto createDummyBlas() const -> Blas;
+
     /// Used to convert wavefront models to a bottom level acceleration structure.
     /// @param vertexBuffer A vertex buffer of some geometry.
     /// @param indexBuffer An index buffer of some geometry.

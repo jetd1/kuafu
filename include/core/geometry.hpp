@@ -63,8 +63,10 @@ struct Geometry {
     uint32_t geometryIndex = 0;     ///< A unique index required by the acceleration structures.
     std::string path;         ///< The model's path, relative to the path to assets.
     bool initialized = false; ///< Keeps track of whether or not the geometry was initialized.
+
     bool dynamic = false;     ///< Keeps track of whether or not the geometry is dynamic or static. // TODO: use this field
     bool isOpaque = true;
+    bool hideRender = false;
 };
 
 /// Describes an instance of some geometry.

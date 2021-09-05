@@ -9,7 +9,8 @@ enum class Level {
     eNew,
     eObj,
     eActive,
-    eGLTF
+    eGLTF,
+    eHide
 };
 
 inline Level currentLevel;
@@ -113,39 +114,18 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(1000); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(10000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-//        renderer->getConfig().setClearColor(glm::vec4(0.45F, 0.45F, 0.45F, 0.8F));
-//        renderer->getConfig().setClearColor(glm::vec4(0.6F, 0.6F, 0.5F, 1.0F));
         renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.2F));
         renderer->getConfig().setAccumulatingFrames(true);
 
         renderer->getScene( ).getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
         renderer->getScene( ).getCamera( )->setFront( glm::vec3( 0.0F, 0.0F, -1.F ) );
         renderer->getScene( ).getCamera( )->setUp( glm::vec3( 0.0F, 1.0F, 0.F ) );
-//        renderer->getScene( ).getCamera( )->setFov( 90.0F );
-
-//        auto dLight = std::make_shared<kuafu::DirectionalLight>();
-//        dLight->direction ={-1., 0, 0.};
-//        dLight->color = {1., 1., 1.};
-//        dLight->strength = 1.;
-//        renderer->getScene().setDirectionalLight(dLight);
 
         auto cornell = kuafu::loadScene("models/CornellBox.obj", false);
-        //auto cornell = kuafu::loadObj( "models/Sphere.obj" );
 
-//        auto lightPlane = kuafu::loadObj( "models/plane.obj" );
-//        kuafu::NiceMaterial lightMaterial;
-//        lightMaterial.emission = glm::vec3( 1.0F );
-//        lightPlane->setMaterial( lightMaterial );
-
-//        renderer->getScene().setGeometries({lightPlane});
         for (auto& c: cornell)
             renderer->getScene().submitGeometry(c);
 
-//        auto transform= glm::translate( glm::mat4( 1.0F ), glm::vec3( 0.0F, 80.0F, 0.0F ) );
-//        auto lightPlaneInstance = kuafu::instance( lightPlane, transform );
-
-
-//        renderer->getScene().setGeometryInstances({lightPlaneInstance});
         for (auto& c: cornell) {
             auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, -1.0F));
             auto cornellInstance = kuafu::instance(c, transform);
@@ -747,12 +727,41 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setAccumulatingFrames(true);
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0));
 
-        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
-        renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+        renderer->getScene().getCamera()->setPosition(glm::vec3(0.5F, 0.5F, 0.5F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
 
-//        addScene(renderer->getScene(), "/home/jet/Downloads/toc.glb");
+        addScene(renderer->getScene(), "/home/jet/Downloads/toc.glb");
 //        addScene(renderer->getScene(), "/home/jet/Downloads/test.glb");
-        addScene(renderer->getScene(), "/home/jet/Downloads/model.blend");
+//        addScene(renderer->getScene(), "/home/jet/Downloads/model.blend");
+
+    } else if (scene == Level::eHide) {
+        renderer->reset();
+        renderer->getConfig().setGeometryLimit(1000);
+        renderer->getConfig().setGeometryInstanceLimit(1000);
+        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
+        renderer->getConfig().setAccumulatingFrames(true);
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
+
+        renderer->getScene().getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
+
+        auto dLight = std::make_shared<kuafu::DirectionalLight>();
+        dLight->direction ={-1, 1, -1};
+        dLight->color = {1., 1., 1.};
+        dLight->strength = 3;
+        dLight->softness = 0.1;
+        renderer->getScene().setDirectionalLight(dLight);
+
+        auto floor = kuafu::createYZPlane(false);
+        auto transform = glm::translate(glm::mat4(1.0F), {0, 0, -0.1});
+        transform = glm::rotate(transform, glm::radians(90.F), {0., -1., 0.});
+        transform = glm::scale(transform, glm::vec3(1.0F, 1.0F, 1.0F));
+        auto floorInstance = kuafu::instance(floor, transform);
+
+        renderer->getScene().setGeometries({floor});
+        renderer->getScene().setGeometryInstances({floorInstance});
+        addScene(renderer->getScene(),
+                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/tennis_ball/collision_mesh.obj");
     }
 }
 
@@ -776,4 +785,23 @@ void updateScene(kuafu::Kuafu& renderer) {
 //        dLight->direction += glm::vec3{0.01, 0, 0};
 //        kuafu::global::frameCount = -1;
 //    }
+    static int cnt = 0;
+    cnt++;
+
+    if (currentLevel == Level::eHide) {
+        if (cnt % 1000 == 500) {
+            auto geometry = renderer.getScene().getGeometryByGlobalIndex(1);
+            geometry->hideRender = true;
+            renderer.getScene().markGeometriesChanged();
+            renderer.getScene().markGeometryInstancesChanged();
+            kuafu::global::frameCount = -1;
+        }
+        if (cnt % 1000 == 0) {
+            auto geometry = renderer.getScene().getGeometryByGlobalIndex(1);
+            geometry->hideRender = false;
+            renderer.getScene().markGeometriesChanged();
+            renderer.getScene().markGeometryInstancesChanged();
+            kuafu::global::frameCount = -1;
+        }
+    }
 }
