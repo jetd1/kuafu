@@ -77,6 +77,7 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
       - Note: Blender (2.93) does not export Specular, IOR and Transmission
   - [ ] Load `.blend`
   - [ ] Check `.obj` appearance with blender
+  - [ ] Look into incorrect shadow of "tennis"
 
 
 - Viewer

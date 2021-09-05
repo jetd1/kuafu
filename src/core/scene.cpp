@@ -27,8 +27,6 @@
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
-//#include <gltf/tiny_gltf.h>
-
 namespace kuafu {
 CameraUBO cameraUBO;
 DirectionalLightUBO directionalLightUBO;

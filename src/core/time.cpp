@@ -111,11 +111,9 @@ void Time::update() {
     if (current_time - prevTime2 >= 1.0F) {
         fps = frames;
 
-        std::cout << "FPS: " << frames;
-//            KF_VERBOSE( "FPS: ", frames );
+        KF_INFO("Current FPS: {}", frames);
         allFrames.push_back(frames);
 
-        frames = frames;
         frames = 0;
         prevTime2 = current_time;
     }

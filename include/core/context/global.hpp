@@ -24,9 +24,12 @@
 
 #include <string>
 #include <vector>
+#include <spdlog/spdlog.h>
 #include "core/geometry.hpp"
 
 namespace kuafu::global {
+extern std::shared_ptr<spdlog::logger> logger;
+
 extern int frameCount;
 
 extern std::string assetsPath;

@@ -23,6 +23,9 @@
 #include "core/context/global.hpp"
 
 namespace kuafu::global {
+std::shared_ptr<spdlog::logger> logger =
+        spdlog::stderr_color_mt("kuafu");
+
 int frameCount = -1;
 std::string assetsPath;
 uint32_t geometryIndex = 0;

@@ -53,6 +53,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
 
     // Known issue:
     //   1. Blender 2.93 still do not export Specular, Transmission, IOR
+    //   2. Assimp dev supports more keys but breaks DAE support
 
     for (uint32_t mat_idx = 0; mat_idx < scene->mNumMaterials; ++mat_idx) {
         auto *m = scene->mMaterials[mat_idx];
@@ -60,21 +61,23 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         aiColor3D emissionColor{0, 0, 0};
         float alpha = 1.f;
         float ior = 1.4f;
-        float specular = .5f;
-        float transmission = 0.f;
+        float specular = .5f;                  // CANNOT READ
+        float transmission = 0.f;              // CANNOT READ
         float metallic = 0.f;
         float roughness = 0.f;
-        float emissionStrength = 1.f;
+        float emissionStrength = 1.f;          // CANNOT READ
 
         m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
         m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);
-        m->Get(AI_MATKEY_SPECULAR_FACTOR, specular);
+//        m->Get(AI_MATKEY_SPECULAR_FACTOR, specular);
         m->Get(AI_MATKEY_OPACITY, alpha);
         m->Get(AI_MATKEY_REFRACTI, ior);
-        m->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission);
-        m->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-        m->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-        m->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissionStrength);
+//        m->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission);
+//        m->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metallic);
+//        m->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughness);
+//        m->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissionStrength);
 
         if (alpha < 1e-5 && utils::hasExtension(fname, ".dae")) {
             KF_WARN("The DAE file " + path.string() +

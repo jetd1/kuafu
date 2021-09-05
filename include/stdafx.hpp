@@ -1,6 +1,5 @@
 #pragma once
 
-
 #define SDL_MAIN_HANDLED
 
 #include <SDL.h>
@@ -13,16 +12,10 @@
 
 #include "core/time.hpp"
 
-//#include <ImGui/imgui.h>
-//#include <ImGui/imgui_impl_sdl.h>
-//#include <ImGui/imgui_impl_vulkan.h>
-//#define GLM_SWIZZLE
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
-
-#define GLFORCE_DEPTH_ZERO_TO_ONE
 
 #include <algorithm>
 #include <any>
@@ -31,7 +24,6 @@
 #include <filesystem>
 #include <forward_list>
 #include <fstream>
-#include <gsl/gsl>
 #include <iomanip>
 #include <limits>
 #include <list>
@@ -45,13 +37,23 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#include "core/context/global.hpp"
+#include "spdlog/sinks/stdout_color_sinks.h"
 
-#include <tinyLogger/TinyLogger.hpp>
+template<typename ..._T>
+inline void KF_DEBUG(_T... args) { kuafu::global::logger->debug(args...); }
 
-#define KF_VERBOSE(...)           TINY_LOGGER_NAME::verbose("KF: ", __VA_ARGS__ )
-#define KF_INFO(...)              TINY_LOGGER_NAME::info("KF: ", __VA_ARGS__ )
-#define KF_SUCCESS(...)           TINY_LOGGER_NAME::success("KF: ", __VA_ARGS__ )
-#define KF_WARN(...)              TINY_LOGGER_NAME::warning("KF: ", __VA_ARGS__ )
-#define KF_ERROR(...)             TINY_LOGGER_NAME::error("KF: ", __VA_ARGS__ )
-#define KF_FATAL(...)             TINY_LOGGER_NAME::fatal("KF: ", __VA_ARGS__ )
-#define KF_ASSERT(statement, ...) TINY_LOGGER_NAME::assert2( statement, "KF: ", __VA_ARGS__ )
+template<typename ..._T>
+inline void KF_INFO(_T... args) { kuafu::global::logger->info(args...); }
+
+template<typename ..._T>
+inline void KF_WARN(_T... args) { kuafu::global::logger->warn(args...); }
+
+template<typename ..._T>
+inline void KF_ERROR(_T... args) { kuafu::global::logger->error(args...); }
+
+template<typename ..._T>
+inline void KF_CRITICAL(_T... args) { kuafu::global::logger->critical(args...); }
+
+template<typename ..._T>
+inline void KF_ASSERT(bool st, _T... args) { if (!st) kuafu::global::logger->critical(args...); }

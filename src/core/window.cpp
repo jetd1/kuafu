@@ -120,7 +120,7 @@ bool Window::minimized() {
     return (SDL_GetWindowFlags(pWindow) & SDL_WINDOW_MINIMIZED) != 0U;
 }
 
-auto Window::getExtensions() const -> gsl::span<const char *> {
+std::vector<const char*> Window::getExtensions() const {
     // Retrieve all extensions needed by SDL2.
     uint32_t sdlExtensionsCount;
     SDL_bool result = SDL_Vulkan_GetInstanceExtensions(pWindow, &sdlExtensionsCount, nullptr);
@@ -128,13 +128,21 @@ auto Window::getExtensions() const -> gsl::span<const char *> {
     if (result != SDL_TRUE)
         throw std::runtime_error("Failed to get extensions required by SDL.");
 
-    gsl::owner<const char **> sdlExtensionsNames = new const char *[sdlExtensionsCount];
+    const char** sdlExtensionsNames = new const char *[sdlExtensionsCount];
+    for (size_t i = 0; i < sdlExtensionsCount; i++)
+        sdlExtensionsNames[i] = new char[50];
     result = SDL_Vulkan_GetInstanceExtensions(pWindow, &sdlExtensionsCount, sdlExtensionsNames);
 
     if (result != SDL_TRUE)
         throw std::runtime_error("Failed to get extensions required by SDL.");
 
-    return gsl::span<const char *>(sdlExtensionsNames, sdlExtensionsCount);
+    std::vector<const char*> ret(sdlExtensionsCount);
+    for (size_t i = 0; i < sdlExtensionsCount; i++) {
+        ret[i] = sdlExtensionsNames[i];                    // FIXME: this is potentially dangerous
+    }
+    delete[] sdlExtensionsNames;
+
+    return ret;
 }
 
 }

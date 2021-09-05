@@ -25,7 +25,6 @@
 #include <string>
 #include <vulkan/vulkan.hpp>
 #include "SDL.h"
-#include "gsl/gsl"
 
 namespace kuafu {
 
@@ -69,7 +68,7 @@ public:
 
     bool minimized();
 
-    gsl::span<const char *> getExtensions() const;
+    std::vector<const char*> getExtensions() const;
 };
 
 }
