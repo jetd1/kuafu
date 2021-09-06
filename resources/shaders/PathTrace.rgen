@@ -137,7 +137,7 @@ void main( )
       }
 
       // but to make sure this is not an endless loop, quit after five refraction bounces
-      if ( refractionCounter > 5 )
+      if ( refractionCounter > 6 )
       {
         ray.depth = maxPathDepth + 1;
       }

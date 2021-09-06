@@ -102,7 +102,7 @@ Material getShadingData( inout vec3 localNormal, inout vec3 worldNormal, inout v
 //
 vec3 calcDirectContribution(
     in vec3 L, in vec3 V, in vec3 N, in vec3 lightEmission,
-    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+    in float f, in float a2, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
 
   //      vec3 weight;
   vec3 weight = vec3(0.);
@@ -116,14 +116,12 @@ vec3 calcDirectContribution(
 
     } else {                             // try to calc fancy spec (different from the indirect part!)
       float NdotV = dot(N, V);
-      float f = max(mat.ior, 1e-5);
       vec3 refractedL  = refract(-V, N, 1 / f);
       float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( NdotV, f ) : 1.0;
       //          float reflectProb = 1.0;
 
       if (rnd(ray.seed) <= reflectProb) {                   // spec!
 
-        float a2    = mat.roughness * mat.roughness;
         vec3  H     = normalize(L + V);
         float NdotL = dot(N, L);
         float NdotH = dot(N, H);
@@ -145,7 +143,6 @@ vec3 calcDirectContribution(
     }
 
   } else {
-    float a2    = mat.roughness * mat.roughness;
     vec3  H     = normalize(L + V);
     float NdotL = dot(N, L);
     float NdotH = dot(N, H);
@@ -173,7 +170,7 @@ vec3 calcDirectContribution(
 // By Jet <i@jetd.me>, 2021.
 //
 vec3 traceShadowRay(in vec3 worldPos, in vec3 L, in vec3 V, in vec3 N, in float maxDist, in vec3 lightEmission,
-    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+    in float f, in float a2, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
   isShadowed = true;
   float NdotL = dot(N, L);
   if (NdotL > 0.0) {
@@ -196,14 +193,14 @@ vec3 traceShadowRay(in vec3 worldPos, in vec3 L, in vec3 V, in vec3 N, in float 
                 1// payload (location = 1)
     );
   }
-  return isShadowed ? vec3(0) : calcDirectContribution(L, V, N, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+  return isShadowed ? vec3(0) : calcDirectContribution(L, V, N, lightEmission, f, a2, diffuseColor, specularColor, transmissionColor);
 }
 
 // By Jet <i@jetd.me>, 2021.
 //
 vec3 traceDirectionalLight(
     in vec3 worldPos, in vec3 N,
-    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+    in float f, in float a2, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
   vec3 L = -dlight.direction.xyz;
   vec3 V = normalize(-ray.direction);
 
@@ -215,14 +212,14 @@ vec3 traceDirectionalLight(
   float maxDist = 1e6;
   vec3 lightEmission = dlight.rgbs.xyz * dlight.rgbs.w;
 
-  return traceShadowRay(worldPos, L, V, N, maxDist, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+  return traceShadowRay(worldPos, L, V, N, maxDist, lightEmission, f, a2, diffuseColor, specularColor, transmissionColor);
 }
 
 // By Jet <i@jetd.me>, 2021.
 //
 vec3 tracePointLights(
     in vec3 worldPos, in vec3 N,
-    in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+    in float f, in float a2, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
 
   vec3 ret = vec3(0);
 
@@ -241,7 +238,7 @@ vec3 tracePointLights(
       L = normalize(L);
       vec3 lightEmission = plights.rgbs[i].xyz * plights.rgbs[i].w / d / d;
 
-      ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+      ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, f, a2, diffuseColor, specularColor, transmissionColor);
     }
 
   return ret;
@@ -251,7 +248,7 @@ vec3 tracePointLights(
 //
 vec3 traceActiveLights(
   in vec3 worldPos, in vec3 N,
-  in Material mat, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+  in float f, in float a2, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
 
   vec3 ret = vec3(0);
 
@@ -293,7 +290,7 @@ vec3 traceActiveLights(
         }
 
         vec3 lightEmission = color * alights.rgbs[i].w / d / d;
-        ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, mat, diffuseColor, specularColor, transmissionColor);
+        ret += traceShadowRay(worldPos, L, V, N, d, lightEmission, f, a2, diffuseColor, specularColor, transmissionColor);
       }
     }
 
@@ -321,15 +318,33 @@ void main( )
   } else {
 
     vec3 baseColor = mat.diffuse.xyz;
-    if (mat.diffuse.w != 0)
-      baseColor = texture(textures[nonuniformEXT( mat.texIdx )], uv).xyz;
+    if (mat.diffuseTexIdx >= 0)
+      baseColor = texture(textures[nonuniformEXT( mat.diffuseTexIdx )], uv).xyz;
     baseColor /= M_PI;
 
+    float metallic;
+    if (mat.metallicTexIdx >= 0)
+      metallic = texture(textures[nonuniformEXT( mat.metallicTexIdx )], uv).x;
+    else
+      metallic = mat.metallic;
+
+    float roughness;
+    if (mat.roughnessTexIdx >= 0)
+      roughness = texture(textures[nonuniformEXT( mat.roughnessTexIdx )], uv).x;
+    else
+      roughness = mat.roughness;
+    float a2 =  roughness * roughness;
+
+    float transmission;
+    if (mat.transmissionTexIdx >= 0)
+      transmission = texture(textures[nonuniformEXT( mat.transmissionTexIdx )], uv).x;
+    else
+      transmission = mat.transmission;
+
     float f = max(mat.ior, 1e-5);
-    float diffuse_weight = (1.0 - clamp(mat.metallic, 0.0, 1.0)) * (1.0 - clamp(mat.transmission, 0.0, 1.0));
-    float final_transmission = clamp(mat.transmission, 0.0, 1.0) * (1.0 - clamp(mat.metallic, 0.0, 1.0));
+    float diffuse_weight = (1.0 - clamp(metallic, 0.0, 1.0)) * (1.0 - clamp(transmission, 0.0, 1.0));
+    float final_transmission = clamp(transmission, 0.0, 1.0) * (1.0 - clamp(metallic, 0.0, 1.0));
     float specular_weight = (1.0 - final_transmission);
-    float a2 =  mat.roughness * mat.roughness;
 
     vec3 weight = vec3(0.);
 
@@ -341,8 +356,8 @@ void main( )
     float NdotV = dot(N, V);
 
     vec3 diffuseColor      = diffuse_weight * baseColor;
-    vec3 specularColor     = specular_weight * (baseColor * mat.metallic
-                           + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - mat.metallic));
+    vec3 specularColor     = specular_weight * (baseColor * metallic
+                           + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - metallic));
 //    vec3 transmissionColor = baseColor;
     vec3 transmissionColor = final_transmission * baseColor;        // TODO: what is transmission color?
 
@@ -410,9 +425,9 @@ void main( )
     }
 
     ray.shadow_color =
-        traceDirectionalLight(worldPos, N, mat, diffuseColor, specularColor, transmissionColor)
-      + tracePointLights(worldPos, N, mat, diffuseColor, specularColor, transmissionColor)
-      + traceActiveLights(worldPos, N, mat, diffuseColor, specularColor, transmissionColor);
+        traceDirectionalLight(worldPos, N, f, a2, diffuseColor, specularColor, transmissionColor)
+      + tracePointLights(worldPos, N, f, a2, diffuseColor, specularColor, transmissionColor)
+      + traceActiveLights(worldPos, N, f, a2, diffuseColor, specularColor, transmissionColor);
 
     ray.origin    = worldPos;
     ray.direction = L;

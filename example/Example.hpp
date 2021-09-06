@@ -10,7 +10,8 @@ enum class Level {
     eObj,
     eActive,
     eGLTF,
-    eHide
+    eHide,
+    eTexture
 };
 
 inline Level currentLevel;
@@ -761,7 +762,49 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().setGeometries({floor});
         renderer->getScene().setGeometryInstances({floorInstance});
         addScene(renderer->getScene(),
-                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/tennis_ball/collision_mesh.obj");
+                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/tennis_ball/visual_mesh.obj");
+    } else if (scene == Level::eTexture) {
+        renderer->reset();
+        renderer->getConfig().setGeometryLimit(1000);
+        renderer->getConfig().setGeometryInstanceLimit(1000);
+        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
+        renderer->getConfig().setAccumulatingFrames(true);
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
+
+        renderer->getScene().getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
+        renderer->getScene().getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
+
+        auto dLight = std::make_shared<kuafu::DirectionalLight>();
+        dLight->direction ={-1, 1, -1};
+        dLight->color = {1., 1., 1.};
+        dLight->strength = 3;
+        dLight->softness = 0.1;
+        renderer->getScene().setDirectionalLight(dLight);
+
+        auto floor = kuafu::createYZPlane(false);
+        auto transform = glm::translate(glm::mat4(1.0F), {0, 0, -0.1});
+        transform = glm::rotate(transform, glm::radians(90.F), {0., -1., 0.});
+        transform = glm::scale(transform, glm::vec3(1.0F, 1.0F, 1.0F));
+        auto floorInstance = kuafu::instance(floor, transform);
+
+        renderer->getScene().setGeometries({floor});
+        renderer->getScene().setGeometryInstances({floorInstance});
+
+        kuafu::NiceMaterial mat {
+            .diffuseTexPath = "/home/jet/Downloads/textures/diffuse.jpg",
+            .metallicTexPath = "/home/jet/Downloads/textures/metallic.jpg",
+            .transmissionTexPath = "/home/jet/Downloads/textures/transmission.jpg",
+            .metallic = 0.0,
+            .specular = 0.4,
+            .roughness = 0.4,
+            .ior = 1.33,
+            .transmission = 1.0
+        };
+
+
+        addScene(renderer->getScene(),
+                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/spellegrino/visual_mesh.obj",
+                 glm::mat4(1.0), &mat);
     }
 }
 

@@ -408,13 +408,65 @@ void Scene::uploadGeometries() {
         };
 
         // Set up texture
+        // TODO: make these array
         if (!global::materials[i].diffuseTexPath.empty()) {
-            mat2.texIdx = global::textureIndex;
-            mat2.diffuse.w = 1;
+            try {
+                auto texture = std::make_shared<vkCore::Texture>();
+                texture->init(global::materials[i].diffuseTexPath);
+                mat2.diffuseTexIdx = static_cast<int>(global::textureIndex);
+                mTextures[global::textureIndex++] = texture;
+            } catch (...) {
+                KF_WARN("Failed to load diffuse texture: {}, base color will be used!",
+                        global::materials[i].diffuseTexPath);
+                mat2.diffuseTexIdx = -1;
+            }
+        } else {
+            mat2.diffuseTexIdx = -1;
+        }
 
-            auto texture = std::make_shared<vkCore::Texture>();
-            texture->init(global::materials[i].diffuseTexPath);
-            mTextures[global::textureIndex++] = texture;
+        if (!global::materials[i].metallicTexPath.empty()) {
+            try {
+                auto texture = std::make_shared<vkCore::Texture>();
+                texture->init(global::materials[i].metallicTexPath);
+                mat2.metallicTexIdx = static_cast<int>(global::textureIndex);
+                mTextures[global::textureIndex++] = texture;
+            } catch (...) {
+                KF_WARN("Failed to load metallic texture: {}, metallic value will be used!",
+                        global::materials[i].metallicTexPath);
+                mat2.metallicTexIdx = -1;
+            }
+        } else {
+            mat2.metallicTexIdx = -1;
+        }
+
+        if (!global::materials[i].roughnessTexPath.empty()) {
+            try {
+                auto texture = std::make_shared<vkCore::Texture>();
+                texture->init(global::materials[i].roughnessTexPath);
+                mat2.roughnessTexIdx = static_cast<int>(global::textureIndex);
+                mTextures[global::textureIndex++] = texture;
+            } catch (...) {
+                KF_WARN("Failed to load roughness texture: {}, roughness value will be used!",
+                        global::materials[i].roughnessTexPath);
+                mat2.roughnessTexIdx = -1;
+            }
+        } else {
+            mat2.roughnessTexIdx = -1;
+        }
+
+        if (!global::materials[i].transmissionTexPath.empty()) {
+            try {
+                auto texture = std::make_shared<vkCore::Texture>();
+                texture->init(global::materials[i].transmissionTexPath);
+                mat2.transmissionTexIdx = static_cast<int>(global::textureIndex);
+                mTextures[global::textureIndex++] = texture;
+            } catch (...) {
+                KF_WARN("Failed to load roughness texture: {}, roughness value will be used!",
+                        global::materials[i].transmissionTexPath);
+                mat2.transmissionTexIdx = -1;
+            }
+        } else {
+            mat2.transmissionTexIdx = -1;
         }
 
         memAlignedMaterials.push_back(mat2);

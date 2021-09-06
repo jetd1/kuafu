@@ -1,6 +1,6 @@
 struct Material
 {
-  vec4 diffuse;   // vec3 diffuse  + hasTex
+  vec4 diffuse;   // vec3 diffuse  + padding
   vec4 emission;  // vec3 emission  + emissionStrength
   float alpha;
   float metallic;
@@ -9,9 +9,13 @@ struct Material
   float ior;
   float transmission;
 
-  uint texIdx;
+  int diffuseTexIdx;
+  int metallicTexIdx;
+  int roughnessTexIdx;
+  int transmissionTexIdx;
 
   uint padding0;
+  uint padding1;
 };
 
 struct Vertex
