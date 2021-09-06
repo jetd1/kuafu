@@ -29,11 +29,13 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
   - [x] Diffuse
     - [x] Diffuse texture
   - [x] Specular
-    - [ ] Specular texture
+    - [x] Specular texture
   - [x] Roughness
     - [ ] Oren–Nayar reflectance
     - [ ] Roughness Metallic texture
+    - [x] Roughness texture
   - [x] Transmission
+    - [x] Transmission texture
     - [ ] Refraction w/ roughness
     - [ ] Caustics 
     - [ ] Align behavior with Blender

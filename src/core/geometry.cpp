@@ -10,10 +10,13 @@
 #include <kuafu_utils.hpp>
 
 namespace kuafu {
-bool operator==(const NiceMaterial &m1, const NiceMaterial &m2) {
+bool operator==(const NiceMaterial &m1, const NiceMaterial &m2) {   // C++20 should allow defaulting this
     return (m1.diffuseColor == m2.diffuseColor) &&
            (m1.alpha == m2.alpha) &&
            (m1.diffuseTexPath == m2.diffuseTexPath) &&
+           (m1.metallicTexPath == m2.metallicTexPath) &&
+           (m1.roughnessTexPath == m2.roughnessTexPath) &&
+           (m1.transmissionTexPath == m2.transmissionTexPath) &&
            (m1.transmission == m2.transmission) &&
            (m1.metallic == m2.metallic) &&
            (m1.specular == m2.specular) &&
@@ -21,6 +24,24 @@ bool operator==(const NiceMaterial &m1, const NiceMaterial &m2) {
            (m1.ior == m2.ior) &&
            (m1.emission == m2.emission) &&
            (m1.emissionStrength == m2.emissionStrength);
+}
+
+static inline std::string getTexPath(const aiScene *scene, const aiMaterial *m, aiTextureType t,
+                              const std::filesystem::path& baseDir) {
+    aiString tpath;
+    if (m->GetTextureCount(t) > 0 &&
+        m->GetTexture(t, 0, &tpath) == AI_SUCCESS) {
+//            if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {      // FIXME
+        if (scene->GetEmbeddedTexture(tpath.C_Str())) {
+            KF_WARN("embedded texture not supported");
+        } else {
+            std::string p = std::string(tpath.C_Str());
+            if (!std::filesystem::path(p).is_absolute())
+                p = (baseDir / p).string();
+            return p;
+        }
+    }
+    return "";
 }
 
 std::vector<std::shared_ptr<Geometry> > loadScene(
@@ -101,42 +122,24 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         }
 
         aiString tpath;
-        std::string diffuseTexPath;
-        if (m->GetTextureCount(aiTextureType_DIFFUSE) > 0 &&
-            m->GetTexture(aiTextureType_DIFFUSE, 0, &tpath) == AI_SUCCESS) {
-//            if (auto texture = scene->GetEmbeddedTexture(tpath.C_Str())) {
-            if (scene->GetEmbeddedTexture(tpath.C_Str())) {
-                KF_WARN("embedded texture not supported");
-            } else {
-                std::string p = std::string(tpath.C_Str());
-                if (!std::filesystem::path(p).is_absolute())
-                    p = (parentDir / p).string();
-                diffuseTexPath = p;
-            }
-        }
+        std::string diffuseTexPath = getTexPath(scene, m, aiTextureType_DIFFUSE, parentDir);
+        std::string metallicTexPath = getTexPath(scene, m, aiTextureType_METALNESS, parentDir);
+        std::string roughnessTexPath = getTexPath(scene, m, aiTextureType_DIFFUSE_ROUGHNESS, parentDir);
+        std::string transmissionTexPath = "";
 
-        if (m->GetTextureCount(aiTextureType_METALNESS) > 0) {
-            KF_WARN("metalness texture not supported");
-        }
-
-        if (m->GetTextureCount(aiTextureType_NORMALS) > 0) {
+        if (m->GetTextureCount(aiTextureType_NORMALS) > 0)
             KF_WARN("normals texture not supported");
-        }
 
-        if (m->GetTextureCount(aiTextureType_DIFFUSE_ROUGHNESS) > 0) {
-            KF_WARN("diffuse roughness texture not supported");
-        }
-
-        if (m->GetTexture(
-                AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE,
-                &tpath) == AI_SUCCESS) {
+        if (m->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tpath) == AI_SUCCESS)
             KF_WARN("roughness metallic texture not supported");
-        }
 
         materials.push_back({
                                     .diffuseColor = {diffuseColor.r, diffuseColor.g, diffuseColor.b},
                                     .alpha = alpha,
                                     .diffuseTexPath = std::move(diffuseTexPath),
+                                    .metallicTexPath = std::move(metallicTexPath),
+                                    .roughnessTexPath = std::move(roughnessTexPath),
+                                    .transmissionTexPath = std::move(transmissionTexPath),
                                     .metallic = metallic,
                                     .specular = specular,
                                     .roughness = roughness,
