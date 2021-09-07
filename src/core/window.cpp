@@ -95,6 +95,8 @@ auto Window::update() -> bool {
 void Window::resize(int width, int height) {
     mWidth = width;
     mHeight = height;
+
+    SDL_SetWindowSize(pWindow, width, height);
     mCalledResize = true;
 }
 
