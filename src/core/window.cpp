@@ -71,11 +71,14 @@ auto Window::update() -> bool {
     // Updates local timer bound to this window.
     Time::update();
 
-    // Fetch the latest window dimensions.
-    int width;
-    int height;
-    SDL_GetWindowSize(pWindow, &width, &height);
-    resize(width, height);
+    if (mCalledResize) {       // If called manually
+      mCalledResize = false;
+    } else {                   // Fetch the latest window dimensions.
+        int width, height;
+        SDL_GetWindowSize(pWindow, &width, &height);
+        mWidth = width;
+        mHeight = height;
+    }
 
     return true;
 }
@@ -92,6 +95,7 @@ auto Window::update() -> bool {
 void Window::resize(int width, int height) {
     mWidth = width;
     mHeight = height;
+    mCalledResize = true;
 }
 
 vk::Extent2D Window::getSize() const {

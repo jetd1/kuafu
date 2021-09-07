@@ -36,6 +36,7 @@ protected:
     int mWidth = 800;
     int mHeight = 600;
     std::string mTitle = "Kuafu App";
+    bool mCalledResize = false;
 
 public:
     explicit Window(int width = 800, int height = 600, const std::string &title = "Kuafu App", uint32_t flags = {});

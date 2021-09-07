@@ -111,7 +111,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
             float shininess = -1;
             m->Get(AI_MATKEY_SHININESS, shininess);
             if (shininess > 0) {
-                KF_WARN("Unable to load roughness from " + path.string() + ". Calculating using shininess.");
+                KF_INFO("Unable to load roughness from {}. Calculating using shininess.", path.string());
                 if (shininess <= 5.f)
                     roughness = 1.f;
                 else if (shininess >= 1605.f)
