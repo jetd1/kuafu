@@ -46,7 +46,7 @@ Kuafu::Kuafu(std::shared_ptr<Config> config,
         mContext.pConfig->setAssetsPath(mContext.pConfig->sDefaultAssetsPath);
 
     if (mInitialized)
-        throw std::runtime_error("Renderer was already initialized.");
+        KF_CRITICAL("Renderer was already initialized!");
 
     mInitialized = pWindow->init();
     mContext.init();
@@ -66,6 +66,7 @@ void Kuafu::run() {
     }
 
     mRunning = pWindow->update();
+    mContext.mSurface.setExtent(pWindow->getSize());
     mContext.mScene.mCurrentCamera->update();
     mContext.render();
 }
@@ -75,12 +76,12 @@ std::vector<uint8_t> Kuafu::downloadLatestFrame() {
 }
 
 void Kuafu::setWindow(std::shared_ptr<Window> window) {
-  pWindow = window;
+    pWindow = window;
     mContext.pWindow = pWindow;
 }
 
 void Kuafu::setWindow(int width, int height, const char *title, uint32_t flags) {
-  pWindow = std::make_shared<Window>(width, height, title, flags);
+    pWindow = std::make_shared<Window>(width, height, title, flags);
     mContext.pWindow = pWindow;
 }
 

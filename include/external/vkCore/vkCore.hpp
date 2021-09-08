@@ -2528,6 +2528,9 @@ namespace vkCore
     /// @return Returns the surface's extent.
     auto getExtent( ) const -> vk::Extent2D { return _extent; }
 
+    /// @return Update the surface's extent. Note: this function will not update the surface itself.
+    void setExtent( vk::Extent2D ex ) { _extent = ex; }
+
     /// @note If any of the specified format, color space and present mode are not available the function will fall back to settings that are guaranteed to be supported.
     void init( vk::SurfaceKHR surface, vk::Extent2D extent )
     {

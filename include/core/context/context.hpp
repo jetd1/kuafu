@@ -45,7 +45,7 @@ namespace kuafu {
         vkCore::DebugMessenger mDebugMessenger;
 #endif
 
-        vkCore::Surface mSurface;
+        vkCore::Surface mSurface;     // TODO: kuafu_urgent: update when window changes.
         vk::UniqueDevice mDevice;
         vk::UniqueCommandPool mGraphicsCmdPool;
         vk::UniqueCommandPool mTransferCmdPool;

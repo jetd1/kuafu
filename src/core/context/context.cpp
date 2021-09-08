@@ -448,6 +448,7 @@ void Context::updateSettings() {
     // Handle swapchain refresh
     if (pConfig->mSwapchainNeedsRefresh) {
         pConfig->mSwapchainNeedsRefresh = false;
+        KF_DEBUG("Refreshing Pipeline...");
 
         recreateSwapchain();
     }
@@ -473,8 +474,7 @@ void Context::render() {
 }
 
 void Context::recreateSwapchain() {
-//        KF_LOG_TIME_START("Re-creating swapchain ...");
-
+    KF_DEBUG("Recreating Pipeline...");
     // Waiting idle because this event is considered to be very rare.
     vkCore::global::device.waitIdle();
 
@@ -502,13 +502,10 @@ void Context::recreateSwapchain() {
 //        pCamera->setSize(screenSize.width, screenSize.height);
 
     pConfig->mSwapchainNeedsRefresh = false;
-
-//        KF_LOG_TIME_STOP("Finished re-creating swapchain");
 }
 
 void Context::initPipelines() {
-//        KF_LOG_TIME_START("Initializing graphic pipelines ...");
-
+    KF_DEBUG("Recreating Pipeline...");
     // path tracing pipeline
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = {mRayTracer.getDescriptorSetLayout(),
                                                                  mScene.mSceneDescriptors.layout.get(),
@@ -516,15 +513,12 @@ void Context::initPipelines() {
 
     mRayTracer.createPipeline(descriptorSetLayouts);
     pConfig->mPipelineNeedsRefresh = false;
-
-//        KF_LOG_TIME_STOP("Finished graphic pipelines initialization");
 }
 
 void Context::initGui() {
-    if (pGui != nullptr) {
+    if (pGui != nullptr)
       pGui->init(pWindow->get(), &mSurface, mSwapchain.getExtent(),
                    mPostProcessingRenderer.getRenderPass().get());
-    }
 }
 
 void Context::recordSwapchainCommandBuffers() {
