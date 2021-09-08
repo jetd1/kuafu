@@ -475,11 +475,15 @@ void Scene::uploadGeometries() {
     // upload active light textures
     for (auto& light: pActiveLights) {
         if (!light->texPath.empty()) {
-            light->texID = global::textureIndex;
-
-            auto texture = std::make_shared<vkCore::Texture>();
-            texture->init(light->texPath);
-            mTextures[global::textureIndex++] = texture;
+            try {
+                auto texture = std::make_shared<vkCore::Texture>();
+                texture->init(light->texPath);
+                light->texID = global::textureIndex;
+                mTextures[global::textureIndex++] = texture;
+            } catch (...) {
+                KF_WARN("Failed to load active light texture {}, degrade to spot light!", light->texPath);
+                light->texID = -1;
+            }
         } else {
             light->texID = -1;
         }
