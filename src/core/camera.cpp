@@ -78,6 +78,13 @@ void Camera::setUp(const glm::vec3 &up) {
 }
 
 void Camera::setSize(int width, int height) {
+    if (mIsFullPerspective) {
+        KF_ASSERT(width == mWidth && height == mHeight,
+                  "Current camera is full-perspective and you are setting a different size for the camera. "
+                  "This will cause undefined behavior!");
+        return;
+    }
+
     mWidth = width;
     mHeight = height;
 
@@ -85,6 +92,10 @@ void Camera::setSize(int width, int height) {
 }
 
 void Camera::setFov(float fov) {
+    if (mIsFullPerspective) {
+        KF_CRITICAL("Setting FOV on a full-perspective camera. This will cause undefined behavior!");
+        return;
+    }
     mFov = fov;
 
     updateProjectionMatrix();
