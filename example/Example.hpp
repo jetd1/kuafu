@@ -173,7 +173,8 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
         renderer->getConfig().setAccumulatingFrames(true);
-        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.2));
+//        renderer->getConfig().setAccumulatingFrames(false);
+        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.3));
 //        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
@@ -235,9 +236,11 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         kuafu::NiceMaterial mat;
         mat.diffuseColor = glm::vec3(1.0F, 0.7F, 0.7F);
+//        mat.diffuseColor = glm::vec3(0.275,0.059,0.0);
+//        mat.diffuseColor = glm::vec3(0.1F);
         mat.specular = 0.0F;
-        mat.metallic = 0.0F;
-        mat.roughness = 0.0F;
+        mat.metallic = 0.1F;
+        mat.roughness = 0.01F;
         mat.ior = 1.45F;
 //        mat.ior = 5.0F;
         mat.alpha = 1.0F;

@@ -156,7 +156,10 @@ vec3 calcDirectContribution(
     float diffuseLum   = length(diffuseColor);
     float specularLum  = length(specularColor);
 
-    float probDiffuse  = diffuseLum / (diffuseLum + specularLum);// TODO: improve this
+    float probDiffuse  = diffuseLum / (diffuseLum + specularLum); // TODO: improve this
+
+    if (diffuseLum == 0 && specularLum == 0)                      // TODO: improve this, copy the logic in main
+      probDiffuse = 0.5;
 
     vec3 diffuseWeight  = diffuseColor * vec3(NdotL);
     vec3 specularWeight  = D * F * G * HdotV / NdotH * NdotV;
@@ -359,16 +362,28 @@ void main( )
     vec3 specularColor     = specular_weight * (baseColor * metallic
                            + (mat.specular * 0.08 * vec3(1.0)) * (1.0 - metallic));
 //    vec3 transmissionColor = baseColor;
-    vec3 transmissionColor = final_transmission * baseColor;        // TODO: what is transmission color?
+    vec3 transmissionColor = transmission * baseColor;
+//    vec3 transmissionColor = final_transmission * baseColor;        // TODO: what is transmission color?
 
     float diffuseLum   = length(diffuseColor);
     float specularLum  = length(specularColor);
 
     float probDiffuse  = diffuseLum / (diffuseLum + specularLum);   // TODO: improve this
 
-    if (diffuseLum == 0 && specularLum == 0)
-        probDiffuse = 0;
-    probDiffuse *= specular_weight;    // Prevent undersamping of refrac
+    if (diffuseLum == 0 && specularLum == 0) {                      // TODO: improve this
+      if (baseColor == vec3(0)) {
+        if (diffuse_weight == 1) {
+          probDiffuse = 1.0;
+        } else if (diffuse_weight == 0) {
+          probDiffuse = 0.0;
+        } else {
+          probDiffuse = 0.5;
+        }
+      } else
+        probDiffuse = 0.0;
+    } else {
+      probDiffuse *= specular_weight;    // Prevent undersamping of refrac
+    }
 //    float probDiffuse  = 1.0;
     bool chooseDiffuse = rnd(ray.seed) < probDiffuse;
 
@@ -410,7 +425,7 @@ void main( )
 
         vec3 refractedL  = refract(-V, N, 1 / f);                      // TODO: check if this
 //        vec3 refractedL  = refract(-V, N, 1 / ior);                  //  or this is correct
-        float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( _dot, mat.ior ) : 1.0;
+        float reflectProb = refractedL != vec3( 0.0 ) ? Schlick( _dot, f ) : 1.0;
         //        float reflectProb = 0;
 
         if (rnd(ray.seed) >= reflectProb) {   // perfect refration
