@@ -19,6 +19,7 @@ void Camera::reset() {
     mDirFront = {1.0F, 0.0F, 0.0F};
 
     mFov = 90.0F;
+    mIsFullPerspective = false;
 
     updateViewMatrix();
     updateProjectionMatrix();
@@ -50,13 +51,13 @@ void Camera::update() {
     updateViewMatrix();
 }
 
-void Camera::setAperture(float aperture) {
-    mAperture = aperture;
-}
-
-void Camera::setFocalLength(float focalLength) {
-    mFocalLength = focalLength;
-}
+//void Camera::setAperture(float aperture) {
+//    mAperture = aperture;
+//}
+//
+//void Camera::setFocalLength(float focalLength) {
+//    mFocalLength = focalLength;
+//}
 
 void Camera::setPosition(const glm::vec3 &position) {
     mPosition = position;
@@ -95,6 +96,11 @@ void Camera::updateViewMatrix() {
 }
 
 void Camera::updateProjectionMatrix() {
+    if (mIsFullPerspective) {
+        KF_WARN("Camera is set to be full-perspective, "
+                "use setFullPerspective instead! Nothing will be changed.");
+        return;
+    }
     mProjMatrix = glm::perspective(
             glm::radians(mFov),
             static_cast<float>(mWidth) / static_cast<float>(mHeight),
@@ -102,6 +108,34 @@ void Camera::updateProjectionMatrix() {
     mProjMatrix[1][1] *= -1;
     mProjNeedsUpdate = true;
 }
+
+void Camera::setFullPerspective(
+        float width, float height, float fx, float fy, float cx, float cy, float skew) {
+
+    mIsFullPerspective = true;
+    mWidth = static_cast<int>(width);
+    mHeight = static_cast<int>(height);
+
+    float far = 100.F;
+    float near = 0.1F;
+
+    mProjMatrix = glm::mat4(0);
+    mProjMatrix[0][0] = (2.f * fx) / width;
+
+    mProjMatrix[1][0] = -2 * skew / width;
+    mProjMatrix[1][1] = -(2.f * fy) / height;
+
+    mProjMatrix[2][0] = -2.f * cx / width + 1;
+    mProjMatrix[2][1] = -2.f * cy / height + 1;
+    mProjMatrix[2][2] = -far / (far - near);
+    mProjMatrix[2][3] = -1.f;
+
+    mProjMatrix[3][2] = -far * near / (far - near);
+    mProjMatrix[3][3] = 0.f;
+
+    mProjNeedsUpdate = true;
+}
+
 
 void Camera::setPose(glm::mat4 pose) {
     // TODO: kuafu_urgent: change check to avoid View update

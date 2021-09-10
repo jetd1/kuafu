@@ -75,12 +75,12 @@ public:
 
     void setUp(const glm::vec3 &up);
 
-    void setAperture(float aperture);
-
+//    void setAperture(float aperture);
+//
     [[nodiscard]] inline float getAperture() const { return mAperture; }
 
-    void setFocalLength(float focalLength);
-
+//    void setFocalLength(float focalLength);
+//
     [[nodiscard]] inline float getFocalLength() const { return mFocalLength; }
 
     /// Is used to set a size for the camera that fits the viewport dimensions.
@@ -94,13 +94,20 @@ public:
 
     void setPose(glm::mat4 pose);
 
+    /// Set the camera's projection matrix (and inv) using a full set of perspective parameters.
+    void setFullPerspective(float width, float height, float fx, float fy, float cx, float cy, float skew);
+
     glm::mat4 getPose() const;
 
     [[nodiscard]] auto getWidth() const { return mWidth; }
 
     [[nodiscard]] auto getHeight() const { return mHeight; }
 
-    [[nodiscard]] auto getFov() const { return mFov; }
+    [[nodiscard]] auto getFov() const {
+        if (mIsFullPerspective)
+            KF_WARN("getFov does not make sense for full-perspective cameras.");
+        return mFov;
+    }
 
     /// @return The view matrix.
     auto getViewMatrix() const -> const glm::mat4 & { return mViewMatrix; }
@@ -138,6 +145,8 @@ protected:
     int mHeight; ///< The height of the viewport.
 
     glm::vec3 mPosition; ///< The camera's position.
+
+    bool mIsFullPerspective = false;
 
     glm::mat4 mViewMatrix = glm::mat4(1.0F); ///< The view matrix.
     glm::mat4 mProjMatrix = glm::mat4(1.0F); ///< The projection matrix

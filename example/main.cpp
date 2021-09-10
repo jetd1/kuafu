@@ -11,7 +11,7 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(8);
+    config->setPerPixelSampleRate(4);
     config->setPathDepth(3);
     config->setRussianRoulette(false);
 
@@ -24,6 +24,12 @@ int main() {
     kuafu::Kuafu renderer(config, window, camera);
 
     loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell, eGLTF
+//
+//    window->resize(1920, 1080);
+//    camera->setFullPerspective(
+//            1920, 1080,
+//            1.387511840820312500e+03, 1.386223266601562500e+03,
+//            9.825937500000000000e+02, 5.653156127929687500e+02, 0);
 
     size_t counter = 0;
     while (renderer.isRunning()) {
