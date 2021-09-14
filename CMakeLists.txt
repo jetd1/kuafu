@@ -59,7 +59,7 @@ include_directories("include")
 include_directories("include/external")
 add_library(kuafu SHARED ${RENDERER_SRC})
 add_dependencies(kuafu compile_kf_shaders)
-target_link_libraries(kuafu vulkan assimp ktx SDL2)
+target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2)
 target_precompile_headers(kuafu PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp")
 
 include(${PROJECT_SOURCE_DIR}/example/CMakeLists.txt)
