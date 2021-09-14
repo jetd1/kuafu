@@ -30,6 +30,7 @@ find_package(Vulkan REQUIRED)
 find_package(assimp 5.0.1 REQUIRED PACKAGE_FIND_VERSION)
 find_package(Ktx REQUIRED)
 find_package(SDL2 REQUIRED)
+include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(${SDL2_INCLUDE_DIRS})
 
 #set(KTX_FEATURE_TESTS OFF)
