@@ -204,6 +204,11 @@ vec3 traceShadowRay(in vec3 worldPos, in vec3 L, in vec3 V, in vec3 N, in float 
 vec3 traceDirectionalLight(
     in vec3 worldPos, in vec3 N,
     in float f, in float a2, in vec3 diffuseColor, in vec3 specularColor, in vec3 transmissionColor) {
+
+  vec3 lightEmission = dlight.rgbs.xyz * dlight.rgbs.w;
+  if (lightEmission == vec3(0))
+    return vec3(0);
+
   vec3 L = -dlight.direction.xyz;
   vec3 V = normalize(-ray.direction);
 
@@ -213,7 +218,6 @@ vec3 traceDirectionalLight(
   }
 
   float maxDist = 1e6;
-  vec3 lightEmission = dlight.rgbs.xyz * dlight.rgbs.w;
 
   return traceShadowRay(worldPos, L, V, N, maxDist, lightEmission, f, a2, diffuseColor, specularColor, transmissionColor);
 }
@@ -228,6 +232,11 @@ vec3 tracePointLights(
 
   for (uint i = 0; i < MAX_POINT_LIGHTS; ++i)
     if (plights.rgbs[i].w > 0) {
+
+      float lum = length(plights.rgbs[i].xyz * plights.rgbs[i].w);
+      if (lum == 0)
+        continue;
+
       vec3 V = normalize(-ray.direction);
 
       vec3 lpos = plights.posr[i].xyz;
@@ -237,7 +246,8 @@ vec3 tracePointLights(
       }
 
       vec3 L = lpos - worldPos;
-      float d = length(L) + 1e-3;
+//      float d = length(L) + 1e-3;
+      float d = length(L);
       L = normalize(L);
       vec3 lightEmission = plights.rgbs[i].xyz * plights.rgbs[i].w / d / d;
 
@@ -257,7 +267,11 @@ vec3 traceActiveLights(
 
   for (uint i = 0; i < MAX_ACTIVE_LIGHTS; ++i)
     if (alights.front[i].w > 0) {
-//      ret += vec3(1.);
+
+      float lum = length(alights.rgbs[i].xyz * alights.rgbs[i].w);
+      if (lum == 0)
+        continue;
+
       vec3 V = normalize(-ray.direction);
 
       float softness = alights.sftp[i].x;
@@ -269,7 +283,8 @@ vec3 traceActiveLights(
       }
 
       vec3 L = lpos - worldPos;
-      float d = length(L) + 1e-3;
+//      float d = length(L) + 1e-3;
+      float d = length(L);
       L = normalize(L);
 
       float fov = alights.sftp[i].y;

@@ -118,6 +118,9 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
                     roughness = 0.f;
                 else
                     roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
+            } else if (utils::hasExtension(fname, ".obj")) {
+                KF_INFO("Unable to load roughness from {}. Using default value.", path.string());
+                roughness = 1.f;
             }
         }
 

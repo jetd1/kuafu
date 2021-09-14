@@ -793,21 +793,25 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getScene().setGeometries({floor});
         renderer->getScene().setGeometryInstances({floorInstance});
 
-        kuafu::NiceMaterial mat {
-            .diffuseTexPath = "/home/jet/Downloads/textures/diffuse.jpg",
-            .metallicTexPath = "/home/jet/Downloads/textures/metallic.jpg",
-            .transmissionTexPath = "/home/jet/Downloads/textures/transmission.jpg",
-            .metallic = 0.0,
-            .specular = 0.4,
-            .roughness = 0.4,
-            .ior = 1.33,
-            .transmission = 1.0
-        };
+//        kuafu::NiceMaterial mat {
+//            .diffuseTexPath = "/home/jet/Downloads/textures/diffuse.jpg",
+//            .metallicTexPath = "/home/jet/Downloads/textures/metallic.jpg",
+//            .transmissionTexPath = "/home/jet/Downloads/textures/transmission.jpg",
+//            .metallic = 0.0,
+//            .specular = 0.4,
+//            .roughness = 0.4,
+//            .ior = 1.33,
+//            .transmission = 1.0
+//        };
 
+
+//        addScene(renderer->getScene(),
+//                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/spellegrino/visual_mesh.obj",
+//                 glm::mat4(1.0), &mat);
 
         addScene(renderer->getScene(),
-                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/spellegrino/visual_mesh.obj",
-                 glm::mat4(1.0), &mat);
+                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/rubik/visual_mesh.obj",
+                 glm::mat4(1.0));
     }
 }
 

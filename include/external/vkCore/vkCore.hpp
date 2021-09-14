@@ -441,7 +441,7 @@ namespace vkCore
 
     if ( minVersion > apiVersion )
     {
-      VK_CORE_THROW( "Local Vulkan SDK API version it outdated." );
+      VK_CORE_THROW( "Local Vulkan SDK API version is outdated." );
     }
 
     return apiVersion;
@@ -1253,8 +1253,10 @@ namespace vkCore
     auto instance    = createInstanceUnique( createInfo );
     global::instance = instance.get( );
     VK_CORE_ASSERT( instance, "Failed to create instance." );
+    VK_CORE_LOG( "Create instance: Success" );
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init( instance.get( ) );
+    VK_CORE_LOG( "Init Dispatcher: Instance: Success" );
 
     return std::move( instance );
   }

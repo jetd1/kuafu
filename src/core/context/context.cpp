@@ -59,7 +59,8 @@ size_t currentFrame = 0;
 size_t prevFrame = 0;
 
 Context::~Context() {
-    vkCore::global::device.waitIdle();
+    try { vkCore::global::device.waitIdle(); }
+    catch (vk::DeviceLostError& e) {}
 
     // Gui needs to be destroyed manually, as RAII destruction will not be possible.
     if (pGui != nullptr) {
@@ -88,31 +89,34 @@ void Context::init() {
 
     // Instance
     mInstance = vkCore::initInstanceUnique(layers, extensions, VK_API_VERSION_1_2);
+    KF_DEBUG("Instance initialized!");
 
 #ifdef VK_VALIDATION
     // Debug messenger
     mDebugMessenger.init();
+    KF_DEBUG("DebugMessenger initialized!");
 #endif
 
     // Surface
     VkSurfaceKHR surface;
     SDL_bool result = SDL_Vulkan_CreateSurface(
-        pWindow->get(), static_cast<VkInstance>(vkCore::global::instance),
-                                               &surface);
-
+            pWindow->get(), static_cast<VkInstance>(vkCore::global::instance), &surface);
     if (result != SDL_TRUE)
         throw std::runtime_error("Failed to create surface");
 
     mSurface.init(vk::SurfaceKHR(surface), pWindow->getSize());
+    KF_DEBUG("Surface initialized!");
 
     // Physical device
     vkCore::global::physicalDevice = vkCore::initPhysicalDevice(); // @todo This function does not check if any feature is available when evaluating a device. Additionally, it is pointless to assign vkCore::global::physicalDevice in here because it doesn't need a unique handle.
+    KF_DEBUG("physicalDevice initialized!");
 
     // Reassess the support of the preferred surface settings.
     mSurface.assessSettings();
 
     // Queues
     vkCore::initQueueFamilyIndices();
+    KF_DEBUG("QueueFamilyIndices initialized!");
 
     // Logical device
     vk::PhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures;
@@ -159,6 +163,7 @@ void Context::init() {
     deviceFeatures2.pNext = &bufferDeviceAddressFeatures;
 
     mDevice = vkCore::initDeviceUnique(deviceExtensions, {}, deviceFeatures2);
+    KF_DEBUG("Device initialized!");
 
     vkCore::global::device = mDevice.get();
 
@@ -169,60 +174,77 @@ void Context::init() {
     // Command pools
     mGraphicsCmdPool = vkCore::initCommandPoolUnique(vkCore::global::graphicsFamilyIndex,
                                                      vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+    KF_DEBUG("GraphicsCmdPool initialized!");
     vkCore::global::graphicsCmdPool = mGraphicsCmdPool.get();
 
     mTransferCmdPool = vkCore::initCommandPoolUnique(vkCore::global::transferFamilyIndex, {});
+    KF_DEBUG("TransferCmdPool initialized!");
     vkCore::global::transferCmdPool = mTransferCmdPool.get();
 
     // Post processing renderer
     //mPostProcessingRenderer.initDepthImage(mSurface.getExtent());
     mPostProcessingRenderer.initRenderPass(mSurface.getFormat());
+    KF_DEBUG("RenderPass initialized!");
 
     // Swapchain
     mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
+    KF_DEBUG("Swapchain initialized!");
     pConfig->mSwapchainNeedsRefresh = false;
 
     // GUI
     initGui();
+    KF_DEBUG("Gui initialized!");
 
     // Create fences and semaphores.
     mSync.init();
+    KF_DEBUG("Sync initialized!");
 
     // Path tracer
     mRayTracer.init();
+    KF_DEBUG("RayTracer initialized!");
     pConfig->mMaxPathDepth = mRayTracer.getCapabilities().pipelineProperties.maxRayRecursionDepth;
     mRayTracer.initVarianceBuffer(static_cast<float>(pWindow->getWidth()),
                                   static_cast<float>(pWindow->getHeight()));
 
     mScene.prepareBuffers();
+    KF_DEBUG("Buffers initialized!");
 
     // Descriptor sets and layouts
     mRayTracer.initDescriptorSet();
     mScene.initSceneDescriptorSets();
     mScene.initGeometryDescriptorSets();
+    KF_DEBUG("DescriptorSets initialized!");
 
     // Default environment map to assure start up.
     mScene.setEnvironmentMap("");
     mScene.uploadEnvironmentMap();
     mScene.removeEnvironmentMap();
+    KF_DEBUG("EnvironmentMap initialized!");
 
     // Update scene descriptor sets.
     mScene.updateSceneDescriptors();
+    KF_DEBUG("Descriptors initialized!");
 
     // Initialize the path tracing pipeline.
     initPipelines();
+    KF_DEBUG("Pipelines initialized!");
 
     mRayTracer.createStorageImage(mSwapchain.getExtent());
+    KF_DEBUG("Images initialized!");
+
     mRayTracer.createShaderBindingTable();
+    KF_DEBUG("ShaderBindingTable initialized!");
 
     // Post processing renderer
     mPostProcessingRenderer.initDescriptorSet();
     mPostProcessingRenderer.initPipeline();
     mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo());
+    KF_DEBUG("PostProcessingRenderer initialized!");
 
     // Initialize and record swapchain command buffers.
     mSwapchainCommandBuffers.init(mGraphicsCmdPool.get(), vkCore::global::swapchainImageCount,
                                   vk::CommandBufferUsageFlagBits::eRenderPassContinue);
+    KF_DEBUG("SwapchainCommandBuffers initialized!");
 
 //        KF_LOG_TIME_STOP("Context finished");
 }
@@ -448,7 +470,6 @@ void Context::updateSettings() {
     // Handle swapchain refresh
     if (pConfig->mSwapchainNeedsRefresh) {
         pConfig->mSwapchainNeedsRefresh = false;
-        KF_DEBUG("Refreshing Pipeline...");
 
         recreateSwapchain();
     }
@@ -474,7 +495,7 @@ void Context::render() {
 }
 
 void Context::recreateSwapchain() {
-    KF_DEBUG("Recreating Pipeline...");
+    KF_DEBUG("Recreating Swapchain...");
     // Waiting idle because this event is considered to be very rare.
     vkCore::global::device.waitIdle();
 

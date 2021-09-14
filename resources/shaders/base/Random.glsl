@@ -126,7 +126,12 @@ float GeometricShadowing(float NdotV, float NdotL, float a2)
   return G1(NdotL, a2) * G1(NdotV, a2);
 }
 
+//vec3 schlickFresnel(vec3 f0, float lDotH)
+//{
+//  return f0 + (vec3(1.0f) - f0) * pow(1.0f - lDotH, 5.0f);
+//}
 vec3 schlickFresnel(vec3 f0, float lDotH)
 {
-  return f0 + (vec3(1.0f) - f0) * pow(1.0f - lDotH, 5.0f);
+  return f0 + (vec3(1.0f) - f0) * pow(2.0f, (-5.55473 * lDotH - 6.98316) * lDotH);
 }
+
