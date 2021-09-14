@@ -147,13 +147,9 @@ void Context::init() {
     robustness2FeaturesEXT.nullDescriptor = VK_TRUE;
     robustness2FeaturesEXT.pNext = &indexingFeatures;
 
-    vk::PhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures;
-    rayQueryFeatures.rayQuery = VK_TRUE;
-    rayQueryFeatures.pNext = &robustness2FeaturesEXT;
-
     vk::PhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures;
     bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
-    bufferDeviceAddressFeatures.pNext = &rayQueryFeatures;
+    bufferDeviceAddressFeatures.pNext = &robustness2FeaturesEXT;
 
     vk::PhysicalDeviceFeatures deviceFeatures;
     deviceFeatures.samplerAnisotropy = VK_TRUE;

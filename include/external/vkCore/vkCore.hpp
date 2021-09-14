@@ -501,7 +501,7 @@ namespace vkCore
     {
       if ( !requiredphysicalDeviceExtension.second )
       {
-        VK_CORE_THROW( "Missing physical device extension: ", requiredphysicalDeviceExtension.first, ". Perhaps you have not installed the NVIDIA Vulkan Beta drivers?" );
+        VK_CORE_THROW( "Missing physical device extension: ", requiredphysicalDeviceExtension.first );
       }
       else
       {
