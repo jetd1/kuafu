@@ -69,7 +69,6 @@ auto Window::init() -> bool {
 
 auto Window::update() -> bool {
     // Updates local timer bound to this window.
-    Time::update();
 
     if (mCalledResize) {       // If called manually
       mCalledResize = false;

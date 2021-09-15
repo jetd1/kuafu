@@ -6,7 +6,6 @@
 #include <SDL_vulkan.h>
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
-#define VK_ENABLE_BETA_EXTENSIONS
 
 #include <vkCore/vkCore.hpp>
 
@@ -56,4 +55,5 @@ template<typename ..._T>
 inline void KF_CRITICAL(_T... args) { kuafu::global::logger->critical(args...); }
 
 template<typename ..._T>
-inline void KF_ASSERT(bool st, _T... args) { if (!st) kuafu::global::logger->critical(args...); }
+inline void KF_ASSERT(bool st, _T... args) {
+    if (!st) { kuafu::global::logger->critical(args...); throw std::runtime_error("assertion failed"); } }

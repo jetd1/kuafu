@@ -52,7 +52,6 @@ std::vector<const char *> deviceExtensions = {VK_KHR_DEFERRED_HOST_OPERATIONS_EX
                                               VK_KHR_MAINTENANCE3_EXTENSION_NAME,
                                               VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
                                               VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-                                              VK_KHR_SWAPCHAIN_EXTENSION_NAME,
                                               VK_KHR_SHADER_CLOCK_EXTENSION_NAME};
 
 size_t currentFrame = 0;
@@ -81,11 +80,16 @@ void Context::setGui(const std::shared_ptr<Gui> &gui, bool initialize) {
 }
 
 void Context::init() {
-//        KF_LOG_TIME_START("Context start up ...");
-
     // Retrieve and add window extensions to other extensions.
-    auto windowExtensions = pWindow->getExtensions();
-    extensions.insert(extensions.end(), windowExtensions.begin(), windowExtensions.end());
+    if (pConfig->mPresent) {
+      auto windowExtensions = pWindow->getExtensions();
+      extensions.insert(extensions.end(), windowExtensions.begin(), windowExtensions.end());
+
+      deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    } else {
+        vkCore::global::dataCopies = 1U;
+        vkCore::global::swapchainImageCount = 1U;
+    }
 
     // Instance
     mInstance = vkCore::initInstanceUnique(layers, extensions, VK_API_VERSION_1_2);
@@ -98,21 +102,24 @@ void Context::init() {
 #endif
 
     // Surface
-    VkSurfaceKHR surface;
-    SDL_bool result = SDL_Vulkan_CreateSurface(
-            pWindow->get(), static_cast<VkInstance>(vkCore::global::instance), &surface);
-    if (result != SDL_TRUE)
-        throw std::runtime_error("Failed to create surface");
+    if (pConfig->mPresent) {
+        VkSurfaceKHR surface;
+        SDL_bool result = SDL_Vulkan_CreateSurface(
+                pWindow->get(), static_cast<VkInstance>(vkCore::global::instance), &surface);
+        if (result != SDL_TRUE)
+            throw std::runtime_error("Failed to create surface");
 
-    mSurface.init(vk::SurfaceKHR(surface), pWindow->getSize());
-    KF_DEBUG("Surface initialized!");
+        mSurface.init(vk::SurfaceKHR(surface), pWindow->getSize());
+        KF_DEBUG("Surface initialized!");
+    }
 
     // Physical device
     vkCore::global::physicalDevice = vkCore::initPhysicalDevice(); // @todo This function does not check if any feature is available when evaluating a device. Additionally, it is pointless to assign vkCore::global::physicalDevice in here because it doesn't need a unique handle.
     KF_DEBUG("physicalDevice initialized!");
 
     // Reassess the support of the preferred surface settings.
-    mSurface.assessSettings();
+    if (pConfig->mPresent)
+        mSurface.assessSettings();
 
     // Queues
     vkCore::initQueueFamilyIndices();
@@ -178,29 +185,34 @@ void Context::init() {
     vkCore::global::transferCmdPool = mTransferCmdPool.get();
 
     // Post processing renderer
-    //mPostProcessingRenderer.initDepthImage(mSurface.getExtent());
-    mPostProcessingRenderer.initRenderPass(mSurface.getFormat());
+    //mPostProcessingRenderer.initDepthImage(getExtent());
+    mPostProcessingRenderer.initRenderPass(getFormat());
     KF_DEBUG("RenderPass initialized!");
 
     // Swapchain
-    mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
-    KF_DEBUG("Swapchain initialized!");
-    pConfig->mSwapchainNeedsRefresh = false;
+    if (pConfig->mPresent) {
+        mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
+        KF_DEBUG("Swapchain initialized!");
+        pConfig->mSwapchainNeedsRefresh = false;
+    } else {
+        mFrames.init(
+                pConfig->mMaxImagesInFlight,
+                getExtent(), getFormat(), getColorSpace(),
+                mPostProcessingRenderer.getRenderPass().get());
+    }
 
     // GUI
     initGui();
     KF_DEBUG("Gui initialized!");
 
     // Create fences and semaphores.
-    mSync.init();
+    mSync.init(pConfig->mPresent ? 2 : pConfig->mMaxImagesInFlight);
     KF_DEBUG("Sync initialized!");
 
     // Path tracer
     mRayTracer.init();
     KF_DEBUG("RayTracer initialized!");
     pConfig->mMaxPathDepth = mRayTracer.getCapabilities().pipelineProperties.maxRayRecursionDepth;
-    mRayTracer.initVarianceBuffer(static_cast<float>(pWindow->getWidth()),
-                                  static_cast<float>(pWindow->getHeight()));
 
     mScene.prepareBuffers();
     KF_DEBUG("Buffers initialized!");
@@ -225,7 +237,7 @@ void Context::init() {
     initPipelines();
     KF_DEBUG("Pipelines initialized!");
 
-    mRayTracer.createStorageImage(mSwapchain.getExtent());
+    mRayTracer.createStorageImage(getExtent());
     KF_DEBUG("Images initialized!");
 
     mRayTracer.createShaderBindingTable();
@@ -238,82 +250,16 @@ void Context::init() {
     KF_DEBUG("PostProcessingRenderer initialized!");
 
     // Initialize and record swapchain command buffers.
-    mSwapchainCommandBuffers.init(mGraphicsCmdPool.get(), vkCore::global::swapchainImageCount,
+    mCommandBuffers.init(mGraphicsCmdPool.get(), vkCore::global::swapchainImageCount,
                                   vk::CommandBufferUsageFlagBits::eRenderPassContinue);
     KF_DEBUG("SwapchainCommandBuffers initialized!");
-
-//        KF_LOG_TIME_STOP("Context finished");
 }
 
 void Context::update() {
     updateSettings();
 
-#ifdef KF_VARIANCE_ESTIMATOR
-    // update variance
-if (pConfig->mUpdateVariance)
-{
-  static uint32_t counter = 0;
-  const int maxSize       = 100;
-  static std::vector<std::array<float, maxSize>> ppVariances; // vector of vector. outer for each pixel and inner for each accumulated sample
-
-  auto extent     = mSwapchain.getExtent();
-  auto pixelCount = 1;
-  //extent.width* extent.height;
-  ppVariances.resize(pixelCount); // as many ppVariances as pixels
-
-  KF_ASSERT(maxSize > pConfig->mPerPixelSampleRate, "Variance Estimates Out Of Bound");
-
-  // 1. Gathering stage
-  bool finishedGatheringPp = false;
-  if (counter < pConfig->mPerPixelSampleRate)
-  {
-    // For each new sample of a frame for each pixel set estimated variance
-    for (uint32_t i = 0; i < pixelCount; ++i)
-    {
-      ppVariances[i][counter] = mRayTracer.getPixelVariance(i);
-      std::cout << ppVariances[i][counter] << std::endl;
-    }
-
-    ++counter;
-  }
-  else
-  {
-    finishedGatheringPp = true;
-  }
-
-  // 2. Averaging State
-  if (finishedGatheringPp)
-  {
-    counter = 0;
-
-    std::vector<float> ppSum(pixelCount, 0.0F);
-
-    // Sum up samples for each pixel and store results separately
-    for (uint32_t i = 0; i < pConfig->mPerPixelSampleRate; ++i)
-    {
-      for (uint32_t j = 0; j < pixelCount; ++j)
-      {
-        ppSum[j] += ppVariances[j][i];
-      }
-    }
-
-    float avg = 0.0F;
-    // calculate final average
-    for (size_t i = 0; i < ppSum.size(); ++i)
-    {
-      // Do not forget to take the average of the previous sample sum per pixel
-      avg += ppSum[i] / static_cast<float>(pConfig->mPerPixelSampleRate);
-    }
-
-    pConfig->mVariance = avg / pixelCount;
-  }
-}
-
-//std::cout << mRayTracer.getPixelVariance() << std::endl;
-#endif
-
-    uint32_t imageIndex = mSwapchain.getCurrentImageIndex();
-    uint32_t maxFramesInFlight = static_cast<uint32_t>(mSync.getMaxFramesInFlight());
+    auto imageIndex = getCurrentImageIndex();
+    auto maxFramesInFlight = static_cast<uint32_t>(mSync.getMaxFramesInFlight());
 
     // If the scene is empty add a dummy triangle so that the acceleration structures can be built successfully.
 
@@ -364,11 +310,16 @@ if (pConfig->mUpdateVariance)
 }
 
 void Context::prepareFrame() {
-    mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
+    if (pConfig->mPresent) {
+        mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
+    } else {
+//        mFrames.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame));
+        mFrames.acquireNextImage();
+    }
 }
 
 void Context::submitFrame() {
-    uint32_t imageIndex = mSwapchain.getCurrentImageIndex();
+    uint32_t imageIndex = getCurrentImageIndex();
     size_t imageIndex_t = static_cast<size_t>(imageIndex);
 
     // Check if a previous frame is using the current image.
@@ -379,7 +330,7 @@ void Context::submitFrame() {
     // This will mark the current image to be in use by this frame.
     mSync.getImageInFlight(imageIndex_t) = mSync.getInFlightFence(currentFrame);
 
-    vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);
+    vk::CommandBuffer cmdBuf = mCommandBuffers.get(imageIndex);
 
     // Reset the signaled state of the current frame's fence to the unsignaled one.
     auto currentInFlightFence_t = mSync.getInFlightFence(currentFrame);
@@ -392,34 +343,46 @@ void Context::submitFrame() {
     auto waitSemaphore = mSync.getImageAvailableSemaphore(currentFrame);
     auto finishedRenderSemaphore = mSync.getFinishedRenderSemaphore(currentFrame);
 
-    vk::SubmitInfo submitInfo(1,                   // waitSemaphoreCount
-                              &waitSemaphore,      // pWaitSemaphores
-                              &pWaitDstStageMask,  // pWaitDstStageMask
-                              1,                   // commandBufferCount
-                              &cmdBuf,             // pCommandBuffers
-                              1,                   // signalSemaphoreCount
-                              &finishedRenderSemaphore); // pSignalSemaphores
+    if (pConfig->mPresent) {
+        vk::SubmitInfo submitInfo(1,                   // waitSemaphoreCount
+                                  &waitSemaphore,      // pWaitSemaphores
+                                  &pWaitDstStageMask,  // pWaitDstStageMask
+                                  1,                   // commandBufferCount
+                                  &cmdBuf,             // pCommandBuffers
+                                  1,                   // signalSemaphoreCount
+                                  &finishedRenderSemaphore); // pSignalSemaphores
 
-    vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence_t);
+        vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence_t);
 
-    // Tell the presentation engine that the current image is ready.
-    vk::PresentInfoKHR presentInfo(1,                          // waitSemaphoreCount
-                                   &finishedRenderSemaphore,          // pWaitSemaphores
-                                   1,                          // swapchainCount
-                                   &vkCore::global::swapchain, // pSwapchains
-                                   &imageIndex,                // pImageIndices
-                                   nullptr);                  // pResults
+        // Tell the presentation engine that the current image is ready.
+        vk::PresentInfoKHR presentInfo(1,                          // waitSemaphoreCount
+                                       &finishedRenderSemaphore,          // pWaitSemaphores
+                                       1,                          // swapchainCount
+                                       &vkCore::global::swapchain, // pSwapchains
+                                       &imageIndex,                // pImageIndices
+                                       nullptr);                  // pResults
 
-    // This try catch block is only necessary on Linux for whatever reason. Without it, resizing the window will result in an unhandled throw of vk::Result::eErrorOutOfDateKHR.
-    try {
-        vk::Result result = vkCore::global::graphicsQueue.presentKHR(presentInfo);
-        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
-            pConfig->triggerSwapchainRefresh();
-            KF_WARN("Swapchain out of data or suboptimal.");
+        // This try catch block is only necessary on Linux for whatever reason. Without it, resizing the window will result in an unhandled throw of vk::Result::eErrorOutOfDateKHR.
+        try {
+            vk::Result result = vkCore::global::graphicsQueue.presentKHR(presentInfo);
+            if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
+                pConfig->triggerSwapchainRefresh();
+                KF_WARN("Swapchain out of data or suboptimal.");
+            }
         }
-    }
-    catch (...) {
-        pConfig->triggerSwapchainRefresh();
+        catch (...) {
+            pConfig->triggerSwapchainRefresh();
+        }
+    } else {
+        vk::SubmitInfo submitInfo(0,                   // waitSemaphoreCount   //TODO: FIXME: urgent
+                                  &waitSemaphore,      // pWaitSemaphores          //TODO: FIXME: urgent
+                                  &pWaitDstStageMask,  // pWaitDstStageMask
+                                  1,                   // commandBufferCount
+                                  &cmdBuf,             // pCommandBuffers
+                                  1,                   // signalSemaphoreCount
+                                  &waitSemaphore); // pSignalSemaphores         //TODO: FIXME: urgent
+
+        vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence_t);
     }
 
     prevFrame = currentFrame;
@@ -428,10 +391,12 @@ void Context::submitFrame() {
 
 
 std::vector<uint8_t> Context::downloadLatestFrame() {
-    return vkCore::download<uint8_t>(
-            mSwapchain.getImage(prevFrame),
-            mSurface.getFormat(), vk::ImageLayout::ePresentSrcKHR,
-            vk::Extent3D{mSurface.getExtent(), 1});
+    vk::Image image = getImage(prevFrame);
+    vk::Format format = getFormat();
+    vk::Extent3D extent {getExtent(), 1};
+    vk::ImageLayout layout = vk::ImageLayout::ePresentSrcKHR;
+
+    return vkCore::download<uint8_t>(image, format, layout, extent);
 }
 
 
@@ -449,7 +414,7 @@ void Context::updateSettings() {
 
         mScene.initGeometryDescriptorSets();
 
-        pConfig->mPipelineNeedsRefresh = true;
+        pConfig->triggerPipelineRefresh();
     }
 
     // Handle pipeline refresh
@@ -474,15 +439,17 @@ void Context::updateSettings() {
 void Context::render() {
     update();
 
-    if (pWindow->minimized()) {
-        KF_INFO("Window minimized!");
-        return;
-    }
+    if (pConfig->mPresent) {
+        if (pWindow->minimized()) {
+            KF_WARN("Window minimized! New frames will not be rendered.");
+            return;
+        }
 
-    if (pWindow->changed()) {
-        KF_INFO("Window size changed!");
-        mScene.mCurrentCamera->mProjNeedsUpdate = true;
-        return;
+        if (pWindow->changed()) {
+            KF_INFO("Window size changed!");
+            mScene.mCurrentCamera->mProjNeedsUpdate = true;
+            return;
+        }
     }
 
     prepareFrame();
@@ -495,14 +462,20 @@ void Context::recreateSwapchain() {
     // Waiting idle because this event is considered to be very rare.
     vkCore::global::device.waitIdle();
 
-    // Clean up existing swapchain and dependencies.
-    mSwapchain.destroy();
+    if (pConfig->mPresent) {
+        // Clean up existing swapchain and dependencies.
+        mSwapchain.destroy();
 
-    // Recreating the swapchain.
-    mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
+        // Recreating the swapchain.
+        mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
+    } else {
+        mFrames.destroy();
+        mFrames.init(pConfig->mMaxImagesInFlight,
+                     getExtent(), getFormat(), getColorSpace(), mPostProcessingRenderer.getRenderPass().get());
+    }
 
     // Recreate storage image with the new swapchain image size and update the path tracing descriptor set to use the new storage image view.
-    mRayTracer.createStorageImage(mSwapchain.getExtent());
+    mRayTracer.createStorageImage(getExtent());
 
     const auto &storageImageInfo = mRayTracer.getStorageImageInfo();
     mPostProcessingRenderer.updateDescriptors(storageImageInfo);
@@ -510,13 +483,14 @@ void Context::recreateSwapchain() {
     mRayTracer.updateDescriptors();
 
     if (pGui != nullptr) {
-      pGui->recreate(mSwapchain.getExtent());
+      pGui->recreate(getExtent());
     }
 
     // Update the camera screen size to avoid image stretching.
-    auto screenSize = mSwapchain.getExtent();
-    mScene.mCurrentCamera->setSize(screenSize.width, screenSize.height);
-//        pCamera->setSize(screenSize.width, screenSize.height);
+    if (pConfig->mPresent) {
+        auto size = getExtent();
+        mScene.mCurrentCamera->setSize(size.width, size.height);
+    }
 
     pConfig->mSwapchainNeedsRefresh = false;
 }
@@ -534,7 +508,7 @@ void Context::initPipelines() {
 
 void Context::initGui() {
     if (pGui != nullptr)
-      pGui->init(pWindow->get(), &mSurface, mSwapchain.getExtent(),
+      pGui->init(pWindow->get(), &mSurface, getExtent(),
                    mPostProcessingRenderer.getRenderPass().get());
 }
 
@@ -551,10 +525,10 @@ void Context::recordSwapchainCommandBuffers() {
                                      pConfig->mNextEventEstimation,
                                      pConfig->mNextEventEstimationMinBounces};   // TODO: remove unused
 
-    for (size_t imageIndex = 0; imageIndex < mSwapchainCommandBuffers.get().size(); ++imageIndex) {
-        vk::CommandBuffer cmdBuf = mSwapchainCommandBuffers.get(imageIndex);
+    for (size_t imageIndex = 0; imageIndex < mCommandBuffers.get().size(); ++imageIndex) {
+        vk::CommandBuffer cmdBuf = mCommandBuffers.get(imageIndex);
 
-        mSwapchainCommandBuffers.begin(imageIndex);
+        mCommandBuffers.begin(imageIndex);
         {
             cmdBuf.pushConstants(
                     mRayTracer.getPipelineLayout(),
@@ -584,13 +558,12 @@ void Context::recordSwapchainCommandBuffers() {
 //                    imageIndex, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
 
             // rt
-            mRayTracer.trace(cmdBuf, mSwapchain.getImage(imageIndex), mSwapchain.getExtent());
+            mRayTracer.trace(cmdBuf, getImage(imageIndex), getExtent());
 
             // pp
-            mPostProcessingRenderer.beginRenderPass(cmdBuf, mSwapchain.getFramebuffer(imageIndex),
-                                                    mSwapchain.getExtent());
+            mPostProcessingRenderer.beginRenderPass(cmdBuf, getFramebuffer(imageIndex), getExtent());
             {
-                mPostProcessingRenderer.render(cmdBuf, mSwapchain.getExtent(), index);
+                mPostProcessingRenderer.render(cmdBuf, getExtent(), index);
 
                 // imGui
                 if (pGui != nullptr) {
@@ -599,7 +572,7 @@ void Context::recordSwapchainCommandBuffers() {
             }
             mPostProcessingRenderer.endRenderPass(cmdBuf);
         }
-        mSwapchainCommandBuffers.end(imageIndex);
+        mCommandBuffers.end(imageIndex);
     }
 }
 }

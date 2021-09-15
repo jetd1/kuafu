@@ -135,7 +135,16 @@ public:
 
     void updateVariance(bool flag);
 
+    void setPresent(bool present) { mPresent = present; }
+
 private:
+    // TODO: separate into fixed and changeable parts
+
+    bool mPresent = true;                                  /// not changeable: whether or not initialize the surface
+    vk::Format mFormat = vk::Format::eB8G8R8A8Unorm;
+    vk::ColorSpaceKHR mColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+    const size_t mMaxImagesInFlight = 1;                                       // for offscreen TODO:
+
     bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
     bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
 

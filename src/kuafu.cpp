@@ -31,24 +31,53 @@ Kuafu::Kuafu(std::shared_ptr<Config> config,
              std::shared_ptr<Window> window,
              std::shared_ptr<Camera> camera,
              std::shared_ptr<Gui> gui) {
-    pWindow = window ? window
-            : std::make_shared<Window>();
-    mContext.pWindow = pWindow;
-
-    mContext.mScene.mCurrentCamera = camera ? camera
-            : std::make_shared<Camera>(pWindow->getWidth(), pWindow->getHeight());
-
-    mContext.pConfig = config ? config
-            : std::make_shared<Config>();
+    mContext.pConfig = std::make_shared<Config>(*config);           // TODO: make config a value member instead
     mContext.mScene.pConfig = mContext.pConfig;
 
-    if (mContext.pConfig->getAssetsPath() == "")
+    if (mContext.pConfig->mPresent) {
+        KF_INFO("Present mode enabled.");
+
+        if (!window) {
+            KF_WARN("No window specified, creating a default window.");
+            if (camera)
+                window = std::make_shared<Window>(camera->getWidth(), camera->getHeight());
+            else {
+                KF_WARN("Adding a default camera for the viewer.");
+                window = std::make_shared<Window>();
+                camera = std::make_shared<Camera>(window->getWidth(), window->getHeight());
+            }
+        } else {
+            if (!camera) {
+                KF_WARN("Adding a default camera for the viewer.");
+                camera = std::make_shared<Camera>(window->getWidth(), window->getHeight());
+            }
+        }
+
+    } else {
+        KF_INFO("Offscreen mode enabled.");
+
+        if (window) {
+            KF_WARN("Specified window will be ignored.");
+            window = nullptr;
+        }
+
+    }
+
+    pWindow = window;
+    mContext.pWindow = window;
+
+    mContext.mScene.mCurrentCamera = camera;
+
+    if (mContext.pConfig->getAssetsPath().empty())
         mContext.pConfig->setAssetsPath(mContext.pConfig->sDefaultAssetsPath);
 
-    if (mInitialized)
-        KF_CRITICAL("Renderer was already initialized!");
+    if (pWindow)
+        pWindow->init();
+    else {
+        assert(SDL_Init(SDL_INIT_VIDEO) == 0);
+        assert(SDL_Vulkan_LoadLibrary(nullptr) == 0);
+    }
 
-    mInitialized = pWindow->init();
     mContext.init();
 }
 
@@ -60,13 +89,16 @@ auto Kuafu::isRunning() const -> bool {
 }
 
 void Kuafu::run() {
-    if (!mRunning || !mInitialized) {
-        KF_WARN("!mRunning || !mInitialized");
+    if (!mRunning)
         return;
+
+    Time::update();
+
+    if (mContext.pConfig->mPresent) {
+        mRunning = pWindow->update();
+        mContext.mSurface.setExtent(pWindow->getSize());
     }
 
-    mRunning = pWindow->update();
-    mContext.mSurface.setExtent(pWindow->getSize());
     mContext.mScene.mCurrentCamera->update();
     mContext.render();
 }
@@ -86,7 +118,7 @@ void Kuafu::setWindow(int width, int height, const char *title, uint32_t flags) 
 }
 
 void Kuafu::setGui(std::shared_ptr<Gui> gui) {
-    mInitialized ? mContext.setGui(gui, true) : mContext.setGui(gui);
+    mContext.setGui(gui, true);
 }
 
 void Kuafu::reset() {

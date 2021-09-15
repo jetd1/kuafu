@@ -14,6 +14,7 @@ int main() {
     config->setPerPixelSampleRate(4);
     config->setPathDepth(3);
     config->setRussianRoulette(false);
+    config->setPresent(true);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
@@ -36,8 +37,14 @@ int main() {
         updateScene(renderer);
         renderer.run();
 
-//        if (counter % 100 == 0)
-//            auto ret = renderer.downloadLatestFrame();
+        auto ret = renderer.downloadLatestFrame();
+//        KF_INFO("Downloaded!");
+
+        if (counter == 1000) {
+            auto camera1 = std::make_shared<CustomCamera>(
+                    width * 2, height * 2, glm::vec3(0.f, 0.f, 3.f));
+            renderer.getScene().setCamera(camera1);
+        }
 
         counter++;
     }

@@ -32,7 +32,6 @@ class Kuafu {
     std::shared_ptr<Gui> pGUI = nullptr;
     kuafu::Context mContext;
 
-    bool mInitialized = false;
     bool mRunning = true;
 
 public:

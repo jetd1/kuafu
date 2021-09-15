@@ -36,9 +36,95 @@ namespace kuafu {
 
     class Kuafu;
 
+    class Frames {
+        size_t mN;
+
+        std::vector<vk::Image> mImages;
+        std::vector<vk::DeviceMemory> mImagesMemory;
+
+        std::vector<vk::UniqueImageView> mImageViews;
+        std::vector<vk::UniqueFramebuffer> mFramebuffers;
+
+        size_t mCurrentImageIdx;
+
+        std::mutex mLock;
+
+    public:
+
+        inline void init(
+                size_t n,
+                vk::Extent2D extent,
+                vk::Format format,
+                vk::ColorSpaceKHR colorSpace,
+                vk::RenderPass renderPass) {
+            mN = n;
+            mImages.resize(n);
+            mImagesMemory.resize(n);
+            mImageViews.resize(n);
+            mFramebuffers.resize(n);
+
+            vk::ImageCreateInfo createInfo;
+            createInfo.format = format;
+            createInfo.extent = vk::Extent3D{extent, 1};
+            createInfo.imageType = vk::ImageType::e2D;
+            createInfo.usage = vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferSrc;
+            createInfo.arrayLayers = 1;
+            createInfo.mipLevels = 1;
+            createInfo.sharingMode = vk::SharingMode::eExclusive;
+
+            for (size_t i = 0; i < n; ++i) {
+                mImages[i] = vkCore::global::device.createImage(createInfo);
+
+                auto memRequirements = vkCore::global::device.getImageMemoryRequirements(mImages[i]);
+
+                vk::MemoryAllocateInfo allocInfo;
+                allocInfo.allocationSize = memRequirements.size;
+                allocInfo.memoryTypeIndex = vkCore::findMemoryType(
+                        vkCore::global::physicalDevice,
+                        memRequirements.memoryTypeBits,
+                        vk::MemoryPropertyFlagBits::eDeviceLocal);
+
+                mImagesMemory[i] = vkCore::global::device.allocateMemory(allocInfo);
+                vkCore::global::device.bindImageMemory(mImages[i], mImagesMemory[i], 0);
+            }
+
+//            VkImageCreateInfo imageInfo{};
+//            imageInfo.tiling = tiling;
+//            imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+//            imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+            for (size_t i = 0; i < mImageViews.size(); ++i)
+                mImageViews[i] = vkCore::initImageViewUnique(vkCore::getImageViewCreateInfo(
+                        mImages[i], format, vk::ImageViewType::e2D, vk::ImageAspectFlagBits::eColor));
+
+            for (size_t i = 0; i < mFramebuffers.size(); ++i)
+                mFramebuffers[i] = vkCore::initFramebufferUnique(
+                        { mImageViews[i].get( ) }, renderPass, extent);
+
+        }
+
+        inline void destroy() {
+            mFramebuffers.clear();
+            mImageViews.clear();
+            for (size_t i = 0; i < mN; i++) {
+                vkCore::global::device.destroy(mImages[i]);
+                vkCore::global::device.freeMemory(mImagesMemory[i]);
+            }
+        }
+
+        inline auto getImage(size_t n) { return mImages[n]; }
+        inline auto& getFramebuffer(size_t n) { return mFramebuffers[n]; }
+
+        inline size_t getCurrentImageIndex() { return mCurrentImageIdx; }
+        inline void acquireNextImage() {
+            mLock.lock();
+            mCurrentImageIdx = (mCurrentImageIdx + 1) % mN;
+            mLock.unlock();
+        }
+    };
+
     class Context {
         std::shared_ptr<Window> pWindow = nullptr;
-        std::shared_ptr<Camera> pCamera = nullptr;
         vk::UniqueInstance mInstance;
 
 #ifdef VK_VALIDATION
@@ -55,7 +141,9 @@ namespace kuafu {
 
         vkCore::Sync mSync;
         vkCore::Swapchain mSwapchain;
-        vkCore::CommandBuffer mSwapchainCommandBuffers;
+        vkCore::CommandBuffer mCommandBuffers;
+
+        Frames mFrames;   // only for offscreen use
 
         std::shared_ptr<Gui> pGui = nullptr;
 
@@ -99,6 +187,16 @@ namespace kuafu {
 
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         std::vector<uint8_t> downloadLatestFrame();
+
+        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : mFrames.getCurrentImageIndex(); }
+        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : mFrames.getImage(idx); }
+        inline auto& getFramebuffer(size_t idx) { return pConfig->mPresent ?
+                 mSwapchain.getFramebuffer(idx) : mFrames.getFramebuffer(idx).get(); }
+        inline auto  getFormat() { return pConfig->mPresent ? mSurface.getFormat() : pConfig->mFormat; }
+        inline auto  getColorSpace() { return pConfig->mPresent ? mSurface.getColorSpace() : pConfig->mColorSpace; }
+        inline auto  getExtent() { return pConfig->mPresent ?
+                     mSwapchain.getExtent() : vk::Extent2D{ static_cast<uint32_t>(mScene.mCurrentCamera->getWidth()),
+                                                           static_cast<uint32_t>(mScene.mCurrentCamera->getHeight())} ; }
 
 
     public:

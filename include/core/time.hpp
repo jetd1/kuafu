@@ -32,7 +32,9 @@ class Window;
 /// @todo Average FPS are pointless. Implement minimum FPS and frametimes instead.
 class Time {
 public:
-    friend Window;
+    friend class Kuafu;
+
+    friend class Context;
 
     /// Prints the average fps as well as the time since recording.
     static void printBenchmarkResults();

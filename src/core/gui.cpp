@@ -32,8 +32,8 @@ void Gui::configure() {
 
 void Gui::init(SDL_Window *window, const vkCore::Surface *const surface, vk::Extent2D swapchainImageExtent,
                vk::RenderPass renderPass) {
-  pWindow = window;
-    mSwapchainImageExtent = swapchainImageExtent;
+//  pWindow = window;
+//    mSwapchainImageExtent = swapchainImageExtent;
 //
 //        configure();
 //

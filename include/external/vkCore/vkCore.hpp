@@ -259,7 +259,7 @@ namespace vkCore
 
       if ( ( queueFamilies[index].queueFlags & vk::QueueFlagBits::eGraphics ) == vk::QueueFlagBits::eGraphics )
       {
-        if ( physicalDevice.getSurfaceSupportKHR( index, global::surface ) != 0U )
+        if ( !global::surface || physicalDevice.getSurfaceSupportKHR( index, global::surface ) != 0U )
         {
           graphicsQueueFamilyIndices.push_back( index );
         }
@@ -524,7 +524,7 @@ namespace vkCore
     {
       if ( queueFamilyProperties[index].queueFlags & vk::QueueFlagBits::eGraphics && !graphicsFamilyIndex.has_value( ) )
       {
-        if ( global::physicalDevice.getSurfaceSupportKHR( index, global::surface ) )
+        if ( !global::surface || global::physicalDevice.getSurfaceSupportKHR( index, global::surface ) )
         {
           graphicsFamilyIndex = index;
         }
@@ -2905,8 +2905,9 @@ namespace vkCore
 
     auto getFinishedRenderSemaphore( size_t imageIndex ) -> vk::Semaphore { return _finishedRenderSemaphores[imageIndex].get( ); }
 
-    void init( )
+    void init( size_t n = 2 )
     {
+      _maxFramesInFlight = n;
       _imageAvailableSemaphores.resize( _maxFramesInFlight );
       _finishedRenderSemaphores.resize( _maxFramesInFlight );
       _inFlightFences.resize( _maxFramesInFlight );
@@ -2932,7 +2933,7 @@ namespace vkCore
     std::vector<vk::UniqueSemaphore> _imageAvailableSemaphores;
     std::vector<vk::UniqueSemaphore> _finishedRenderSemaphores;
 
-    const size_t _maxFramesInFlight = 2;
+    size_t _maxFramesInFlight = 2;
   };
 
 

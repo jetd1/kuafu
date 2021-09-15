@@ -267,14 +267,8 @@ void Scene::removeEnvironmentMap() { mUseEnvironmentMap = false;
 }
 
 void Scene::setCamera(std::shared_ptr<Camera> camera) {
-//        mCameras.insert(camera);
     mCurrentCamera = camera;
-}
-
-void Scene::setCamera(int width, int height, const glm::vec3 &position) {
-    auto cam = std::make_shared<Camera>(width, height, position);
-//        mCameras.insert(cam);
-    mCurrentCamera = cam;
+    pConfig->triggerSwapchainRefresh();
 }
 
 void Scene::prepareBuffers() {

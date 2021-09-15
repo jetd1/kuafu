@@ -467,7 +467,8 @@ void RayTracer::buildTlas(const std::vector<std::shared_ptr<GeometryInstance>> &
     vkCore::Buffer scratchBuffer(
             buildSizesInfo.buildScratchSize,                                                                           // size
             vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR |
-            vk::BufferUsageFlagBits::eShaderDeviceAddress, // usage
+            vk::BufferUsageFlagBits::eShaderDeviceAddress |
+            vk::BufferUsageFlagBits::eStorageBuffer, // usage
             {vkCore::global::graphicsFamilyIndex},                                                                   // queueFamilyIndices
             vk::MemoryPropertyFlagBits::eDeviceLocal |
             vk::MemoryPropertyFlagBits::eHostCoherent,                      // memoryPropertyFlags
@@ -493,9 +494,9 @@ void RayTracer::buildTlas(const std::vector<std::shared_ptr<GeometryInstance>> &
     cmdBuf.submitToQueue(vkCore::global::graphicsQueue);
 }
 
-void RayTracer::createStorageImage(vk::Extent2D swapchainExtent) {
+void RayTracer::createStorageImage(vk::Extent2D extent) {
     auto storageImageInfo = vkCore::getImageCreateInfo(
-            vk::Extent3D(swapchainExtent.width, swapchainExtent.height, 1));
+            vk::Extent3D(extent.width, extent.height, 1));
     storageImageInfo.usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled |
                              vk::ImageUsageFlagBits::eColorAttachment;
     storageImageInfo.format = vk::Format::eB8G8R8A8Unorm; // TODO: make this the surface format, and not hard-coded
@@ -678,13 +679,6 @@ void RayTracer::initDescriptorSet() {
                               vk::DescriptorType::eStorageImage,
                               vk::ShaderStageFlagBits::eRaygenKHR);
 
-#ifdef KF_VARIANCE_ESTIMATOR
-    // Variance buffer
-mDescriptors.bindings.add(2,
-                           vk::DescriptorType::eStorageBuffer,
-                           vk::ShaderStageFlagBits::eRaygenKHR);
-#endif
-
     mDescriptors.layout = mDescriptors.bindings.initLayoutUnique();
     mDescriptors.pool = mDescriptors.bindings.initPoolUnique(vkCore::global::swapchainImageCount);
     _descriptorSets = vkCore::allocateDescriptorSets(mDescriptors.pool.get(), mDescriptors.layout.get());
@@ -700,10 +694,6 @@ void RayTracer::updateDescriptors() {
 
     mDescriptors.bindings.write(_descriptorSets, 0, &tlasInfo);
     mDescriptors.bindings.write(_descriptorSets, 1, &mStorageImageInfo);
-
-#ifdef KF_VARIANCE_ESTIMATOR
-    mDescriptors.bindings.write(mDescriptorSets, 2, &varianceBufferInfo);
-#endif
 
     mDescriptors.bindings.update();
 }
