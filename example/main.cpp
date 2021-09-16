@@ -19,8 +19,12 @@ int main() {
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
 
+//    auto camera = nullptr;
+
     auto window = std::make_shared<CustomWindow>(
             width, height, "Test", SDL_WINDOW_RESIZABLE, camera);
+
+//    auto window = nullptr;
 
     kuafu::Kuafu renderer(config, window, camera);
 
@@ -37,14 +41,14 @@ int main() {
         updateScene(renderer);
         renderer.run();
 
-        auto ret = renderer.downloadLatestFrame();
+//        auto ret = renderer.downloadLatestFrame();
 //        KF_INFO("Downloaded!");
 
-        if (counter == 1000) {
-            auto camera1 = std::make_shared<CustomCamera>(
-                    width * 2, height * 2, glm::vec3(0.f, 0.f, 3.f));
-            renderer.getScene().setCamera(camera1);
-        }
+//        if (counter == 1000) {
+//            auto camera1 = std::make_shared<CustomCamera>(
+//                    width * 2, height * 2, glm::vec3(0.f, 0.f, 3.f));
+//            renderer.getScene().setCamera(camera1);
+//        }
 
         counter++;
     }

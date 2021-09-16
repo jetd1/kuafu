@@ -110,12 +110,14 @@ namespace kuafu {
                 vkCore::global::device.destroy(mImages[i]);
                 vkCore::global::device.freeMemory(mImagesMemory[i]);
             }
+            mImages.clear();
+            mImagesMemory.clear();
         }
 
         inline auto getImage(size_t n) { return mImages[n]; }
         inline auto& getFramebuffer(size_t n) { return mFramebuffers[n]; }
 
-        inline size_t getCurrentImageIndex() { return mCurrentImageIdx; }
+        inline size_t getCurrentImageIndex() const { return mCurrentImageIdx; }
         inline void acquireNextImage() {
             mLock.lock();
             mCurrentImageIdx = (mCurrentImageIdx + 1) % mN;
@@ -195,8 +197,9 @@ namespace kuafu {
         inline auto  getFormat() { return pConfig->mPresent ? mSurface.getFormat() : pConfig->mFormat; }
         inline auto  getColorSpace() { return pConfig->mPresent ? mSurface.getColorSpace() : pConfig->mColorSpace; }
         inline auto  getExtent() { return pConfig->mPresent ?
-                     mSwapchain.getExtent() : vk::Extent2D{ static_cast<uint32_t>(mScene.mCurrentCamera->getWidth()),
-                                                           static_cast<uint32_t>(mScene.mCurrentCamera->getHeight())} ; }
+                     mSwapchain.getExtent() : mScene.mCurrentCamera ?
+                     vk::Extent2D{ static_cast<uint32_t>(mScene.mCurrentCamera->getWidth()),
+                                   static_cast<uint32_t>(mScene.mCurrentCamera->getHeight())} : vk::Extent2D{1, 1}; }
 
 
     public:

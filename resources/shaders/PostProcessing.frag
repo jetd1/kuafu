@@ -12,6 +12,7 @@ void main( ) {
   vec2 uv = outUV;
 
   // Apply gamma correction
-  float gamma = 1.0 / 2.2;
-  fragColor   = pow( texture( pathTracingOutput, uv ), vec4( gamma ) );
+//  float gamma = 1.0 / 2.2;
+//  fragColor   = pow( texture( pathTracingOutput, uv ), vec4( gamma ) );
+  fragColor   =  texture( pathTracingOutput, uv );
 }

@@ -135,13 +135,15 @@ public:
 
     void updateVariance(bool flag);
 
-    void setPresent(bool present) { mPresent = present; }
+    inline void setPresent(bool present) { mPresent = present; }
+
+    inline bool getPresent() { return mPresent; }
 
 private:
     // TODO: separate into fixed and changeable parts
 
     bool mPresent = true;                                  /// not changeable: whether or not initialize the surface
-    vk::Format mFormat = vk::Format::eB8G8R8A8Unorm;
+    vk::Format mFormat = vk::Format::eB8G8R8A8Srgb;
     vk::ColorSpaceKHR mColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
     const size_t mMaxImagesInFlight = 1;                                       // for offscreen TODO:
 

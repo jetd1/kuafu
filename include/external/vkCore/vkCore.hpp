@@ -581,7 +581,8 @@ namespace vkCore
   {
     return vk::ImageCreateInfo( { },                                                                     // flags
                                 vk::ImageType::e2D,                                                      // imageType
-                                vk::Format::eR8G8B8A8Unorm,                                              // format
+//                                vk::Format::eR8G8B8A8Unorm,                                              // format
+                                vk::Format::eR8G8B8A8Srgb,                                              // format
                                 extent,                                                                  // extent
                                 1U,                                                                      // mipLevels
                                 1U,                                                                      // arrayLayers
@@ -1717,7 +1718,7 @@ namespace vkCore
         VK_CORE_THROW( "Failed to load texture" );
       }
 
-      vk::DeviceSize size = width * height * 4;
+      vk::DeviceSize size = width * height * 4;             // FIXME
 
       // Set up the staging buffer.
       Buffer stagingBuffer( size,
@@ -1729,7 +1730,8 @@ namespace vkCore
 
       stbi_image_free( pixels );
 
-      auto imageCreateInfo = getImageCreateInfo( vk::Extent3D { static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 } );
+      auto imageCreateInfo = getImageCreateInfo(
+              vk::Extent3D { static_cast<uint32_t>( width ), static_cast<uint32_t>( height ), 1 } );
       Image::init( imageCreateInfo );
 
       transitionToLayout( vk::ImageLayout::eTransferDstOptimal );
@@ -2610,7 +2612,8 @@ namespace vkCore
     }
 
     vk::SurfaceKHR _surface                  = nullptr;                           ///< The Vulkan surface.
-    vk::Format _format                       = vk::Format::eB8G8R8A8Unorm;        ///< The desired surface format.
+//    vk::Format _format                       = vk::Format::eB8G8R8A8Unorm;        ///< The desired surface format.
+    vk::Format _format                       = vk::Format::eB8G8R8A8Srgb;        ///< The desired surface format.
     vk::ColorSpaceKHR _colorSpace            = vk::ColorSpaceKHR::eSrgbNonlinear; ///< The desired color space.
     vk::PresentModeKHR _presentMode          = vk::PresentModeKHR::eMailbox;      ///< The desired present mode.
     vk::SurfaceCapabilitiesKHR _capabilities = 0;                                 ///< The surface's capabilities.
@@ -2952,6 +2955,7 @@ namespace vkCore
         switch (_format) {
             case vk::Format::eR8G8B8A8Unorm:
             case vk::Format::eB8G8R8A8Unorm:
+            case vk::Format::eB8G8R8A8Srgb:
                 formatSize = 4;
                 aspect = vk::ImageAspectFlagBits::eColor;
                 break;
@@ -3019,7 +3023,7 @@ namespace vkCore
                              vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst,
                              { global::transferFamilyIndex },  // TODO: check this
                              vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent );
-        CommandBuffer commandBuffer(global::graphicsCmdPool);
+        CommandBuffer commandBuffer(global::transferCmdPool);
         commandBuffer.begin();
 
         if (_layout != vk::ImageLayout::eTransferSrcOptimal) {
@@ -3077,6 +3081,9 @@ namespace vkCore
                 formatSize = 4;
                 break;
             case vk::Format::eD24UnormS8Uint:
+                formatSize = 4;
+                break;
+            case vk::Format::eB8G8R8A8Srgb:
                 formatSize = 4;
                 break;
             default:
