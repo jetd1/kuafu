@@ -176,17 +176,14 @@ void RayTracer::buildBlas(vk::BuildAccelerationStructureFlagsKHR flags) {
     // Iterate over the groups of geometries, creating one BLAS for each group
     int index = 0;
     for (Blas &blas : mBlas) {
-        if (!blas.as.as) {
+        if (blas.as.as)
             vkCore::global::device.destroyAccelerationStructureKHR(blas.as.as);
-        }
 
-        if (!blas.as.memory) {
+        if (blas.as.memory)
             vkCore::global::device.freeMemory(blas.as.memory);
-        }
 
-        if (!blas.as.buffer) {
+        if (blas.as.buffer)
             vkCore::global::device.destroyBuffer(blas.as.buffer);
-        }
 
         vk::AccelerationStructureBuildGeometryInfoKHR buildInfo(
                 vk::AccelerationStructureTypeKHR::eBottomLevel,   // type

@@ -839,14 +839,14 @@ void updateScene(kuafu::Kuafu& renderer) {
     cnt++;
 
     if (currentLevel == Level::eHide) {
-        if (cnt % 1000 == 500) {
+        if (cnt % 10 == 5) {
             auto geometry = renderer.getScene().getGeometryByGlobalIndex(1);
             geometry->hideRender = true;
             renderer.getScene().markGeometriesChanged();
             renderer.getScene().markGeometryInstancesChanged();
             kuafu::global::frameCount = -1;
         }
-        if (cnt % 1000 == 0) {
+        if (cnt % 10 == 0) {
             auto geometry = renderer.getScene().getGeometryByGlobalIndex(1);
             geometry->hideRender = false;
             renderer.getScene().markGeometriesChanged();

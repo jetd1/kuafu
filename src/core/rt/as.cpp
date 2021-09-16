@@ -25,17 +25,14 @@
 
 namespace kuafu {
 void AccelerationStructure::destroy() {
-    if (as) {
+    if (as)
         vkCore::global::device.destroyAccelerationStructureKHR(as);
-    }
 
-    if (buffer) {
+    if (buffer)
         vkCore::global::device.destroyBuffer(buffer);
-    }
 
-    if (memory) {
+    if (memory)
         vkCore::global::device.freeMemory(memory);
-    }
 }
 
 auto initAccelerationStructure(vk::AccelerationStructureCreateInfoKHR &asCreateInfo) -> AccelerationStructure {

@@ -387,6 +387,8 @@ void Scene::uploadGeometries() {
     memAlignedMaterials.clear();
     memAlignedMaterials.reserve(global::materials.size());
 
+    global::textureIndex = 0;
+
     // Create all textures of a material
     for (size_t i = 0; i < global::materials.size(); ++i) {
         // Convert to memory aligned struct

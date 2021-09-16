@@ -69,6 +69,7 @@ mkdir build && cd build && cmake .. && make kuafu_example -j && ./kuafu_example;
   - [x] Online shader compilation
     - [ ] (Maybe) Use libgls
   - [x] Hide render
+    - [ ] No rebuilding Blas
     - [ ] As an instance property
 
 
