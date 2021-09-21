@@ -17,6 +17,8 @@ int main() {
     config->setPresent(true);
     config->setAccumulatingFrames(false);
     config->setUseDenoiser(true);
+    config->setGeometryLimit(20000);
+    config->setGeometryInstanceLimit(20000);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
@@ -42,7 +44,6 @@ int main() {
     while (renderer.isRunning()) {
         updateScene(renderer);
         renderer.run();
-//        break;
 
 //        auto ret = renderer.downloadLatestFrame();
 //        KF_INFO("Downloaded!");

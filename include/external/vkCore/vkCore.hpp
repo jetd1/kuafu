@@ -2101,7 +2101,7 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
       _stagingBuffers.resize( copies );
       _storageBuffers.resize( copies );
       _bufferInfos.resize( copies );
-      _fences.resize( copies );
+//      _fences.resize( copies );
 
       vk::MemoryAllocateFlagsInfo* allocateFlags = nullptr;
       vk::MemoryAllocateFlagsInfo temp( vk::MemoryAllocateFlagBitsKHR::eDeviceAddress );
@@ -2136,7 +2136,7 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
         _bufferInfos[i].offset = 0;
         _bufferInfos[i].range  = VK_WHOLE_SIZE;
 
-        _fences[i] = initFenceUnique( vk::FenceCreateFlagBits::eSignaled );
+//        _fences[i] = initFenceUnique( vk::FenceCreateFlagBits::eSignaled );
       }
 
       upload( data );
@@ -2171,7 +2171,7 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
     std::vector<Buffer> _storageBuffers; ///< Holds the storage buffer and all its copies.
 
     std::vector<vk::DescriptorBufferInfo> _bufferInfos;
-    std::vector<vk::UniqueFence> _fences;
+//    std::vector<vk::UniqueFence> _fences;
 
     vk::DeviceSize _maxSize = 0;
     uint32_t _count         = 0;

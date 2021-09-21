@@ -55,6 +55,7 @@ public:
     /// @param geometryInstance The instance to queue for rendering.
     /// @note This function does not invoke any draw calls.
     void submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryInstance);
+    void submitGeometryInstance(const GeometryInstance& geometryInstance);
 
     /// Used to submit multiple geometry instances for rendering, replacing all existing instances.
     /// @param geometryInstances The instances to queue for rendering.
@@ -80,6 +81,7 @@ public:
     /// Once a geometry was submitted, geometry instances referencing this particular geometry can be drawn.
     /// @param geometry The geometry to submit.
     void submitGeometry(std::shared_ptr<Geometry> geometry);
+    void submitGeometry(const Geometry& geometry);
 
     /// Used to submit multiple geometries and set up their buffers.
     ///
