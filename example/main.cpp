@@ -11,8 +11,8 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(1024);
-    config->setPathDepth(6);
+    config->setPerPixelSampleRate(4);
+    config->setPathDepth(3);
     config->setRussianRoulette(false);
     config->setPresent(true);
     config->setAccumulatingFrames(false);

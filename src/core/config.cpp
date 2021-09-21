@@ -146,7 +146,6 @@ void Config::setTextureLimit(size_t amount) {
 
 void Config::setUseDenoiser(bool useDenoiser) {
     mUseDenoiser = useDenoiser;
-    // TODO: implement this
 }
 
 void Config::setPerPixelSampleRate(uint32_t sampleRate) {

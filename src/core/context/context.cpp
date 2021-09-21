@@ -52,7 +52,10 @@ std::vector<const char *> deviceExtensions = {VK_KHR_DEFERRED_HOST_OPERATIONS_EX
                                               VK_KHR_MAINTENANCE3_EXTENSION_NAME,
                                               VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
                                               VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
-                                              VK_KHR_SHADER_CLOCK_EXTENSION_NAME};
+                                              VK_KHR_SHADER_CLOCK_EXTENSION_NAME,
+                                              VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+                                              VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME
+                                              };
 
 size_t currentFrame = 0;
 size_t prevFrame = 0;
@@ -102,9 +105,6 @@ void Context::init() {
 
         deviceExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
         deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
-
-        deviceExtensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
-        deviceExtensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
         mDenoiser.initOptiX(
                 OPTIX_DENOISER_INPUT_RGB,
@@ -282,16 +282,11 @@ void Context::init() {
         timelineCreateInfo.semaphoreType = vk::SemaphoreType::eTimeline;
         timelineCreateInfo.initialValue  = 0;
 
-        vk::ExportSemaphoreCreateInfo esci;
-        esci.handleTypes = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
-        esci.pNext       = &timelineCreateInfo;
-
         vk::SemaphoreCreateInfo sci;
-        sci.pNext        = &esci;
+        sci.pNext        = &timelineCreateInfo;
+        sci.flags        = vk::SemaphoreCreateFlagBits(0);
 
         mCmdSemaphore = vkCore::global::device.createSemaphoreUnique(sci);
-
-//        mDenoiser.createSemaphore(false);                 // create dummy denoiser semaphore
     }
 
     // Post processing renderer
