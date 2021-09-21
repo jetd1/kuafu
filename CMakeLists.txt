@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(kuafu VERSION 0.1)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS_DEBUG "-o0 -g3 -Wall -Wnon-virtual-dtor -fsized-deallocation -Wno-deprecated-declarations")
@@ -30,12 +30,7 @@ find_package(Vulkan REQUIRED)
 find_package(assimp 5.0.1 REQUIRED PACKAGE_FIND_VERSION)
 find_package(Ktx REQUIRED)
 find_package(SDL2 REQUIRED)
-
-#set(CUDA_TOOLKIT_ROOT_DIR /workspace/cuda)
-find_package(CUDA REQUIRED)    # TODO: make optional
-include_directories(${CUDA_INCLUDE_DIRS})
-link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64/)
-link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs/")
+find_package(CUDAToolkit REQUIRED)   # TODO: make optional
 
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(${SDL2_INCLUDE_DIRS})
@@ -67,7 +62,7 @@ include_directories("include")
 include_directories("include/external")
 add_library(kuafu SHARED ${RENDERER_SRC})
 add_dependencies(kuafu compile_kf_shaders)
-target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2 cudart_static)
+target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2 CUDA::cudart_static)
 target_precompile_headers(kuafu PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp")
 set_target_properties(kuafu PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 

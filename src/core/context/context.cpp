@@ -97,6 +97,8 @@ void Context::init() {
     }
 
     if (pConfig->mUseDenoiser) {
+        global::logger->warn("Denoiser ON! You must have an NVIDIA GPU with driver version > 470 installed.");
+
         deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
         deviceExtensions.push_back(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
         deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
