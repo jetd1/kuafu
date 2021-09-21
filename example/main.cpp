@@ -11,10 +11,12 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(4);
+    config->setPerPixelSampleRate(1);
     config->setPathDepth(3);
     config->setRussianRoulette(false);
     config->setPresent(true);
+    config->setGeometryLimit(20000);
+    config->setGeometryInstanceLimit(20000);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));

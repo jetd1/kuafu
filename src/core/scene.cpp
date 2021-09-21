@@ -77,6 +77,21 @@ void Scene::submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryIns
     markGeometryInstancesChanged();
 }
 
+void Scene::submitGeometryInstance(const GeometryInstance& geometryInstance) {
+    if (!mDummy) {
+        if (mGeometryInstances.size() > pConfig->mMaxGeometryInstances) {
+            throw std::runtime_error(
+                    "Failed to submit geometry instance because instance buffer size has been exceeded.");
+            return;
+        }
+    }
+
+    auto g = std::make_shared<GeometryInstance>();
+    *g = geometryInstance;
+    mGeometryInstances.push_back(g);
+    markGeometryInstancesChanged();
+}
+
 void Scene::setGeometryInstances(const std::vector<std::shared_ptr<GeometryInstance>> &geometryInstances) {
     mGeometryInstances.clear();
     mGeometryInstances.reserve(geometryInstances.size());
@@ -138,6 +153,21 @@ void Scene::submitGeometry(std::shared_ptr<Geometry> geometry) {
     }
 
     mGeometries.push_back(geometry);
+    markGeometriesChanged();
+}
+
+void Scene::submitGeometry(const Geometry& geometry) {
+    if (!mDummy) {
+        if (mGeometries.size() >= pConfig->mMaxGeometry) {
+            throw std::runtime_error(
+                    "Failed to submit geometry because geometries buffer size has been exceeded.");
+            return;
+        }
+    }
+
+    auto g = std::make_shared<Geometry>();
+    *g = geometry;
+    mGeometries.push_back(g);
     markGeometriesChanged();
 }
 

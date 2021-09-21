@@ -11,7 +11,8 @@ enum class Level {
     eActive,
     eGLTF,
     eHide,
-    eTexture
+    eTexture,
+    eFanbo
 };
 
 inline Level currentLevel;
@@ -812,6 +813,15 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         addScene(renderer->getScene(),
                  "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/rubik/visual_mesh.obj",
                  glm::mat4(1.0));
+    }  else if (scene == Level::eFanbo) {
+        auto& scene = renderer->getScene();
+
+        for (int i = 0; i < 2000; i++) {
+            auto sp = kuafu::createSphere();
+            scene.submitGeometry(sp);
+            scene.submitGeometryInstance(instance(sp, glm::mat4(1.0F)));
+        }
+
     }
 }
 
