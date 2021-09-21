@@ -115,6 +115,9 @@ public:
     /// Used to set the maximum amount of textures that can be loaded.
     void setTextureLimit(size_t amount);
 
+    void setMaterialLimit(size_t amount);
+
+
     void setPerPixelSampleRate(uint32_t sampleRate);
 
     auto getPerPixelSampleRate() const -> uint32_t { return mPerPixelSampleRate; }

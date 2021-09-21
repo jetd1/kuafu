@@ -144,6 +144,15 @@ void Config::setTextureLimit(size_t amount) {
     mMaxTexturesChanged = true;
 }
 
+void Config::setMaterialLimit(size_t amount) {
+  if (amount == 0) {
+    //            amount;
+    KF_WARN("Can not use value 0 for the maximum amount of materials. Using 1 instead.");
+  }
+
+  mMaxMaterials = ++amount;
+}
+
 void Config::setUseDenoiser(bool useDenoiser) {
     mUseDenoiser = useDenoiser;
     // TODO: implement this
