@@ -7,10 +7,13 @@
 namespace kuafu {
 Camera::Camera(int width, int height, const glm::vec3 &position) : mWidth(width), mHeight(height),
                                                                    mPosition(position) {
-    reset();
+    mRenderTargets = std::make_shared<RenderTargets>();
+    updateProjectionMatrix();
+    mProjNeedsUpdate = true;
+    resetView();
 }
 
-void Camera::reset() {
+void Camera::resetView() {
     static glm::vec3 position = mPosition;
 
     mPosition = position;
@@ -18,14 +21,9 @@ void Camera::reset() {
     mDirRight = {0.0F, -1.0F, 0.0F};
     mDirFront = {1.0F, 0.0F, 0.0F};
 
-    mFov = 90.0F;
-    mIsFullPerspective = false;
-
     updateViewMatrix();
-    updateProjectionMatrix();
 
     mViewNeedsUpdate = true;
-    mProjNeedsUpdate = true;
 
     global::frameCount = -1;
 }
@@ -89,6 +87,7 @@ void Camera::setSize(int width, int height) {
     mHeight = height;
 
     updateProjectionMatrix();
+    clearRenderTargets();
 }
 
 void Camera::setFov(float fov) {
@@ -145,6 +144,7 @@ void Camera::setFullPerspective(
     mProjMatrix[3][3] = 0.f;
 
     mProjNeedsUpdate = true;
+    clearRenderTargets();
 }
 
 

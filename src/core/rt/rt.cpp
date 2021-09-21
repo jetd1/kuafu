@@ -48,7 +48,7 @@ void RayTracer::destroy() {
 }
 
 
-auto RayTracer::createDummyBlas() const -> Blas {
+auto RayTracer::createDummyBlas() const {
 
     vk::AccelerationStructureGeometryTrianglesDataKHR trianglesData(
             Vertex::getVertexPositionFormat(),
@@ -78,7 +78,7 @@ auto RayTracer::createDummyBlas() const -> Blas {
 
 
 auto RayTracer::modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
-                            const vkCore::StorageBuffer<uint32_t> &indexBuffer, bool opaque) const -> Blas {
+                            const vkCore::StorageBuffer<uint32_t> &indexBuffer, bool opaque) const {
     // Using index 0, because there are no copies of these buffers.
     vk::BufferDeviceAddressInfo vertexAddressInfo(vertexBuffer.get(0));
     vk::BufferDeviceAddressInfo indexAddressInfo(indexBuffer.get(0));
@@ -114,7 +114,7 @@ auto RayTracer::modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
 }
 
 auto RayTracer::geometryInstanceToAccelerationStructureInstance(
-        std::shared_ptr<GeometryInstance> &geometryInstance) -> vk::AccelerationStructureInstanceKHR {
+        std::shared_ptr<GeometryInstance> &geometryInstance) {
     KF_ASSERT(mBlas.size() > geometryInstance->geometryIndex,
               "Failed to transform geometry instance to a VkGeometryInstanceKHR because index is out of bounds.");
     Blas &blas{mBlas[geometryInstance->geometryIndex]};
@@ -492,27 +492,18 @@ void RayTracer::buildTlas(const std::vector<std::shared_ptr<GeometryInstance>> &
 }
 
 void RayTracer::createStorageImage(vk::Extent2D extent) {
+    mRenderTargets->clear();
+//    if (mRenderTargets->contains("rgba"))
+//         return;
+
     auto storageImageInfo = vkCore::getImageCreateInfo(
             vk::Extent3D(extent.width, extent.height, 1));
     storageImageInfo.usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled |
                              vk::ImageUsageFlagBits::eColorAttachment |
                              vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
-    storageImageInfo.format = vk::Format::eR32G32B32A32Sfloat;  // FIXME: this is a bug
-//    storageImageInfo.format = vk::Format::eB8G8R8A8Unorm;     // FIXME: this is a bug
-//    storageImageInfo.format = vk::Format::eB8G8R8A8Srgb;
+    storageImageInfo.format = vk::Format::eR32G32B32A32Sfloat;
 
-    mStorageImage.init(storageImageInfo);
-    mStorageImage.transitionToLayout(vk::ImageLayout::eGeneral);
-
-    mStorageImageView = vkCore::initImageViewUnique(
-            vkCore::getImageViewCreateInfo(mStorageImage.get(), mStorageImage.getFormat()));
-
-    auto samplerCreateInfo = vkCore::getSamplerCreateInfo();
-    mStorageImageSampler = vkCore::initSamplerUnique(samplerCreateInfo);
-
-    mStorageImageInfo.sampler = mStorageImageSampler.get();
-    mStorageImageInfo.imageView = mStorageImageView.get();
-    mStorageImageInfo.imageLayout = mStorageImage.getLayout();
+    createRenderTarget("rgba", storageImageInfo);
 }
 
 void RayTracer::createShaderBindingTable() {
@@ -685,43 +676,13 @@ void RayTracer::initDescriptorSet() {
 }
 
 void RayTracer::updateDescriptors() {
-    vk::WriteDescriptorSetAccelerationStructureKHR tlasInfo(1,
-                                                            &mTlas.as.as);
-
-    vk::DescriptorBufferInfo varianceBufferInfo(_varianceBuffer.get(),
-                                                0,
-                                                VK_WHOLE_SIZE);
-
+    vk::WriteDescriptorSetAccelerationStructureKHR tlasInfo(1, &mTlas.as.as);
     mDescriptors.bindings.write(_descriptorSets, 0, &tlasInfo);
-    mDescriptors.bindings.write(_descriptorSets, 1, &mStorageImageInfo);
+
+    auto storageImageInfo = getStorageImageInfo("rgba");
+    mDescriptors.bindings.write(_descriptorSets, 1, &storageImageInfo);
 
     mDescriptors.bindings.update();
 }
 
-void RayTracer::initVarianceBuffer(float width, float height) {
-    // Create buffer to store variance value
-    _varianceBuffer.init(sizeof(float) * 3 * width * height,
-                         vk::BufferUsageFlagBits::eStorageBuffer,
-                         {vkCore::global::graphicsFamilyIndex},
-                         vk::MemoryPropertyFlagBits::eHostVisible);
-}
-
-// This is wrong! This calculates variance off all pixel colors of a frame.
-// Instead, one should look at the individual pixel at increased sample rates, right?
-float RayTracer::getPixelVariance(uint32_t index) {
-    static bool alreadyMapped = false;
-    static void *mapped = NULL;
-
-    if (!alreadyMapped) {
-        alreadyMapped = true;
-        vk::Result result = vkCore::global::device.mapMemory(_varianceBuffer.getMemory(), 0,
-                                                             _varianceBuffer.getSize(), {}, &mapped);
-        KF_ASSERT(result == vk::Result::eSuccess, "Failed to map memory of variance buffer.");
-    }
-
-    auto *pData = reinterpret_cast<float *>(mapped);
-
-    float res = (pData)[index];
-    return res;
-}
 }

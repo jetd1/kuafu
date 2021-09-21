@@ -23,6 +23,7 @@
 #pragma once
 
 #include "stdafx.hpp"
+#include "image.hpp"
 
 namespace kuafu {
 /// A minimal camera implementation.
@@ -59,7 +60,7 @@ public:
     /// @note The function will be called every tick.
     virtual void update();
 
-    void reset();
+    void resetView();
 
     /// @return Returns the camera's position.
     auto getPosition() const -> const glm::vec3 & { return mPosition; }
@@ -140,6 +141,9 @@ public:
     bool mViewNeedsUpdate = true; ///< Keeps track of whether or not to udpate the view matrix.
     bool mProjNeedsUpdate = true; ///< Keeps track of whether or not to udpate the projection matrix.
 
+    inline void clearRenderTargets() { mRenderTargets->clear(); }
+    inline auto getRenderTargets() { return mRenderTargets; }
+
 protected:
     int mWidth;  ///< The width of the viewport.
     int mHeight; ///< The height of the viewport.
@@ -165,6 +169,8 @@ protected:
     float mFov = 90.0F;  ///< The field of view.
     float mAperture = 0.0F;   // DOF disabled by default
     float mFocalLength = 5.0F;
+
+    std::shared_ptr<RenderTargets> mRenderTargets;
 };
 
 /*

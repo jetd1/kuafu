@@ -22,6 +22,7 @@
 //
 #pragma once
 
+#include "core/image.hpp"
 #include "core/rt/as.hpp"
 #include "core/geometry.hpp"
 #include "core/config.hpp"
@@ -55,15 +56,10 @@ struct PathTracingCapabilities {
 class RayTracer {
 public:
     RayTracer() = default;
-
     ~RayTracer();
-
     RayTracer(const RayTracer &) = delete;
-
     RayTracer(const RayTracer &&) = delete;
-
     auto operator=(const RayTracer &) -> RayTracer & = delete;
-
     auto operator=(const RayTracer &&) -> RayTracer & = delete;
 
     /// Retrieves the physical device's path tracing capabilities.
@@ -73,40 +69,48 @@ public:
     void destroy();
 
     /// @return Returns the top level acceleration structure.
-    auto getTlas() const -> const Tlas & { return mTlas; }
+    const auto& getTlas() const { return mTlas; }
 
-    auto getStorageImageInfo() const -> const vk::DescriptorImageInfo & { return mStorageImageInfo; }
+    const auto& getCapabilities() { return mCapabilities; }
 
-    auto getCapabilities() const -> const PathTracingCapabilities & { return mCapabilities; }
+    inline void setRenderTargets(std::shared_ptr<RenderTargets> renderTargets) { mRenderTargets = renderTargets; }
 
-    auto getStorageImage() const -> vk::Image { return mStorageImage.get(); }
+    inline void createRenderTarget(const std::string& target, const vk::ImageCreateInfo& createInfo) {
+        StorageImage storageImage;
+        storageImage.init(createInfo);
+        (*mRenderTargets)[target] = std::move(storageImage);
+    }
 
-    auto getStorageImageView() const -> vk::ImageView { return mStorageImageView.get(); }
+    [[nodiscard]] auto getStorageImage(const std::string& target) const { return mRenderTargets->at(target).get(); }
 
-    auto getPipeline() const -> vk::Pipeline { return _pipeline.get(); }
+    [[nodiscard]] auto getStorageImageView(const std::string& target) const { return mRenderTargets->at(target).getView(); }
 
-    auto getPipelineLayout() const -> vk::PipelineLayout { return _layout.get(); };
+    [[nodiscard]] const auto& getStorageImageInfo(const std::string& target) const { return mRenderTargets->at(target).getInfo(); }
 
-    auto getDescriptorSetLayout() -> vk::DescriptorSetLayout { return mDescriptors.layout.get(); }
+    [[nodiscard]] auto getPipeline() const { return _pipeline.get(); }
 
-    auto getDescriptorSet(size_t index) -> vk::DescriptorSet { return _descriptorSets[index]; }
+    [[nodiscard]] auto getPipelineLayout() const { return _layout.get(); };
+
+    [[nodiscard]] auto getDescriptorSetLayout() const { return mDescriptors.layout.get(); }
+
+    [[nodiscard]] auto getDescriptorSet(size_t index) const { return _descriptorSets[index]; }
 
     /// Used to create a empty blas.
     /// @return Returns a dummy bottom level acceleration structure.
-    auto createDummyBlas() const -> Blas;
+    [[nodiscard]] auto createDummyBlas() const;
 
     /// Used to convert wavefront models to a bottom level acceleration structure.
     /// @param vertexBuffer A vertex buffer of some geometry.
     /// @param indexBuffer An index buffer of some geometry.
     /// @return Returns the bottom level acceleration structure.
-    auto modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
-                     const vkCore::StorageBuffer<uint32_t> &indexBuffer, bool opaque) const -> Blas;
+    [[nodiscard]] auto modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
+                     const vkCore::StorageBuffer<uint32_t> &indexBuffer, bool opaque) const;
 
     /// Used to convert a bottom level acceleration structure instance to a Vulkan geometry instance.
     /// @param instance A bottom level acceleration structure instance.
     /// @return Returns the Vulkan geometry instance.
     auto geometryInstanceToAccelerationStructureInstance(
-            std::shared_ptr<GeometryInstance> &geometryInstance) -> vk::AccelerationStructureInstanceKHR;
+            std::shared_ptr<GeometryInstance> &geometryInstance);
 
     /// Used to prepare building the bottom level acceleration structures.
     /// @param vertexBuffers Vertex buffers of all geometry in the scene.
@@ -169,10 +173,7 @@ private:
     vkCore::Buffer _instanceBuffer;
     vkCore::Buffer _sbtBuffer; ///< The shader binding table buffer.
 
-    vkCore::Image mStorageImage;
-    vk::UniqueImageView mStorageImageView;
-    vk::UniqueSampler mStorageImageSampler;
-    vk::DescriptorImageInfo mStorageImageInfo;
+    std::shared_ptr<RenderTargets> mRenderTargets;
 
     vkCore::Descriptors mDescriptors;
     std::vector<vk::DescriptorSet> _descriptorSets;

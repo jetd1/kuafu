@@ -109,7 +109,7 @@ inline void addSphere(kuafu::Kuafu *renderer) {
 inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
     currentLevel = scene;
 
-    renderer->getScene().getCamera()->reset();
+    renderer->getScene().getCamera()->resetView();
 
     if (scene == Level::eCornell) {
         renderer->reset();

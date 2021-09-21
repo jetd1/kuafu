@@ -130,7 +130,7 @@ void Kuafu::reset() {
     // Reset frame counter
     kuafu::global::frameCount = -1;
 
-    mContext.mScene.getCamera()->reset();
+    mContext.mScene.getCamera()->resetView();
 
     // Delete all textures
     global::materials.clear();

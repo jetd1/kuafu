@@ -270,6 +270,7 @@ void Context::init() {
     initPipelines();
     KF_DEBUG("Pipelines initialized!");
 
+    mRayTracer.setRenderTargets(mScene.mCurrentCamera->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
     KF_DEBUG("Images initialized!");
 
@@ -294,7 +295,7 @@ void Context::init() {
     // Post processing renderer
     mPostProcessingRenderer.initDescriptorSet();
     mPostProcessingRenderer.initPipeline();
-    mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo());
+    mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo("rgba"));
     KF_DEBUG("PostProcessingRenderer initialized!");
 
     // Initialize command buffers.
@@ -364,7 +365,7 @@ void Context::prepareFrame() {
         mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
     } else {
 //        mFrames.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame));
-        mFrames.acquireNextImage();
+        mFrames.acquireNextImage();            // FIXME
     }
 }
 
@@ -556,12 +557,13 @@ void Context::recreateSwapchain() {
     }
 
     // Recreate storage image with the new swapchain image size and update the path tracing descriptor set to use the new storage image view.
+    mRayTracer.setRenderTargets(mScene.mCurrentCamera->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
 
     if (pConfig->mUseDenoiser)
         mDenoiser.allocateBuffers(getExtent());
 
-    mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo());
+    mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo("rgba"));
 
     mRayTracer.updateDescriptors();
 
@@ -645,7 +647,7 @@ void Context::recordSwapchainCommandBuffers() {
 
         // denoise
         if (pConfig->mUseDenoiser)
-            mDenoiser.imageToBuffer(cmdBuf, {mRayTracer.getStorageImage()});
+            mDenoiser.imageToBuffer(cmdBuf, {mRayTracer.getStorageImage("rgba")});
 
     }
     mCommandBuffers.end(imageIndex);
@@ -659,7 +661,7 @@ void Context::recordSwapchainCommandBuffers() {
     mCommandBuffers2.begin(imageIndex);
     {
         if(pConfig->mUseDenoiser)
-            mDenoiser.bufferToImage(cmdBuf2, mRayTracer.getStorageImage());
+            mDenoiser.bufferToImage(cmdBuf2, mRayTracer.getStorageImage("rgba"));
 
         // pp
         mPostProcessingRenderer.beginRenderPass(cmdBuf2, getFramebuffer(imageIndex), getExtent());
