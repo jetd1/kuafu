@@ -102,6 +102,7 @@ public:
     void createSemaphore();
     auto getTLSemaphore() { return mSemaphore.vk; }
 
+    void freeResources();
     void destroy();
 
 };

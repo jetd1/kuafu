@@ -46,7 +46,8 @@ CUresult kfCuCtxDestroy(CUcontext ctx) {
 }
 
 void kfCuDlClose() {
-    dlclose(libcuda);
+    if (libcuda)
+        dlclose(libcuda);
 }
 
 }

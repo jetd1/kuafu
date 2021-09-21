@@ -34,12 +34,12 @@ find_package(SDL2 REQUIRED)
 #set(CUDA_TOOLKIT_ROOT_DIR /workspace/cuda)
 find_package(CUDA REQUIRED)    # TODO: make optional
 include_directories(${CUDA_INCLUDE_DIRS})
+link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64/)
+link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs/")
+
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(${SDL2_INCLUDE_DIRS})
-include_directories(3rd_party/OptiX7SDK/include)
-
-link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64/")
-link_directories("${CUDA_TOOLKIT_ROOT_DIR}/lib64/stubs/")
+include_directories("3rd_party/OptiX7SDK/include")
 
 #set(KTX_FEATURE_TESTS OFF)
 #set(KTX_FEATURE_TOOLS OFF)
@@ -65,7 +65,7 @@ file(GLOB_RECURSE RENDERER_SRC "src/*")
 
 include_directories("include")
 include_directories("include/external")
-add_library(kuafu SHARED ${RENDERER_SRC} include/cuda_dl.hpp)
+add_library(kuafu SHARED ${RENDERER_SRC})
 add_dependencies(kuafu compile_kf_shaders)
 target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2 cudart_static)
 target_precompile_headers(kuafu PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp")

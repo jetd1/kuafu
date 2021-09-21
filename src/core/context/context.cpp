@@ -106,11 +106,6 @@ void Context::init() {
         deviceExtensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
         deviceExtensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
 
-//        mDenoiser.initOptiX(
-//                OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL,
-//                OPTIX_PIXEL_FORMAT_FLOAT4,
-//                false);                                 // TODO
-
         mDenoiser.initOptiX(
                 OPTIX_DENOISER_INPUT_RGB,
                 OPTIX_PIXEL_FORMAT_FLOAT4,

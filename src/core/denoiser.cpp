@@ -112,7 +112,7 @@ void DenoiserOptix::allocateBuffers(const vk::Extent2D& imgSize)
 {
     mImageSize = imgSize;
 
-    destroy();
+    freeResources();
     createSemaphore();
 
     vk::DeviceSize bufferSize =
@@ -314,8 +314,7 @@ void DenoiserOptix::denoiseImageBuffer(uint64_t& fenceValue)
     }
 }
 
-
-void DenoiserOptix::destroy() {
+void DenoiserOptix::freeResources() {
     vkCore::global::device.destroy(mSemaphore.vk);
 
     for(auto& p : mPixelBufferIn)
@@ -333,12 +332,16 @@ void DenoiserOptix::destroy() {
 
     if(mDMinRgb != 0)
         CUDA_CHECK(cudaFree((void*)mDMinRgb));
+}
+
+void DenoiserOptix::destroy() {
+    try {
+        freeResources();
+    } catch(...) {}
 
     kfCuCtxDestroy(mCudaContext);
     kfCuDlClose();
 }
-
-
 
 
 
