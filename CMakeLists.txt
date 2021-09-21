@@ -30,11 +30,11 @@ find_package(Vulkan REQUIRED)
 find_package(assimp 5.0.1 REQUIRED PACKAGE_FIND_VERSION)
 find_package(Ktx REQUIRED)
 find_package(SDL2 REQUIRED)
-find_package(CUDAToolkit REQUIRED)   # TODO: make optional
 
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(${SDL2_INCLUDE_DIRS})
 include_directories("3rd_party/OptiX7SDK/include")
+include_directories("$ENV{CUDA_PATH}/include")
 
 #set(KTX_FEATURE_TESTS OFF)
 #set(KTX_FEATURE_TOOLS OFF)
@@ -62,7 +62,7 @@ include_directories("include")
 include_directories("include/external")
 add_library(kuafu SHARED ${RENDERER_SRC})
 add_dependencies(kuafu compile_kf_shaders)
-target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2 CUDA::cudart_static)
+target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2 "$ENV{CUDA_PATH}/lib64/libcudart_static.a")
 target_precompile_headers(kuafu PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp")
 set_target_properties(kuafu PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
