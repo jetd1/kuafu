@@ -52,7 +52,8 @@ template<typename ..._T>
 inline void KF_ERROR(_T... args) { kuafu::global::logger->error(args...); }
 
 template<typename ..._T>
-inline void KF_CRITICAL(_T... args) { kuafu::global::logger->critical(args...); }
+inline void KF_CRITICAL(_T... args) {
+    kuafu::global::logger->critical(args...); throw std::runtime_error("KF_CRITICAL"); }
 
 template<typename ..._T>
 inline void KF_ASSERT(bool st, _T... args) {

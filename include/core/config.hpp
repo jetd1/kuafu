@@ -38,8 +38,6 @@ public:
 
     friend class Kuafu;
 
-    friend class Pipeline;
-
     friend class Scene;
 
     /// @return Returns the path depth.
@@ -147,6 +145,8 @@ private:
     vk::ColorSpaceKHR mColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
     const size_t mMaxImagesInFlight = 1;                                       // for offscreen TODO:
 
+    bool mUseDenoiser = false;  // todo
+
     bool mPipelineNeedsRefresh = false; ///< Keeps track of whether or not the graphics pipeline needs to be recreated.
     bool mSwapchainNeedsRefresh = false; ///< Keeps track of whether or not the swapchain needs to be recreated.
 
@@ -165,8 +165,6 @@ private:
     uint32_t mPathDepth = 6;                                         ///< The current path depth.
     uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.
     uint32_t mRussianRouletteMinBounces = 4;
-
-    bool mUseDenoiser = false;  // todo
 
     bool mNextEventEstimation = true;            // TODO: not used!
     uint32_t mNextEventEstimationMinBounces = 0; // TODO: not used!

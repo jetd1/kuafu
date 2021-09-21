@@ -495,8 +495,11 @@ void RayTracer::createStorageImage(vk::Extent2D extent) {
     auto storageImageInfo = vkCore::getImageCreateInfo(
             vk::Extent3D(extent.width, extent.height, 1));
     storageImageInfo.usage = vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled |
-                             vk::ImageUsageFlagBits::eColorAttachment;
-    storageImageInfo.format = vk::Format::eB8G8R8A8Unorm; // TODO: make this the surface format, and not hard-coded
+                             vk::ImageUsageFlagBits::eColorAttachment |
+                             vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+    storageImageInfo.format = vk::Format::eR32G32B32A32Sfloat;  // FIXME: this is a bug
+//    storageImageInfo.format = vk::Format::eB8G8R8A8Unorm;     // FIXME: this is a bug
+//    storageImageInfo.format = vk::Format::eB8G8R8A8Srgb;
 
     mStorageImage.init(storageImageInfo);
     mStorageImage.transitionToLayout(vk::ImageLayout::eGeneral);

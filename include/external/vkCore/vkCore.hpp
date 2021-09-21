@@ -673,6 +673,53 @@ namespace vkCore
     return vk::Format::eUndefined;
   }
 
+///////////////////////////////////////////////////////////////////////////////
+// Return the access flag for an image layout
+inline vk::AccessFlagBits accessFlagsForImageLayout(vk::ImageLayout layout)
+{
+    switch(layout) {
+        case vk::ImageLayout::ePreinitialized:
+            return vk::AccessFlagBits::eHostWrite;
+        case vk::ImageLayout::eTransferDstOptimal:
+            return vk::AccessFlagBits::eTransferWrite;
+        case vk::ImageLayout::eTransferSrcOptimal:
+            return vk::AccessFlagBits::eTransferRead;
+        case vk::ImageLayout::eColorAttachmentOptimal:
+            return vk::AccessFlagBits::eColorAttachmentWrite;
+        case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+            return vk::AccessFlagBits::eDepthStencilAttachmentWrite;
+        case vk::ImageLayout::eShaderReadOnlyOptimal:
+            return vk::AccessFlagBits::eShaderRead;
+        default:
+            return vk::AccessFlagBits{};
+    }
+}
+
+inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
+{
+    switch(layout) {
+        case vk::ImageLayout::eTransferDstOptimal:
+        case vk::ImageLayout::eTransferSrcOptimal:
+            return vk::PipelineStageFlagBits::eTransfer;
+        case vk::ImageLayout::eColorAttachmentOptimal:
+            return vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        case vk::ImageLayout::eDepthStencilAttachmentOptimal:
+            return vk::PipelineStageFlagBits::eAllCommands;  // We do this to allow queue other than graphic
+            // return VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        case vk::ImageLayout::eShaderReadOnlyOptimal:
+            return vk::PipelineStageFlagBits::eAllCommands;  // We do this to allow queue other than graphic
+            // return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        case vk::ImageLayout::ePreinitialized:
+            return vk::PipelineStageFlagBits::eHost;
+        case vk::ImageLayout::eUndefined:
+            return vk::PipelineStageFlagBits::eTopOfPipe;
+        default:
+            return vk::PipelineStageFlagBits::eBottomOfPipe;
+    }
+}
+
+
+
   /// Simplifies the process of setting up an image memory barrier info.
   /// @param image The vulkan image.
   /// @param oldLayout The current image layout of the given vulkan image.
@@ -789,7 +836,11 @@ namespace vkCore
     }
     else
     {
-      VK_CORE_THROW( "Image layout transition not supported." );
+        barrier.srcAccessMask    = accessFlagsForImageLayout(oldLayout);
+        barrier.dstAccessMask    = accessFlagsForImageLayout(newLayout);
+
+        srcStageMask     = pipelineStageForLayout(oldLayout);
+        dstStageMask     = pipelineStageForLayout(newLayout);
     }
 
     return { barrier, srcStageMask, dstStageMask };
@@ -1840,7 +1891,7 @@ namespace vkCore
       imageCreateInfo.arrayLayers = 6;
       imageCreateInfo.flags       = vk::ImageCreateFlagBits::eCubeCompatible;
       imageCreateInfo.mipLevels   = numLevels;
-      imageCreateInfo.format      = vk::Format::eR8G8B8A8Unorm; // @todo add format support handling
+      imageCreateInfo.format      = vk::Format::eR8G8B8A8Srgb; // @todo add format support handling
 
       Image::init( imageCreateInfo );
 
@@ -1946,7 +1997,7 @@ namespace vkCore
       imageCreateInfo.arrayLayers = 6;
       imageCreateInfo.flags       = vk::ImageCreateFlagBits::eCubeCompatible;
       imageCreateInfo.mipLevels   = numLevels;
-      imageCreateInfo.format      = vk::Format::eR8G8B8A8Unorm; // @todo add format support handling
+      imageCreateInfo.format      = vk::Format::eR8G8B8A8Srgb; // @todo add format support handling
 
       Image::init( imageCreateInfo );
 
@@ -2612,7 +2663,6 @@ namespace vkCore
     }
 
     vk::SurfaceKHR _surface                  = nullptr;                           ///< The Vulkan surface.
-//    vk::Format _format                       = vk::Format::eB8G8R8A8Unorm;        ///< The desired surface format.
     vk::Format _format                       = vk::Format::eB8G8R8A8Srgb;        ///< The desired surface format.
     vk::ColorSpaceKHR _colorSpace            = vk::ColorSpaceKHR::eSrgbNonlinear; ///< The desired color space.
     vk::PresentModeKHR _presentMode          = vk::PresentModeKHR::eMailbox;      ///< The desired present mode.

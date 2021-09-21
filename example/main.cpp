@@ -11,10 +11,12 @@ int main() {
 
     auto config = std::make_shared<kuafu::Config>();
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(4);
-    config->setPathDepth(3);
+    config->setPerPixelSampleRate(1024);
+    config->setPathDepth(6);
     config->setRussianRoulette(false);
     config->setPresent(true);
+    config->setAccumulatingFrames(false);
+    config->setUseDenoiser(true);
 
     auto camera = std::make_shared<CustomCamera>(
             width, height, glm::vec3(0.f, 0.f, 3.f));
@@ -40,6 +42,7 @@ int main() {
     while (renderer.isRunning()) {
         updateScene(renderer);
         renderer.run();
+//        break;
 
 //        auto ret = renderer.downloadLatestFrame();
 //        KF_INFO("Downloaded!");

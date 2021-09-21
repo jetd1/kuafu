@@ -30,6 +30,7 @@
 #include "core/gui.hpp"
 #include "core/scene.hpp"
 #include "core/postprocess.hpp"
+#include "core/denoiser.hpp"
 #include "core/rt/rt.hpp"
 
 namespace kuafu {
@@ -141,6 +142,12 @@ namespace kuafu {
         RayTracer mRayTracer;
         PostProcessingRenderer mPostProcessingRenderer;
 
+        // Timeline semaphores
+        uint64_t mFenceValue = 0;
+        DenoiserOptix mDenoiser;
+        vkCore::CommandBuffer mCommandBuffers2;
+        vk::UniqueSemaphore mCmdSemaphore;
+
         vkCore::Sync mSync;
         vkCore::Swapchain mSwapchain;
         vkCore::CommandBuffer mCommandBuffers;
@@ -187,6 +194,10 @@ namespace kuafu {
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         void submitFrame();
 
+        void submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf);
+        void submitFrame(const vk::CommandBuffer& cmdBuf);
+
+
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         std::vector<uint8_t> downloadLatestFrame();
 
@@ -200,6 +211,8 @@ namespace kuafu {
                      mSwapchain.getExtent() : mScene.mCurrentCamera ?
                      vk::Extent2D{ static_cast<uint32_t>(mScene.mCurrentCamera->getWidth()),
                                    static_cast<uint32_t>(mScene.mCurrentCamera->getHeight())} : vk::Extent2D{1, 1}; }
+        inline auto getCmdSemaphore() { return pConfig->mUseDenoiser ? mDenoiser.getTLSemaphore() : mCmdSemaphore.get(); };
+//        inline auto getCmdSemaphore() { return mDenoiser.getTLSemaphore(); };
 
 
     public:

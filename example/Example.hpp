@@ -116,8 +116,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(10000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
         renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.2F));
-        renderer->getConfig().setAccumulatingFrames(true);
-
         renderer->getScene( ).getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
         renderer->getScene( ).getCamera( )->setFront( glm::vec3( 0.0F, 0.0F, -1.F ) );
         renderer->getScene( ).getCamera( )->setUp( glm::vec3( 0.0F, 1.0F, 0.F ) );
@@ -172,8 +170,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
-//        renderer->getConfig().setAccumulatingFrames(false);
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.3));
 //        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
@@ -380,7 +376,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryInstanceLimit(50000);
         renderer->getConfig().setTextureLimit(2); // Will give a warning.
 
-        renderer->getConfig().setAccumulatingFrames(false);
         renderer->getConfig().setClearColor(glm::vec4(0.5F, 0.5F, 0.7F, 1.0F));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(9.8F, 0.3F, 7.7F));
@@ -425,7 +420,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(1000);
         renderer->getConfig().setTextureLimit(50); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
         renderer->getConfig().setClearColor(glm::vec4(1.0F));
 
         renderer->getScene().removeEnvironmentMap();
@@ -454,7 +448,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(false);
 //        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.1F));
 
@@ -515,7 +508,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(false);
 //        renderer->getConfig().setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
 
@@ -555,7 +547,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(100); // Will give a warning.
         renderer->getConfig().setGeometryInstanceLimit(15000);
         renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
@@ -728,7 +719,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(1000);
         renderer->getConfig().setGeometryInstanceLimit(1000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(0.5F, 0.5F, 0.5F));
@@ -743,7 +733,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(1000);
         renderer->getConfig().setGeometryInstanceLimit(1000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
@@ -771,7 +760,6 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setGeometryLimit(1000);
         renderer->getConfig().setGeometryInstanceLimit(1000);
         renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getConfig().setAccumulatingFrames(true);
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
 
         renderer->getScene().getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));

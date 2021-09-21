@@ -79,6 +79,8 @@ public:
 
     auto getCapabilities() const -> const PathTracingCapabilities & { return mCapabilities; }
 
+    auto getStorageImage() const -> vk::Image { return mStorageImage.get(); }
+
     auto getStorageImageView() const -> vk::ImageView { return mStorageImageView.get(); }
 
     auto getPipeline() const -> vk::Pipeline { return _pipeline.get(); }

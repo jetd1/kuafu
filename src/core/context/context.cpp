@@ -62,9 +62,11 @@ Context::~Context() {
     catch (vk::DeviceLostError& e) {}
 
     // Gui needs to be destroyed manually, as RAII destruction will not be possible.
-    if (pGui != nullptr) {
+    if (pGui != nullptr)
       pGui->destroy();
-    }
+
+    if (pConfig->mUseDenoiser)
+        mDenoiser.destroy();
 }
 
 void Context::setGui(const std::shared_ptr<Gui> &gui, bool initialize) {
@@ -89,6 +91,31 @@ void Context::init() {
     } else {
         vkCore::global::dataCopies = 1U;
         vkCore::global::swapchainImageCount = 1U;
+    }
+
+    if (pConfig->mUseDenoiser) {
+        deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_EXTERNAL_FENCE_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_EXTERNAL_SEMAPHORE_FD_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_FD_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_EXTERNAL_FENCE_FD_EXTENSION_NAME);
+
+        deviceExtensions.push_back(VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
+
+        deviceExtensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+        deviceExtensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+
+//        mDenoiser.initOptiX(
+//                OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL,
+//                OPTIX_PIXEL_FORMAT_FLOAT4,
+//                false);                                 // TODO
+
+        mDenoiser.initOptiX(
+                OPTIX_DENOISER_INPUT_RGB,
+                OPTIX_PIXEL_FORMAT_FLOAT4,
+                false);                                 // TODO
+        KF_DEBUG("OptiX initialized!");
     }
 
     // Instance
@@ -126,8 +153,17 @@ void Context::init() {
     KF_DEBUG("QueueFamilyIndices initialized!");
 
     // Logical device
+    vk::PhysicalDeviceSynchronization2FeaturesKHR synchronization2Features;
+    synchronization2Features.synchronization2 = VK_TRUE;
+    synchronization2Features.pNext = nullptr;
+
+    vk::PhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures;
+    timelineSemaphoreFeatures.timelineSemaphore = VK_TRUE;
+    timelineSemaphoreFeatures.pNext = &synchronization2Features;
+
     vk::PhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures;
     shaderClockFeatures.shaderSubgroupClock = VK_TRUE;
+    shaderClockFeatures.pNext = &timelineSemaphoreFeatures;
 
     vk::PhysicalDeviceAccelerationStructureFeaturesKHR asFeatures;
     asFeatures.accelerationStructure = VK_TRUE;
@@ -243,16 +279,38 @@ void Context::init() {
     mRayTracer.createShaderBindingTable();
     KF_DEBUG("ShaderBindingTable initialized!");
 
+    // Denoiser
+    if (pConfig->mUseDenoiser)
+        mDenoiser.allocateBuffers(getExtent());
+    else {
+        vk::SemaphoreTypeCreateInfo timelineCreateInfo;
+        timelineCreateInfo.semaphoreType = vk::SemaphoreType::eTimeline;
+        timelineCreateInfo.initialValue  = 0;
+
+        vk::ExportSemaphoreCreateInfo esci;
+        esci.handleTypes = vk::ExternalSemaphoreHandleTypeFlagBits::eOpaqueFd;
+        esci.pNext       = &timelineCreateInfo;
+
+        vk::SemaphoreCreateInfo sci;
+        sci.pNext        = &esci;
+
+        mCmdSemaphore = vkCore::global::device.createSemaphoreUnique(sci);
+
+//        mDenoiser.createSemaphore(false);                 // create dummy denoiser semaphore
+    }
+
     // Post processing renderer
     mPostProcessingRenderer.initDescriptorSet();
     mPostProcessingRenderer.initPipeline();
     mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo());
     KF_DEBUG("PostProcessingRenderer initialized!");
 
-    // Initialize and record swapchain command buffers.
+    // Initialize command buffers.
     mCommandBuffers.init(mGraphicsCmdPool.get(), vkCore::global::swapchainImageCount,
-                                  vk::CommandBufferUsageFlagBits::eRenderPassContinue);
-    KF_DEBUG("SwapchainCommandBuffers initialized!");
+                         vk::CommandBufferUsageFlagBits::eRenderPassContinue);
+    mCommandBuffers2.init(mGraphicsCmdPool.get(), vkCore::global::swapchainImageCount,
+                          vk::CommandBufferUsageFlagBits::eRenderPassContinue);
+    KF_DEBUG("commandBuffers initialized!");
 }
 
 void Context::update() {
@@ -318,51 +376,80 @@ void Context::prepareFrame() {
     }
 }
 
-void Context::submitFrame() {
-    uint32_t imageIndex = getCurrentImageIndex();
-    size_t imageIndex_t = static_cast<size_t>(imageIndex);
-
-    // Check if a previous frame is using the current image.
-    if (mSync.getImageInFlight(imageIndex)) {
+void Context::submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf)
+{
+    auto imageIndex = static_cast<size_t>(getCurrentImageIndex());
+    if (mSync.getImageInFlight(imageIndex))
         mSync.waitForFrame(currentFrame);
-    }
 
-    // This will mark the current image to be in use by this frame.
-    mSync.getImageInFlight(imageIndex_t) = mSync.getInFlightFence(currentFrame);
+    mSync.getImageInFlight(imageIndex) = mSync.getInFlightFence(currentFrame);
+    auto currentInFlightFence = mSync.getInFlightFence(currentFrame);
+    auto result = vkCore::global::device.resetFences(1, &currentInFlightFence);
+    KF_ASSERT(result == vk::Result::eSuccess, "Failed to reset fences");
 
-    vk::CommandBuffer cmdBuf = mCommandBuffers.get(imageIndex);
+    // Increment for signaling
+    mFenceValue++;
 
-    // Reset the signaled state of the current frame's fence to the unsignaled one.
-    auto currentInFlightFence_t = mSync.getInFlightFence(currentFrame);
-    auto result = vkCore::global::device.resetFences(1, &currentInFlightFence_t);
-    KF_ASSERT(result == vk::Result::eSuccess, "KF: failed to reset fences");
+    vk::CommandBufferSubmitInfoKHR cmdBufInfo;
+    cmdBufInfo.setCommandBuffer(cmdBuf);
 
-    // Submits / executes the current image's / framebuffer's command buffer.
-    vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    vk::SemaphoreSubmitInfoKHR waitSemaphore;
+    waitSemaphore.setSemaphore(mSync.getImageAvailableSemaphore(currentFrame));
+    waitSemaphore.setStageMask(vk::PipelineStageFlagBits2KHR::eColorAttachmentOutput);
 
-    auto waitSemaphore = mSync.getImageAvailableSemaphore(currentFrame);
-    auto finishedRenderSemaphore = mSync.getFinishedRenderSemaphore(currentFrame);
+    vk::SemaphoreSubmitInfoKHR signalSemaphore;
+    signalSemaphore.setSemaphore(getCmdSemaphore());
+    signalSemaphore.setStageMask(vk::PipelineStageFlagBits2KHR::eAllCommands);
+    signalSemaphore.setValue(mFenceValue);
+
+    vk::SubmitInfo2KHR submits;
+    submits.setCommandBufferInfos(cmdBufInfo);
+    if (pConfig->mPresent)                                 // TODO: FIXME
+        submits.setWaitSemaphoreInfos(waitSemaphore);      // TODO: FIXME
+    submits.setSignalSemaphoreInfos(signalSemaphore);
+
+    vkCore::global::graphicsQueue.submit2KHR(submits);
+}
+
+
+//--------------------------------------------------------------------------------------------------
+// Convenient function to call for submitting the rendering command
+//
+void Context::submitFrame(const vk::CommandBuffer& cmdBuf)
+{
+    auto currentInFlightFence = mSync.getInFlightFence(currentFrame);
+    auto currentFinishedSemaphore = mSync.getFinishedRenderSemaphore(currentFrame);
+
+    vk::CommandBufferSubmitInfoKHR cmdBufInfo;
+    cmdBufInfo.setCommandBuffer(cmdBuf);
+
+    vk::SemaphoreSubmitInfoKHR waitSemaphore;
+    waitSemaphore.setSemaphore(getCmdSemaphore());
+    waitSemaphore.setStageMask(vk::PipelineStageFlagBits2KHR::eAllCommands);
+    waitSemaphore.setValue(mFenceValue);
+
+    vk::SemaphoreSubmitInfoKHR signalSemaphore;
+    signalSemaphore.setSemaphore(currentFinishedSemaphore);
+    signalSemaphore.setStageMask(vk::PipelineStageFlagBits2KHR::eAllCommands);
+
+    vk::SubmitInfo2KHR submits;
+    submits.setCommandBufferInfos(cmdBufInfo);
+    submits.setWaitSemaphoreInfos(waitSemaphore);
+    submits.setSignalSemaphoreInfos(signalSemaphore);
+
+    vkCore::global::graphicsQueue.submit2KHR(submits, currentInFlightFence);
+
 
     if (pConfig->mPresent) {
-        vk::SubmitInfo submitInfo(1,                   // waitSemaphoreCount
-                                  &waitSemaphore,      // pWaitSemaphores
-                                  &pWaitDstStageMask,  // pWaitDstStageMask
-                                  1,                   // commandBufferCount
-                                  &cmdBuf,             // pCommandBuffers
-                                  1,                   // signalSemaphoreCount
-                                  &finishedRenderSemaphore); // pSignalSemaphores
+        uint32_t imageIndex = getCurrentImageIndex();
 
-        vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence_t);
-
-        // Tell the presentation engine that the current image is ready.
         vk::PresentInfoKHR presentInfo(1,                          // waitSemaphoreCount
-                                       &finishedRenderSemaphore,          // pWaitSemaphores
+                                       &currentFinishedSemaphore,          // pWaitSemaphores
                                        1,                          // swapchainCount
                                        &vkCore::global::swapchain, // pSwapchains
                                        &imageIndex,                // pImageIndices
                                        nullptr);                  // pResults
 
-        // This try catch block is only necessary on Linux for whatever reason. Without it, resizing the window will result in an unhandled throw of vk::Result::eErrorOutOfDateKHR.
         try {
             vk::Result result = vkCore::global::graphicsQueue.presentKHR(presentInfo);
             if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
@@ -374,15 +461,17 @@ void Context::submitFrame() {
             pConfig->triggerSwapchainRefresh();
         }
     } else {
-        vk::SubmitInfo submitInfo(0,                   // waitSemaphoreCount   //TODO: FIXME: urgent
-                                  &waitSemaphore,      // pWaitSemaphores          //TODO: FIXME: urgent
+        vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+
+        vk::SubmitInfo submitInfo(1,                   // waitSemaphoreCount
+                                  &currentFinishedSemaphore,      // pWaitSemaphores
                                   &pWaitDstStageMask,  // pWaitDstStageMask
                                   1,                   // commandBufferCount
                                   &cmdBuf,             // pCommandBuffers
-                                  1,                   // signalSemaphoreCount
-                                  &waitSemaphore); // pSignalSemaphores         //TODO: FIXME: urgent
+                                  0,                   // signalSemaphoreCount
+                                  nullptr); // pSignalSemaphores
 
-        vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence_t);
+        vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence);
     }
 
     prevFrame = currentFrame;
@@ -454,7 +543,7 @@ void Context::render() {
 
     prepareFrame();
     recordSwapchainCommandBuffers();
-    submitFrame();
+//    submitFrame();
 }
 
 void Context::recreateSwapchain() {
@@ -477,8 +566,10 @@ void Context::recreateSwapchain() {
     // Recreate storage image with the new swapchain image size and update the path tracing descriptor set to use the new storage image view.
     mRayTracer.createStorageImage(getExtent());
 
-    const auto &storageImageInfo = mRayTracer.getStorageImageInfo();
-    mPostProcessingRenderer.updateDescriptors(storageImageInfo);
+    if (pConfig->mUseDenoiser)
+        mDenoiser.allocateBuffers(getExtent());
+
+    mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo());
 
     mRayTracer.updateDescriptors();
 
@@ -515,64 +606,80 @@ void Context::initGui() {
 void Context::recordSwapchainCommandBuffers() {
     mSync.waitForFrame(prevFrame);
 
-    RtPushConstants pushConstants = {pConfig->mClearColor,
-                                     global::frameCount,
-                                     pConfig->mPerPixelSampleRate,
-                                     pConfig->mPathDepth,
-                                     static_cast<uint32_t>(mScene.mUseEnvironmentMap),
-                                     static_cast<uint32_t>(pConfig->mRussianRoulette),
-                                     pConfig->mRussianRouletteMinBounces,
-                                     pConfig->mNextEventEstimation,
-                                     pConfig->mNextEventEstimationMinBounces};   // TODO: remove unused
+    RtPushConstants pushConstants = {
+            pConfig->mClearColor,
+            global::frameCount,
+            pConfig->mPerPixelSampleRate,
+            pConfig->mPathDepth,
+            static_cast<uint32_t>(mScene.mUseEnvironmentMap),
+            static_cast<uint32_t>(pConfig->mRussianRoulette),
+            pConfig->mRussianRouletteMinBounces,
+            pConfig->mNextEventEstimation,
+            pConfig->mNextEventEstimationMinBounces };   // TODO: remove unused
 
-    for (size_t imageIndex = 0; imageIndex < mCommandBuffers.get().size(); ++imageIndex) {
-        vk::CommandBuffer cmdBuf = mCommandBuffers.get(imageIndex);
+    size_t imageIndex = getCurrentImageIndex();
 
-        mCommandBuffers.begin(imageIndex);
-        {
-            cmdBuf.pushConstants(
-                    mRayTracer.getPipelineLayout(),
-                    vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR |
-                    vk::ShaderStageFlagBits::eClosestHitKHR,
-                    0,
-                    sizeof(RtPushConstants),
-                    &pushConstants);
+    vk::CommandBuffer cmdBuf = mCommandBuffers.get(imageIndex);
+    vk::CommandBuffer cmdBuf2 = mCommandBuffers2.get(imageIndex);
 
-            cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRayTracer.getPipeline());
+    size_t index = imageIndex % mSync.getMaxFramesInFlight();
 
-            size_t index = imageIndex % mSync.getMaxFramesInFlight();
+    mCommandBuffers.begin(imageIndex);
+    {
+        cmdBuf.pushConstants(
+                mRayTracer.getPipelineLayout(),
+                vk::ShaderStageFlagBits::eRaygenKHR | vk::ShaderStageFlagBits::eMissKHR |
+                vk::ShaderStageFlagBits::eClosestHitKHR,
+                0,
+                sizeof(RtPushConstants),
+                &pushConstants);
 
-            std::vector<vk::DescriptorSet> descriptorSets = {mRayTracer.getDescriptorSet(index),
-                                                             mScene.mSceneDescriptorSets[index],
-                                                             mScene.mGeometryDescriptorSets[index]};
+        cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRayTracer.getPipeline());
 
-            cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
-                                      mRayTracer.getPipelineLayout(),
-                                      0,
-                                      static_cast<uint32_t>(descriptorSets.size()),
-                                      descriptorSets.data(),
-                                      0,
-                                      nullptr);
-//
-//            mSwapchain.setImageLayout(
-//                    imageIndex, vk::ImageLayout::eUndefined, vk::ImageLayout::ePresentSrcKHR);
+        std::vector<vk::DescriptorSet> descriptorSets = {mRayTracer.getDescriptorSet(index),
+                                                         mScene.mSceneDescriptorSets[index],
+                                                         mScene.mGeometryDescriptorSets[index]};
 
-            // rt
-            mRayTracer.trace(cmdBuf, getImage(imageIndex), getExtent());
+        cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
+                                  mRayTracer.getPipelineLayout(),
+                                  0,
+                                  static_cast<uint32_t>(descriptorSets.size()),
+                                  descriptorSets.data(),
+                                  0,
+                                  nullptr);
 
-            // pp
-            mPostProcessingRenderer.beginRenderPass(cmdBuf, getFramebuffer(imageIndex), getExtent());
-            {
-                mPostProcessingRenderer.render(cmdBuf, getExtent(), index);
+        // rt
+        mRayTracer.trace(cmdBuf, getImage(imageIndex), getExtent());
 
-                // imGui
-                if (pGui != nullptr) {
-                  pGui->renderDrawData(cmdBuf);
-                }
-            }
-            mPostProcessingRenderer.endRenderPass(cmdBuf);
-        }
-        mCommandBuffers.end(imageIndex);
+        // denoise
+        if (pConfig->mUseDenoiser)
+            mDenoiser.imageToBuffer(cmdBuf, {mRayTracer.getStorageImage()});
+
     }
+    mCommandBuffers.end(imageIndex);
+    submitWithTLSemaphore(cmdBuf);
+
+
+    if(pConfig->mUseDenoiser)
+        mDenoiser.denoiseImageBuffer(mFenceValue);
+
+
+    mCommandBuffers2.begin(imageIndex);
+    {
+        if(pConfig->mUseDenoiser)
+            mDenoiser.bufferToImage(cmdBuf2, mRayTracer.getStorageImage());
+
+        // pp
+        mPostProcessingRenderer.beginRenderPass(cmdBuf2, getFramebuffer(imageIndex), getExtent());
+        {
+            mPostProcessingRenderer.render(cmdBuf2, getExtent(), index);
+
+            if (pGui != nullptr)
+                pGui->renderDrawData(cmdBuf2);
+        }
+        mPostProcessingRenderer.endRenderPass(cmdBuf2);
+    }
+    mCommandBuffers2.end(imageIndex);
+    submitFrame(cmdBuf2);
 }
 }
