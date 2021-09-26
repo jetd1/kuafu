@@ -107,7 +107,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
             alpha = 1.f;
         }
 
-        if (roughness == 0 && !utils::hasExtension(fname, {".gltf", ".glb"})) {
+        if (roughness == 0 && !utils::hasExtension(fname, std::vector<std::string_view>{".gltf", ".glb"})) {
             float shininess = -1;
             m->Get(AI_MATKEY_SHININESS, shininess);
             if (shininess > 0) {

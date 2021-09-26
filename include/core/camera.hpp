@@ -89,10 +89,6 @@ public:
     /// @param height The height of the viewport.
     void setSize(int width, int height);
 
-    /// Is used to set the camera's field of view.
-    /// @param fov The new field of view.
-    void setFov(float fov);
-
     void setPose(glm::mat4 pose);
 
     /// Set the camera's projection matrix (and inv) using a full set of perspective parameters.
