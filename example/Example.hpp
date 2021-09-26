@@ -174,7 +174,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.3));
 //        renderer->getConfig().setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
-        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
+        renderer->getScene().getCamera()->setPosition(glm::vec3(-12.6F, 0.0F, 15.4F));
         renderer->getScene().getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
 //        auto dLight = std::make_shared<kuafu::DirectionalLight>();

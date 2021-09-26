@@ -104,12 +104,6 @@ public:
 
     [[nodiscard]] auto getHeight() const { return mHeight; }
 
-    [[nodiscard]] auto getFov() const {
-        if (mIsFullPerspective)
-            KF_WARN("getFov does not make sense for full-perspective cameras.");
-        return mFov;
-    }
-
     /// @return The view matrix.
     auto getViewMatrix() const -> const glm::mat4 & { return mViewMatrix; }
 
@@ -144,31 +138,38 @@ public:
     inline void clearRenderTargets() { mRenderTargets->clear(); }
     inline auto getRenderTargets() { return mRenderTargets; }
 
+    [[nodiscard]] inline float getPrincipalPointX() const { return mCx; }
+    [[nodiscard]] inline float getPrincipalPointY() const { return mCy; }
+    [[nodiscard]] inline float getFocalX() const { return mFx; }
+    [[nodiscard]] inline float getFocalY() const { return mFy; }
+    [[nodiscard]] inline float getNear() const { return mNear; }
+    [[nodiscard]] inline float getFar() const { return mFar; }
+    [[nodiscard]] inline float getSkew() const { return mSkew; }
+
 protected:
     int mWidth;  ///< The width of the viewport.
     int mHeight; ///< The height of the viewport.
 
     glm::vec3 mPosition; ///< The camera's position.
 
-    bool mIsFullPerspective = false;
+    float mFx;
+    float mFy;
+    float mCx;
+    float mCy;
+    float mSkew = 0;
 
     glm::mat4 mViewMatrix = glm::mat4(1.0F); ///< The view matrix.
     glm::mat4 mProjMatrix = glm::mat4(1.0F); ///< The projection matrix
 
-//        glm::mat4 _viewInverse = glm::mat4(1.0F); ///< The view matrix inversed.
-//        glm::mat4 _projectionInverse = glm::mat4(1.0F); ///< The projection matrix inversed.
-
-//        glm::vec3 _worldUp = {0.0F, 0.0F, 1.0F}; ///< The world up vector.
-    glm::vec3 mDirUp = {0.0F, 0.0F, 1.0F};                  ///< The local up vector.
+    glm::vec3 mDirUp = {0.0F, 0.0F, 1.0F};                      ///< The local up vector.
     glm::vec3 mDirRight = {0.0F, -1.0F, 0.0F};                  ///< The local right vector.
-    glm::vec3 mDirFront = {1.0F, 0.0F, 0.0F};                  ///< The viewing direction.
+    glm::vec3 mDirFront = {1.0F, 0.0F, 0.0F};                   ///< The viewing direction.
 
-//        float _yaw = -90.0F; ///< The yaw (left and right).
-//        float _pitch = 0.0F;   ///< The pitch (down and up).
-//        float _sensitivity = 0.06F;  ///< The mouse sensitivity.
-    float mFov = 90.0F;  ///< The field of view.
     float mAperture = 0.0F;   // DOF disabled by default
     float mFocalLength = 5.0F;
+
+    const float mFar = 100.F;
+    const float mNear = 0.1F;
 
     std::shared_ptr<RenderTargets> mRenderTargets;
 };

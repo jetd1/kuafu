@@ -8,8 +8,13 @@ namespace kuafu {
 Camera::Camera(int width, int height, const glm::vec3 &position) : mWidth(width), mHeight(height),
                                                                    mPosition(position) {
     mRenderTargets = std::make_shared<RenderTargets>();
+
+    mCx = mWidth / 2.f;
+    mCy = mHeight / 2.f;
+    mFx = mFy = mWidth * 0.5;   // Some reasonable initialization
     updateProjectionMatrix();
     mProjNeedsUpdate = true;
+
     resetView();
 }
 
@@ -76,26 +81,8 @@ void Camera::setUp(const glm::vec3 &up) {
 }
 
 void Camera::setSize(int width, int height) {
-    if (mIsFullPerspective) {
-        KF_ASSERT(width == mWidth && height == mHeight,
-                  "Current camera is full-perspective and you are setting a different size for the camera. "
-                  "This will cause undefined behavior!");
-        return;
-    }
-
     mWidth = width;
     mHeight = height;
-
-    updateProjectionMatrix();
-    clearRenderTargets();
-}
-
-void Camera::setFov(float fov) {
-    if (mIsFullPerspective) {
-        KF_CRITICAL("Setting FOV on a full-perspective camera. This will cause undefined behavior!");
-        return;
-    }
-    mFov = fov;
 
     updateProjectionMatrix();
 }
@@ -105,42 +92,34 @@ void Camera::updateViewMatrix() {
     mViewNeedsUpdate = true;
 }
 
-void Camera::updateProjectionMatrix() {
-    if (mIsFullPerspective) {
-        KF_WARN("Camera is set to be full-perspective, "
-                "use setFullPerspective instead! Nothing will be changed.");
-        return;
-    }
-    mProjMatrix = glm::perspective(
-            glm::radians(mFov),
-            static_cast<float>(mWidth) / static_cast<float>(mHeight),
-            0.1F, 100.0F);
-    mProjMatrix[1][1] *= -1;
-    mProjNeedsUpdate = true;
-}
-
 void Camera::setFullPerspective(
         float width, float height, float fx, float fy, float cx, float cy, float skew) {
 
-    mIsFullPerspective = true;
     mWidth = static_cast<int>(width);
     mHeight = static_cast<int>(height);
 
-    float far = 100.F;
-    float near = 0.1F;
+    mFx = fx;
+    mFy = fy;
+    mCx = cx;
+    mCy = cy;
+    mSkew = skew;
 
+    updateProjectionMatrix();
+}
+
+void Camera::updateProjectionMatrix() {
     mProjMatrix = glm::mat4(0);
-    mProjMatrix[0][0] = (2.f * fx) / width;
+    mProjMatrix[0][0] = (2.f * mFx) / mWidth;
 
-    mProjMatrix[1][0] = -2 * skew / width;
-    mProjMatrix[1][1] = -(2.f * fy) / height;
+    mProjMatrix[1][0] = -2 * mSkew / mWidth;
+    mProjMatrix[1][1] = -(2.f * mFy) / mHeight;
 
-    mProjMatrix[2][0] = -2.f * cx / width + 1;
-    mProjMatrix[2][1] = -2.f * cy / height + 1;
-    mProjMatrix[2][2] = -far / (far - near);
+    mProjMatrix[2][0] = -2.f * mCx / mWidth + 1;
+    mProjMatrix[2][1] = -2.f * mCy / mHeight + 1;
+    mProjMatrix[2][2] = -mFar / (mFar - mNear);
     mProjMatrix[2][3] = -1.f;
 
-    mProjMatrix[3][2] = -far * near / (far - near);
+    mProjMatrix[3][2] = -mFar * mNear / (mFar - mNear);
     mProjMatrix[3][3] = 0.f;
 
     mProjNeedsUpdate = true;
