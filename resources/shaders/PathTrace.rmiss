@@ -12,11 +12,11 @@ layout( binding = 2, set = 1 ) uniform samplerCube environmentMap;
 void main( )
 {
   vec3 dir = ray.direction;
-  dir.x *= -1.0; // mirror
+  dir = vec3(-dir.y, dir.z, -dir.x);
 
   if ( ray.depth == 0 )     // view ray
     if ( useEnvironmentMap )
-      ray.emission = texture( environmentMap, dir ).xyz * 0.8F;    // TODO: kuafu_urgent: make sense?
+      ray.emission = texture( environmentMap, dir ).xyz;
     else
       ray.emission = clearColor.xyz * clearColor.w;
 
