@@ -92,8 +92,11 @@ void Context::init() {
 
       deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     } else {
-        vkCore::global::dataCopies = 1U;
-        vkCore::global::swapchainImageCount = 1U;
+//        vkCore::global::dataCopies = 1U;
+//        vkCore::global::swapchainImageCount = 1U;
+
+        vkCore::global::dataCopies = pConfig->mMaxImagesInFlight;
+        vkCore::global::swapchainImageCount = pConfig->mMaxImagesInFlight;
     }
 
     if (pConfig->mUseDenoiser) {
@@ -228,7 +231,7 @@ void Context::init() {
         KF_DEBUG("Swapchain initialized!");
         pConfig->mSwapchainNeedsRefresh = false;
     } else {
-        mFrames.init(
+        mScene.mCurrentCamera->mFrames->init(
                 pConfig->mMaxImagesInFlight,
                 getExtent(), getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
@@ -365,7 +368,7 @@ void Context::prepareFrame() {
         mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
     } else {
 //        mFrames.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame));
-        mFrames.acquireNextImage();            // FIXME
+        mScene.mCurrentCamera->mFrames->acquireNextImage();            // FIXME
     }
 }
 
@@ -454,17 +457,17 @@ void Context::submitFrame(const vk::CommandBuffer& cmdBuf)
             pConfig->triggerSwapchainRefresh();
         }
     } else {
-        vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+        vk::PipelineStageFlags pWaitDstStageMask = vk::PipelineStageFlagBits::eAllCommands;
 
         vk::SubmitInfo submitInfo(1,                   // waitSemaphoreCount
                                   &currentFinishedSemaphore,      // pWaitSemaphores
                                   &pWaitDstStageMask,  // pWaitDstStageMask
-                                  1,                   // commandBufferCount
-                                  &cmdBuf,             // pCommandBuffers
+                                  0,                   // commandBufferCount
+                                  nullptr, // commandBuffer             // pCommandBuffers
                                   0,                   // signalSemaphoreCount
                                   nullptr); // pSignalSemaphores
 
-        vkCore::global::graphicsQueue.submit(submitInfo, currentInFlightFence);
+        vkCore::global::graphicsQueue.submit(submitInfo, nullptr);
     }
 
     prevFrame = currentFrame;
@@ -473,6 +476,7 @@ void Context::submitFrame(const vk::CommandBuffer& cmdBuf)
 
 
 std::vector<uint8_t> Context::downloadLatestFrame() {
+    mSync.waitForFrame(prevFrame);
     vk::Image image = getImage(prevFrame);
     vk::Format format = getFormat();
     vk::Extent3D extent {getExtent(), 1};
@@ -540,11 +544,12 @@ void Context::render() {
 }
 
 void Context::recreateSwapchain() {
-    KF_DEBUG("Recreating Swapchain...");
     // Waiting idle because this event is considered to be very rare.
     vkCore::global::device.waitIdle();
 
     if (pConfig->mPresent) {
+        KF_DEBUG("Recreating Swapchain...");
+
         // Clean up existing swapchain and dependencies.
         mSwapchain.destroy();
 
@@ -554,9 +559,12 @@ void Context::recreateSwapchain() {
         // Update the camera screen size to avoid image stretching.
         mScene.mCurrentCamera->setSize(getExtent().width, getExtent().height);
     } else {
-        mFrames.destroy();
-        mFrames.init(pConfig->mMaxImagesInFlight,
-                     getExtent(), getFormat(), getColorSpace(), mPostProcessingRenderer.getRenderPass().get());
+        KF_DEBUG("Switching Framebuffer...");
+
+        mScene.mCurrentCamera->mFrames->init(
+                pConfig->mMaxImagesInFlight, getExtent(),
+                getFormat(), getColorSpace(),
+                mPostProcessingRenderer.getRenderPass().get());
     }
 
     // Recreate storage image with the new swapchain image size and update the path tracing descriptor set to use the new storage image view.
@@ -567,7 +575,6 @@ void Context::recreateSwapchain() {
         mDenoiser.allocateBuffers(getExtent());
 
     mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo("rgba"));
-
     mRayTracer.updateDescriptors();
 
     if (pGui != nullptr)

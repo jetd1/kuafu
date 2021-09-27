@@ -142,6 +142,8 @@ public:
     [[nodiscard]] inline float getFar() const { return mFar; }
     [[nodiscard]] inline float getSkew() const { return mSkew; }
 
+    std::shared_ptr<Frames> mFrames;
+
 protected:
     int mWidth;  ///< The width of the viewport.
     int mHeight; ///< The height of the viewport.

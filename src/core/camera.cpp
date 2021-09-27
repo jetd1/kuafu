@@ -8,9 +8,10 @@ namespace kuafu {
 Camera::Camera(int width, int height, const glm::vec3 &position) : mWidth(width), mHeight(height),
                                                                    mPosition(position) {
     mRenderTargets = std::make_shared<RenderTargets>();
+    mFrames = std::make_shared<Frames>();
 
-    mCx = mWidth / 2.f;
-    mCy = mHeight / 2.f;
+    mCx = mWidth * 0.5;
+    mCy = mHeight * 0.5;
     mFx = mFy = mWidth * 0.5;   // Some reasonable initialization
     updateProjectionMatrix();
     mProjNeedsUpdate = true;
@@ -127,6 +128,7 @@ void Camera::updateProjectionMatrix() {
 
     mProjNeedsUpdate = true;
     clearRenderTargets();
+    mFrames->destroy();
 }
 
 

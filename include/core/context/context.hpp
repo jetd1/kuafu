@@ -62,8 +62,6 @@ namespace kuafu {
         vkCore::Swapchain mSwapchain;
         vkCore::CommandBuffer mCommandBuffers;
 
-        Frames mFrames;   // only for offscreen use
-
         std::shared_ptr<Gui> pGui = nullptr;
 
         Scene mScene;
@@ -107,14 +105,13 @@ namespace kuafu {
         void submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf);
         void submitFrame(const vk::CommandBuffer& cmdBuf);
 
-
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         std::vector<uint8_t> downloadLatestFrame();
 
-        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : mFrames.getCurrentImageIndex(); }
-        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : mFrames.getImage(idx); }
+        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : mScene.mCurrentCamera->mFrames->getCurrentImageIndex(); }
+        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : mScene.mCurrentCamera->mFrames->getImage(idx); }
         inline auto& getFramebuffer(size_t idx) { return pConfig->mPresent ?
-                 mSwapchain.getFramebuffer(idx) : mFrames.getFramebuffer(idx).get(); }
+                 mSwapchain.getFramebuffer(idx) : mScene.mCurrentCamera->mFrames->getFramebuffer(idx).get(); }
         inline auto  getFormat() { return pConfig->mPresent ? mSurface.getFormat() : pConfig->mFormat; }
         inline auto  getColorSpace() { return pConfig->mPresent ? mSurface.getColorSpace() : pConfig->mColorSpace; }
         inline auto  getExtent() { return pConfig->mPresent ?

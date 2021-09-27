@@ -22,6 +22,8 @@ class Frames {
 
     std::mutex mLock;
 
+    bool mInitialized = false;
+
 public:
 
     inline void init(
@@ -30,6 +32,9 @@ public:
             vk::Format format,
             vk::ColorSpaceKHR colorSpace,
             vk::RenderPass renderPass) {
+        if (mInitialized)
+            return;
+
         mN = n;
         mImages.resize(n);
         mImagesMemory.resize(n);
@@ -69,9 +74,13 @@ public:
             mFramebuffers[i] = vkCore::initFramebufferUnique(
                     { mImageViews[i].get( ) }, renderPass, extent);
 
+        mInitialized = true;
     }
 
     inline void destroy() {
+        if (!mInitialized)
+            return;
+
         mFramebuffers.clear();
         mImageViews.clear();
         for (size_t i = 0; i < mN; i++) {
@@ -80,17 +89,22 @@ public:
         }
         mImages.clear();
         mImagesMemory.clear();
+
+        mInitialized = false;
     }
 
-    inline auto getImage(size_t n) { return mImages[n]; }
-    inline auto& getFramebuffer(size_t n) { return mFramebuffers[n]; }
+    inline auto getImage(size_t n) { KF_ASSERT(mInitialized, ""); return mImages[n]; }
+    inline auto& getFramebuffer(size_t n) { KF_ASSERT(mInitialized, ""); return mFramebuffers[n]; }
 
-    [[nodiscard]] inline size_t getCurrentImageIndex() const { return mCurrentImageIdx; }
+    [[nodiscard]] inline size_t getCurrentImageIndex() const { KF_ASSERT(mInitialized, ""); return mCurrentImageIdx; }
     inline void acquireNextImage() {
+        KF_ASSERT(mInitialized, "");
         mLock.lock();
         mCurrentImageIdx = (mCurrentImageIdx + 1) % mN;
         mLock.unlock();
     }
+
+    [[nodiscard]] inline bool initialized() const { return mInitialized; }
 };
 
 class StorageImage {

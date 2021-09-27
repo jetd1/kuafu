@@ -146,7 +146,7 @@ private:
     bool mPresent = true;                                  /// not changeable: whether or not initialize the surface
     vk::Format mFormat = vk::Format::eB8G8R8A8Srgb;
     vk::ColorSpaceKHR mColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
-    const size_t mMaxImagesInFlight = 1;                                       // for offscreen TODO:
+    const size_t mMaxImagesInFlight = 2;                                       // for offscreen TODO:
 
     bool mUseDenoiser = false;  // todo
 

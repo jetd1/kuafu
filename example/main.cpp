@@ -40,6 +40,9 @@ int main() {
 //            1.387511840820312500e+03, 1.386223266601562500e+03,
 //            9.825937500000000000e+02, 5.653156127929687500e+02, 0);
 
+//    auto camera1 = std::make_shared<CustomCamera>(
+//            width * 2, height * 2, glm::vec3(0.f, 0.f, 3.f));
+
     size_t counter = 0;
     while (renderer.isRunning()) {
         updateScene(renderer);
@@ -51,6 +54,10 @@ int main() {
 //        if (counter == 1000) {
 //            auto camera1 = std::make_shared<CustomCamera>(
 //                    width * 2, height * 2, glm::vec3(0.f, 0.f, 3.f));
+//            renderer.getScene().setCamera(camera1);
+//        }
+
+//        if (counter == 200) {
 //            renderer.getScene().setCamera(camera1);
 //        }
 
