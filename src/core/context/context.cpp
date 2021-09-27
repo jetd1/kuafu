@@ -550,6 +550,9 @@ void Context::recreateSwapchain() {
 
         // Recreating the swapchain.
         mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
+
+        // Update the camera screen size to avoid image stretching.
+        mScene.mCurrentCamera->setSize(getExtent().width, getExtent().height);
     } else {
         mFrames.destroy();
         mFrames.init(pConfig->mMaxImagesInFlight,
@@ -567,15 +570,8 @@ void Context::recreateSwapchain() {
 
     mRayTracer.updateDescriptors();
 
-    if (pGui != nullptr) {
+    if (pGui != nullptr)
       pGui->recreate(getExtent());
-    }
-
-    // Update the camera screen size to avoid image stretching.
-    if (pConfig->mPresent) {
-        auto size = getExtent();
-        mScene.mCurrentCamera->setSize(size.width, size.height);
-    }
 
     pConfig->mSwapchainNeedsRefresh = false;
 }

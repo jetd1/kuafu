@@ -61,6 +61,11 @@ Kuafu::Kuafu(std::shared_ptr<Config> config,
             window = nullptr;
         }
 
+        if (!camera) {
+            KF_WARN("Adding a dummy camera.");
+            camera = std::make_shared<Camera>(1, 1);
+        }
+
     }
 
     pWindow = window;

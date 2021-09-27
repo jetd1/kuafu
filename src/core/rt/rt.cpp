@@ -493,8 +493,8 @@ void RayTracer::buildTlas(const std::vector<std::shared_ptr<GeometryInstance>> &
 
 void RayTracer::createStorageImage(vk::Extent2D extent) {
     mRenderTargets->clear();
-//    if (mRenderTargets->contains("rgba"))
-//         return;
+    if (mRenderTargets->contains("rgba"))
+         return;
 
     auto storageImageInfo = vkCore::getImageCreateInfo(
             vk::Extent3D(extent.width, extent.height, 1));

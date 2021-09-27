@@ -3092,7 +3092,7 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
                                        {aspect, 0, 0, 1}, offset, extent);
         commandBuffer.get(0).copyImageToBuffer(_image, vk::ImageLayout::eTransferSrcOptimal, stagingBuffer.get(), copyRegion);
         commandBuffer.end();
-        commandBuffer.submitToQueue(global::graphicsQueue, {}, waitSemaphores);  // wait idle inside
+        commandBuffer.submitToQueue(global::transferQueue, {}, waitSemaphores);  // wait idle inside
 
         void *mapped;
         auto result = vkCore::global::device.mapMemory(

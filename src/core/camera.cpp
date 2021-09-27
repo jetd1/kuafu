@@ -84,6 +84,9 @@ void Camera::setSize(int width, int height) {
     mWidth = width;
     mHeight = height;
 
+    mCx = mWidth / 2.f;
+    mCy = mHeight / 2.f;
+
     updateProjectionMatrix();
 }
 
