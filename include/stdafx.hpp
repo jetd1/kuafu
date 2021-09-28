@@ -7,14 +7,20 @@
 
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 
-#include <vkCore/vkCore.hpp>
-
+#include "vkCore/vkCore.hpp"
 #include "core/time.hpp"
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
-#include <glm/glm.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtx/hash.hpp>
+#include <glm/glm.hpp>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <driver_types.h>
+
+#include <spdlog/spdlog.h>
 
 #include <algorithm>
 #include <any>
@@ -36,25 +42,26 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+
 #include "core/context/global.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-template<typename ..._T>
-inline void KF_DEBUG(_T... args) { kuafu::global::logger->debug(args...); }
+template<typename ...Types>
+inline void KF_DEBUG(Types... args) { kuafu::global::logger->debug(args...); }
 
-template<typename ..._T>
-inline void KF_INFO(_T... args) { kuafu::global::logger->info(args...); }
+template<typename ...Types>
+inline void KF_INFO(Types... args) { kuafu::global::logger->info(args...); }
 
-template<typename ..._T>
-inline void KF_WARN(_T... args) { kuafu::global::logger->warn(args...); }
+template<typename ...Types>
+inline void KF_WARN(Types... args) { kuafu::global::logger->warn(args...); }
 
-template<typename ..._T>
-inline void KF_ERROR(_T... args) { kuafu::global::logger->error(args...); }
+template<typename ...Types>
+inline void KF_ERROR(Types... args) { kuafu::global::logger->error(args...); }
 
-template<typename ..._T>
-inline void KF_CRITICAL(_T... args) {
-    kuafu::global::logger->critical(args...); throw std::runtime_error("KF_CRITICAL"); }
+template<typename ...Types>
+inline void KF_CRITICAL(Types... args) {
+    kuafu::global::logger->critical(args...); throw std::runtime_error(
+            "Critical error encountered. See log above for details."); }
 
-template<typename ..._T>
-inline void KF_ASSERT(bool st, _T... args) {
-    if (!st) { kuafu::global::logger->critical(args...); throw std::runtime_error("assertion failed"); } }
+template<typename ...Types>
+inline void KF_ASSERT(bool st, Types... args) { if (!st) KF_CRITICAL(args...); }

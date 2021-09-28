@@ -22,7 +22,7 @@
 //
 #include "core/scene.hpp"
 #include "core/context/global.hpp"
-#include <kuafu_utils.hpp>
+#include "kuafu_utils.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION

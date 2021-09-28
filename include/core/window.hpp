@@ -22,10 +22,6 @@
 //
 #pragma once
 
-#include <string>
-#include <vulkan/vulkan.hpp>
-#include "SDL.h"
-
 namespace kuafu {
 
 class Window {

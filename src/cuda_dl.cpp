@@ -3,7 +3,6 @@
 //
 #include <cuda.h>
 #include <dlfcn.h>
-#include <driver_types.h>
 
 namespace kuafu {
 

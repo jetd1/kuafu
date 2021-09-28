@@ -23,9 +23,6 @@
 #include "kuafu.hpp"
 #include "core/context/global.hpp"
 
-#include <utility>
-#include <memory>
-
 namespace kuafu {
 Kuafu::Kuafu(std::shared_ptr<Config> config,
              std::shared_ptr<Window> window,
@@ -62,7 +59,7 @@ Kuafu::Kuafu(std::shared_ptr<Config> config,
         }
 
         if (!camera) {
-            KF_WARN("Adding a dummy camera.");
+            KF_INFO("Adding a dummy 1x1 camera.");
             camera = std::make_shared<Camera>(1, 1);
         }
 

@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include <stdafx.hpp>
-#include <vulkan/vulkan.hpp>
+#include "stdafx.hpp"
 
 namespace kuafu {
 

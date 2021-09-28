@@ -1,13 +1,13 @@
 //
 // By Jet <i@jetd.me> 2021.
 //
+#include "kuafu_utils.hpp"
 #include "core/geometry.hpp"
 #include "core/context/global.hpp"
 #include <assimp/Importer.hpp>
 #include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
-#include <kuafu_utils.hpp>
 
 namespace kuafu {
 bool operator==(const NiceMaterial &m1, const NiceMaterial &m2) {   // C++20 should allow defaulting this

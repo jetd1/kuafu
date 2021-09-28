@@ -116,7 +116,8 @@ auto RayTracer::modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
 auto RayTracer::geometryInstanceToAccelerationStructureInstance(
         std::shared_ptr<GeometryInstance> &geometryInstance) {
     KF_ASSERT(mBlas.size() > geometryInstance->geometryIndex,
-              "Failed to transform geometry instance to a VkGeometryInstanceKHR because index is out of bounds.");
+              "Geometry index is out of bounds. "
+              "Hint for SAPIEN users: Are you creating two active renders?");
     Blas &blas{mBlas[geometryInstance->geometryIndex]};
 
     vk::AccelerationStructureDeviceAddressInfoKHR addressInfo(blas.as.as);

@@ -6,9 +6,6 @@
 
 
 #include "stdafx.hpp"
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <driver_types.h>
 #include "optix_types.h"
 #include "cuda_dl.hpp"
 

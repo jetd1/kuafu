@@ -1,4 +1,5 @@
 #include "kuafu.hpp"
+#include <random>
 
 enum class Level {
     eCornell,

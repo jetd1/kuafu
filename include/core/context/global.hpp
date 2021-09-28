@@ -22,9 +22,6 @@
 //
 #pragma once
 
-#include <string>
-#include <vector>
-#include <spdlog/spdlog.h>
 #include "core/geometry.hpp"
 
 namespace kuafu::global {

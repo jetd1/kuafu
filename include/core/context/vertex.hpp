@@ -23,9 +23,6 @@
 #pragma once
 #define GLM_ENABLE_EXPERIMENTAL
 
-#include "glm/gtx/hash.hpp"
-#include <vulkan/vulkan.hpp>
-
 namespace kuafu {
 
 struct Vertex {
