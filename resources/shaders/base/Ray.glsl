@@ -1,6 +1,8 @@
 struct RayPayLoad
 {
   vec3 direction;
+  vec3 albedo;
+  vec3 normal;
   vec3 emission;
   vec3 origin;
   vec3 weight;

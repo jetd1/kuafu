@@ -93,7 +93,7 @@ public:
 
     [[nodiscard]] auto getDescriptorSetLayout() const { return mDescriptors.layout.get(); }
 
-    [[nodiscard]] auto getDescriptorSet(size_t index) const { return _descriptorSets[index]; }
+    [[nodiscard]] auto getDescriptorSet(size_t index) const { return mDescriptorSets[index]; }
 
     /// Used to create a empty blas.
     /// @return Returns a dummy bottom level acceleration structure.
@@ -176,7 +176,7 @@ private:
     std::shared_ptr<RenderTargets> mRenderTargets;
 
     vkCore::Descriptors mDescriptors;
-    std::vector<vk::DescriptorSet> _descriptorSets;
+    std::vector<vk::DescriptorSet> mDescriptorSets;
 
     vkCore::Buffer _varianceBuffer;
 };

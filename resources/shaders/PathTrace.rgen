@@ -13,51 +13,8 @@ layout( location = 2 ) rayPayloadEXT RayPayLoad shadowRay;
 
 layout( binding = 0, set = 0 ) uniform accelerationStructureEXT topLevelAS;
 layout( binding = 1, set = 0, rgba32f ) uniform image2D image;
-
-//#define VARIANCE
-//#define HEATMAP
-
-#ifdef VARIANCE
-layout( binding = 2, set = 0 ) buffer VarianceBuffer
-{
-  float v[];
-}
-varianceBuffer;
-#endif
-
-#ifdef HEATMAP
-// From RayTracingInVulkan by GSnoopy https://github.com/GPSnoopy/RayTracingInVulkan
-vec3 heatmap( float t )
-{
-  const vec3 c[10] = {
-    vec3( 0.0f / 255.0f, 2.0f / 255.0f, 91.0f / 255.0f ),
-    vec3( 0.0f / 255.0f, 108.0f / 255.0f, 251.0f / 255.0f ),
-    vec3( 0.0f / 255.0f, 221.0f / 255.0f, 221.0f / 255.0f ),
-    vec3( 51.0f / 255.0f, 221.0f / 255.0f, 0.0f / 255.0f ),
-    vec3( 255.0f / 255.0f, 252.0f / 255.0f, 0.0f / 255.0f ),
-    vec3( 255.0f / 255.0f, 180.0f / 255.0f, 0.0f / 255.0f ),
-    vec3( 255.0f / 255.0f, 104.0f / 255.0f, 0.0f / 255.0f ),
-    vec3( 226.0f / 255.0f, 22.0f / 255.0f, 0.0f / 255.0f ),
-    vec3( 191.0f / 255.0f, 0.0f / 255.0f, 83.0f / 255.0f ),
-    vec3( 145.0f / 255.0f, 0.0f / 255.0f, 65.0f / 255.0f )
-  };
-
-  const float s = t * 10.0f;
-
-  const int cur = int( s ) <= 9 ? int( s ) : 9;
-  const int prv = cur >= 1 ? cur - 1 : 0;
-  const int nxt = cur < 9 ? cur + 1 : 9;
-
-  const float blur = 0.8f;
-
-  const float wc = smoothstep( float( cur ) - blur, float( cur ) + blur, s ) * ( 1.0 - smoothstep( float( cur + 1 ) - blur, float( cur + 1 ) + blur, s ) );
-  const float wp = 1.0 - smoothstep( float( cur ) - blur, float( cur ) + blur, s );
-  const float wn = smoothstep( float( cur + 1 ) - blur, float( cur + 1 ) + blur, s );
-
-  const vec3 r = wc * c[cur] + wp * c[prv] + wn * c[nxt];
-  return vec3( clamp( r.x, 0.0, 1.0 ), clamp( r.y, 0.0, 1.0 ), clamp( r.z, 0.0, 1.0 ) );
-}
-#endif
+layout( binding = 2, set = 0, rgba32f ) uniform image2D albedoImage;
+layout( binding = 3, set = 0, rgba32f ) uniform image2D normalImage;
 
 void main( )
 {
@@ -65,15 +22,8 @@ void main( )
   uint mapping = gl_LaunchIDEXT.y * gl_LaunchSizeEXT.x + gl_LaunchIDEXT.x;
   uint seed    = tea( mapping, int( clockARB( ) ) );
   vec3 colors  = vec3( 0.0 );
-
-#ifdef VARIANCE
-  float meanX = 0.0;
-  float meanY = 0.0;
-  float meanZ = 0.0;
-  float valuesX[100];
-  float valuesY[100];
-  float valuesZ[100];
-#endif
+  vec3 albedo  = vec3( 0.0 );
+  vec3 normal  = vec3( 0.0 );
 
   uint timeStart = uint( clockARB( ) );
 
@@ -109,6 +59,8 @@ void main( )
     ray.origin     = origin.xyz;
     ray.weight     = vec3( 0.0 );
     ray.emission   = vec3( 1.0 );
+    ray.albedo     = vec3( 0.0 );
+    ray.normal     = vec3( 0.0 );
     ray.refractive = false;
     ray.type       = 0;             // view ray
     ray.shadow_color = vec3(0.0);
@@ -129,18 +81,18 @@ void main( )
       }
 
       // TODO: kuafu_urgent: Push Constant
-      // refractive rays are allowed to bounce more time to have the all effects at lower sample rates
-      if ( ray.refractive )
-      {
-        ray.depth -= 1;
-        ++refractionCounter;
-      }
-
-      // but to make sure this is not an endless loop, quit after five refraction bounces
-      if ( refractionCounter > 6 )
-      {
-        ray.depth = maxPathDepth + 1;
-      }
+//      // refractive rays are allowed to bounce more time to have the all effects at lower sample rates
+//      if ( ray.refractive )
+//      {
+//        ray.depth -= 1;
+//        ++refractionCounter;
+//      }
+//
+//      // but to make sure this is not an endless loop, quit after five refraction bounces
+//      if ( refractionCounter > 6 )
+//      {
+//        ray.depth = maxPathDepth + 1;
+//      }
 
       traceRayEXT( topLevelAS,    // acceleration structure
                    rayFlags,      // rayFlags
@@ -158,6 +110,11 @@ void main( )
       weight *= ray.weight;
       color += ray.shadow_color * weight;
       ray.shadow_color = vec3(0.);
+
+      if (i == 0 && ray.depth == 0) {
+        albedo = ray.albedo;
+        normal = ray.normal;
+      }
 
       if (weight == vec3(0.))
         break;
@@ -180,60 +137,11 @@ void main( )
         weight *= 1.0 / p;
       }
     }
-
-#ifdef VARIANCE
-    meanX += color.x;
-    valuesX[sampleRatePerPixel] = color.x;
-
-    meanY += color.y;
-    valuesY[sampleRatePerPixel] = color.y;
-
-    meanZ += color.z;
-    valuesZ[sampleRatePerPixel] = color.z;
-#endif
-
     colors += color;
   }
 
   // weighted average
   vec3 finalColor = colors / sampleRatePerPixel;
-
-#ifdef HEATMAP
-  uint time          = uint( clockARB( ) ) - timeStart;
-  finalColor         = vec3( 0.0 );
-  float heatmapScale = 1000000.0 * 1.5 * 1.5;
-  finalColor         = heatmap( clamp( float( time ) / heatmapScale, 0.0, 1.0 ) );
-#endif
-
-#ifdef VARIANCE
-  // write sample to variance buffer
-  meanX /= sampleRatePerPixel;
-  meanY /= sampleRatePerPixel;
-  meanZ /= sampleRatePerPixel;
-
-  float sumX = 0.0;
-  float sumY = 0.0;
-  float sumZ = 0.0;
-
-  for ( uint i = 0; i < sampleRatePerPixel; ++i )
-  {
-    float deviationX = valuesX[i] - meanX;
-    sumX += deviationX * deviationX;
-
-    float deviationY = valuesY[i] - meanY;
-    sumY += deviationY * deviationY;
-
-    float deviationZ = valuesZ[i] - meanZ;
-    sumZ += deviationZ * deviationZ;
-  }
-
-  float div  = sampleRatePerPixel == 1 ? 1.0 : ( sampleRatePerPixel - 1 ); // is this even valid?
-  float varX = sumX / div;
-  float varY = sumY / div;
-  float varZ = sumZ / div;
-
-  varianceBuffer.v[mapping] = ( varX + varY + varZ ) / 3.0;
-#endif
 
   // tone mapping
   //const float limit = 1.5;
@@ -253,4 +161,7 @@ void main( )
     vec4 temp     = vec4( mix( oldColor, finalColor, 1.0 / float( frameCount + 1 ) ), 1.0 );
     imageStore( image, ivec2( gl_LaunchIDEXT.xy ), temp );
   }
+
+  imageStore( albedoImage, ivec2( gl_LaunchIDEXT.xy ), vec4( albedo, 1.0 ) );
+  imageStore( normalImage, ivec2( gl_LaunchIDEXT.xy ), vec4( normal, 1.0 ) );
 }

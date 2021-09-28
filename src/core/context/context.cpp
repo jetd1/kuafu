@@ -112,7 +112,7 @@ void Context::init() {
         deviceExtensions.push_back(VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME);
 
         mDenoiser.initOptiX(
-                OPTIX_DENOISER_INPUT_RGB,
+                OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL,
                 OPTIX_PIXEL_FORMAT_FLOAT4,
                 false);                                 // TODO
         KF_DEBUG("OptiX initialized!");
@@ -650,7 +650,11 @@ void Context::recordSwapchainCommandBuffers() {
 
         // denoise
         if (pConfig->mUseDenoiser)
-            mDenoiser.imageToBuffer(cmdBuf, {mRayTracer.getStorageImage("rgba")});
+            mDenoiser.imageToBuffer(cmdBuf, {
+                mRayTracer.getStorageImage("rgba"),
+                mRayTracer.getStorageImage("albedo"),
+                mRayTracer.getStorageImage("normal")
+            });
 
     }
     mCommandBuffers.end(imageIndex);

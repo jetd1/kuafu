@@ -463,5 +463,7 @@ void main( )
     ray.direction = L;
     ray.emission  = vec3(0.0);
     ray.weight    = weight;
+    ray.albedo    = baseColor;
+    ray.normal    = N;
   }
 }

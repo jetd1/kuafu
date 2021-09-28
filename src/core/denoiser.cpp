@@ -65,7 +65,7 @@ bool DenoiserOptix::initOptiX(
             break;
     }
 
-    mDOptions.inputKind = inputKind;  //OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL;
+    mDOptions.inputKind = inputKind;
     OPTIX_CHECK(optixDenoiserCreate(gOptixDevice, &mDOptions, &mDenoiser));
     OPTIX_CHECK(optixDenoiserSetModel(
             mDenoiser, hdr ? OPTIX_DENOISER_MODEL_KIND_HDR

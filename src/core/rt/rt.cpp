@@ -504,6 +504,8 @@ void RayTracer::createStorageImage(vk::Extent2D extent) {
     storageImageInfo.format = vk::Format::eR32G32B32A32Sfloat;
 
     createRenderTarget("rgba", storageImageInfo);
+    createRenderTarget("albedo", storageImageInfo);
+    createRenderTarget("normal", storageImageInfo);
 }
 
 void RayTracer::createShaderBindingTable() {
@@ -670,17 +672,33 @@ void RayTracer::initDescriptorSet() {
                               vk::DescriptorType::eStorageImage,
                               vk::ShaderStageFlagBits::eRaygenKHR);
 
+    // Albedo
+    mDescriptors.bindings.add(2,
+                              vk::DescriptorType::eStorageImage,
+                              vk::ShaderStageFlagBits::eRaygenKHR);
+
+    // Normal
+    mDescriptors.bindings.add(3,
+                              vk::DescriptorType::eStorageImage,
+                              vk::ShaderStageFlagBits::eRaygenKHR);
+
     mDescriptors.layout = mDescriptors.bindings.initLayoutUnique();
     mDescriptors.pool = mDescriptors.bindings.initPoolUnique(vkCore::global::swapchainImageCount);
-    _descriptorSets = vkCore::allocateDescriptorSets(mDescriptors.pool.get(), mDescriptors.layout.get());
+    mDescriptorSets = vkCore::allocateDescriptorSets(mDescriptors.pool.get(), mDescriptors.layout.get());
 }
 
 void RayTracer::updateDescriptors() {
     vk::WriteDescriptorSetAccelerationStructureKHR tlasInfo(1, &mTlas.as.as);
-    mDescriptors.bindings.write(_descriptorSets, 0, &tlasInfo);
+    mDescriptors.bindings.write(mDescriptorSets, 0, &tlasInfo);
 
-    auto storageImageInfo = getStorageImageInfo("rgba");
-    mDescriptors.bindings.write(_descriptorSets, 1, &storageImageInfo);
+    auto rgbaStorageImageInfo = getStorageImageInfo("rgba");
+    mDescriptors.bindings.write(mDescriptorSets, 1, &rgbaStorageImageInfo);
+
+    auto albedoStorageImageInfo = getStorageImageInfo("albedo");
+    mDescriptors.bindings.write(mDescriptorSets, 2, &albedoStorageImageInfo);
+
+    auto normalStorageImageInfo = getStorageImageInfo("normal");
+    mDescriptors.bindings.write(mDescriptorSets, 3, &normalStorageImageInfo);
 
     mDescriptors.bindings.update();
 }
