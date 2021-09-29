@@ -140,8 +140,14 @@ public:
 
     inline bool getPresent() { return mPresent; }
 
+    inline void setInitialWidth(int w) { mInitialWidth = w; }
+    inline void setInitialHeight(int h) { mInitialHeight = h; }
+
 private:
     // TODO: separate into fixed and changeable parts
+
+    int mInitialWidth = 800;
+    int mInitialHeight = 600;
 
     bool mPresent = true;                                  /// not changeable: whether or not initialize the surface
     vk::Format mFormat = vk::Format::eB8G8R8A8Srgb;

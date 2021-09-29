@@ -26,11 +26,12 @@
 
 namespace kuafu {
 
-Window::Window(int width, int height, const std::string &title, uint32_t flags) :
+Window::Window(int width, int height, const std::string &title, uint32_t flags, Camera* camera) :
         mFlags(flags),
         mWidth(width),
         mHeight(height),
-        mTitle(title) {
+        mTitle(title),
+        pCamera(camera) {
     mFlags |= SDL_WINDOW_VULKAN;
 }
 
@@ -42,9 +43,6 @@ Window::~Window() {
 
 
 auto Window::init() -> bool {
-    //SDL_SetHint( SDL_HINT_FRAMEBUFFER_ACCELERATION, "1" );
-    //SDL_SetHint( SDL_HINT_RENDER_VSYNC, "1" );
-
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         throw std::runtime_error("SDL Error, Closing application.");
         return false;
@@ -58,11 +56,7 @@ auto Window::init() -> bool {
         return false;
     }
 
-    //if ( SDL_GL_SetSwapInterval( 1 ) == -1 )
-    //{
-    //  throw std::runtime_error( "Swap interval not supported." );
-    //  return false;
-    //}
+    SDL_SetRelativeMouseMode(SDL_FALSE);
 
     return true;
 }
@@ -79,17 +73,145 @@ auto Window::update() -> bool {
         mHeight = height;
     }
 
+    // Add your custom event polling and integrate your event system.
+    SDL_Event event;
+
+    while (SDL_PollEvent(&event) != 0) {
+//            ImGui_ImplSDL2_ProcessEvent(&event);
+
+        switch (event.type) {
+            case SDL_QUIT: {
+                return false;
+            }
+
+            case SDL_WINDOWEVENT: {
+                switch (event.window.event) {
+                    case SDL_WINDOWEVENT_CLOSE:
+                        return false;
+
+                    case SDL_WINDOWEVENT_RESIZED:
+                        resize(static_cast<int>( event.window.data1 ), static_cast<int>( event.window.data2 ));
+                        break;
+
+                    case SDL_WINDOWEVENT_MINIMIZED:
+                        resize(0, 0);
+                        break;
+                }
+                break;
+            }
+
+            case SDL_KEYDOWN: {
+                switch (event.key.keysym.sym) {
+                    case SDLK_w:
+                        global::keys::eW = true;
+                        break;
+
+                    case SDLK_a:
+                        global::keys::eA = true;
+                        break;
+
+                    case SDLK_s:
+                        global::keys::eS = true;
+                        break;
+
+                    case SDLK_d:
+                        global::keys::eD = true;
+                        break;
+
+                    case SDLK_LSHIFT:
+                        global::keys::eLeftShift = true;
+                        break;
+
+                    case SDLK_ESCAPE:
+                        return false;
+
+                    case SDLK_c:
+                        global::keys::eC = true;
+                        break;
+
+                    case SDLK_b:
+                        global::keys::eB = true;
+                        break;
+
+                    case SDLK_l:
+                        global::keys::eL = true;
+                        break;
+
+                    case SDLK_LCTRL:
+                        global::keys::eLeftCtrl = true;
+                        break;
+
+                    case SDLK_SPACE: {
+                        if (_mouseVisible) {
+                            _mouseVisible = false;
+                            SDL_SetRelativeMouseMode(SDL_TRUE);
+                            SDL_GetRelativeMouseState(nullptr, nullptr); // Magic fix!
+                        } else {
+                            SDL_SetRelativeMouseMode(SDL_FALSE);
+                            _mouseVisible = true;
+                        }
+
+                        break;
+                    }
+                }
+                break;
+            }
+
+            case SDL_KEYUP: {
+                switch (event.key.keysym.sym) {
+                    case SDLK_w:
+                        global::keys::eW = false;
+                        break;
+
+                    case SDLK_a:
+                        global::keys::eA = false;
+                        break;
+
+                    case SDLK_s:
+                        global::keys::eS = false;
+                        break;
+
+                    case SDLK_d:
+                        global::keys::eD = false;
+                        break;
+
+                    case SDLK_LSHIFT:
+                        global::keys::eLeftShift = false;
+                        break;
+
+                    case SDLK_LCTRL:
+                        global::keys::eLeftCtrl = false;
+                        break;
+
+                    case SDLK_c:
+                        global::keys::eC = false;
+                        break;
+
+                    case SDLK_b:
+                        global::keys::eB = false;
+                        break;
+
+                    case SDLK_l:
+                        global::keys::eL = false;
+                        break;
+                }
+                break;
+            }
+
+            case SDL_MOUSEMOTION: {
+                if (!_mouseVisible) {
+                    int x;
+                    int y;
+                    SDL_GetRelativeMouseState(&x, &y);
+                    pCamera->processMouse(x, -y);
+                    break;
+                }
+            }
+        }
+    }
+
     return true;
 }
-
-//void Window::clean( )
-//{
-//    SDL_DestroyWindow( pWindow );
-//    pWindow = nullptr;
-//
-//    SDL_Quit( );
-//}
-
 
 void Window::resize(int width, int height) {
     mWidth = width;

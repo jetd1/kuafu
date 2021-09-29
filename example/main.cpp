@@ -1,6 +1,5 @@
-#include "CustomCamera.hpp"
+//#include "CustomCamera.hpp"
 #include "Example.hpp"
-#include "CustomWindow.hpp"
 #include "core/context/global.hpp"
 #include <spdlog/spdlog.h>
 
@@ -10,6 +9,9 @@ int main() {
     kuafu::global::logger->set_level(spdlog::level::debug);
 
     auto config = std::make_shared<kuafu::Config>();
+    config->setInitialWidth(width);
+    config->setInitialHeight(height);
+
     config->setAssetsPath("../resources");
     config->setPerPixelSampleRate(1);
     config->setPathDepth(8);
@@ -20,17 +22,7 @@ int main() {
     config->setGeometryLimit(20000);
     config->setGeometryInstanceLimit(20000);
 
-    auto camera = std::make_shared<CustomCamera>(
-            width, height, glm::vec3(0.f, 0.f, 3.f));
-
-//    auto camera = nullptr;
-
-    auto window = std::make_shared<CustomWindow>(
-            width, height, "Test", SDL_WINDOW_RESIZABLE, camera);
-
-//    auto window = nullptr;
-
-    kuafu::Kuafu renderer(config, window, camera);
+    kuafu::Kuafu renderer(config);
 
     loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell, eGLTF
 //

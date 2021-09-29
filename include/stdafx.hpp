@@ -63,5 +63,5 @@ inline void KF_CRITICAL(Types... args) {
     kuafu::global::logger->critical(args...); throw std::runtime_error(
             "Critical error encountered. See log above for details."); }
 
-template<typename ...Types>
-inline void KF_ASSERT(bool st, Types... args) { if (!st) KF_CRITICAL(args...); }
+template<typename BType, typename ...Types>
+inline void KF_ASSERT(BType st, Types... args) { if (!st) KF_CRITICAL(args...); }

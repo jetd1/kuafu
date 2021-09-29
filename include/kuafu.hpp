@@ -22,9 +22,10 @@
 //
 #pragma once
 
-#include <memory>
-#include "core/window.hpp"
+#include "stdafx.hpp"
 #include "core/context/context.hpp"
+#include "core/window.hpp"
+#include "core/gui.hpp"
 
 namespace kuafu {
 class Kuafu {
@@ -35,10 +36,7 @@ class Kuafu {
     bool mRunning = true;
 
 public:
-    explicit Kuafu(std::shared_ptr<Config> config = nullptr,
-                   std::shared_ptr<Window> window = nullptr,
-                   std::shared_ptr<Camera> camera = nullptr,
-                   std::shared_ptr<Gui> gui = nullptr);
+    explicit Kuafu(std::shared_ptr<Config> config = nullptr);
 
     void run();
 

@@ -5,8 +5,8 @@
 #include "core/context/global.hpp"
 
 namespace kuafu {
-Camera::Camera(int width, int height, const glm::vec3 &position) : mWidth(width), mHeight(height),
-                                                                   mPosition(position) {
+Camera::Camera(void*, int width, int height, const glm::vec3 &position)
+              : mWidth(width), mHeight(height), mPosition(position) {
     mRenderTargets = std::make_shared<RenderTargets>();
     mFrames = std::make_shared<Frames>();
 
@@ -163,5 +163,39 @@ void Camera::processMouse(float xOffset, float yOffset) {
 
     mViewNeedsUpdate = true;
     global::frameCount = -1;
+}
+
+void Camera::processKeyboard() {
+    const float defaultSpeed = 2.5F;
+    static float currentSpeed = defaultSpeed;
+    float finalSpeed = currentSpeed * kuafu::Time::getDeltaTime();
+
+    if (global::keys::eLeftShift) {
+        currentSpeed = 10.0F;
+    } else if (global::keys::eLeftCtrl) {
+        currentSpeed = 0.5F;
+    } else {
+        currentSpeed = defaultSpeed;
+    }
+
+    if (global::keys::eW) {
+        mPosition += mDirFront * finalSpeed;
+        mViewNeedsUpdate = true;
+    }
+
+    if (global::keys::eS) {
+        mPosition -= mDirFront * finalSpeed;
+        mViewNeedsUpdate = true;
+    }
+
+    if ( global::keys::eA ) {
+        mPosition -= mDirRight * finalSpeed;
+        mViewNeedsUpdate = true;
+    }
+
+    if ( global::keys::eD ) {
+        mPosition += mDirRight * finalSpeed;
+        mViewNeedsUpdate = true;
+    }
 }
 }

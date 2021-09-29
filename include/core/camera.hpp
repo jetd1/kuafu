@@ -42,11 +42,11 @@ public:
     /// @param width The width of the viewport.
     /// @param height The height of the viewport.
     /// @param position The position of your camera.
-    Camera(int width, int height, const glm::vec3 &position = {0.0F, 0.0F, 3.0F});
+    Camera(void*, int width, int height, const glm::vec3 &position = {0.0F, 0.0F, 3.0F});
 
     virtual ~Camera() = default;
 
-    Camera(const Camera &) = default;
+    Camera(const Camera &) = delete;
 
     Camera(const Camera &&) = delete;
 
@@ -121,12 +121,12 @@ public:
     /// Processes mouse input (default implementation).
     /// @param xOffset The difference of the current offset on the x-axis and the previous offset.
     /// @param yOffset The difference of the current offset on the y-axis and the previous offset.
-    virtual void processMouse(float xOffset, float yOffset);
+    void processMouse(float xOffset, float yOffset);
 
     /// Used to handle user-defined keyboard inputs or input events.
     /// This function is called inside update() and followed up by a call to updateViewMatrix() and does not have to be called by the user.
     /// @note Implementation of this function should be inside a user-defined inherited class.
-    virtual void processKeyboard() {}
+    void processKeyboard();
 
     bool mViewNeedsUpdate = true; ///< Keeps track of whether or not to udpate the view matrix.
     bool mProjNeedsUpdate = true; ///< Keeps track of whether or not to udpate the projection matrix.

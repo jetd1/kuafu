@@ -103,42 +103,26 @@ void Scene::setGeometryInstances(const std::vector<std::shared_ptr<GeometryInsta
     markGeometryInstancesChanged();
 }
 
-void Scene::removeGeometryInstance(std::shared_ptr<GeometryInstance> geometryInstance) {
-    if (geometryInstance == nullptr) {
-        throw std::runtime_error("An invalid geometry instance can not be removed.");
-        return;
-    }
+void Scene::removeGeometryInstance(const std::shared_ptr<GeometryInstance>& geometryInstance) {
+    KF_ASSERT(geometryInstance, "Deleting an invalid geometry instance!");
 
-    // Create a copy of all geometry instances
-    std::vector<std::shared_ptr<GeometryInstance>> temp(mGeometryInstances);
-
-    // Clear the original container
-    mGeometryInstances.clear();
-    mGeometryInstances.reserve(temp.size());
-
-    // Iterate over the container with the copies
-    for (auto it : temp) {
-        // Delete the given geometry instance if it matches
-        if (it != geometryInstance) {
-            mGeometryInstances.push_back(it);
-        }
-    }
+    mGeometryInstances.erase(
+            std::remove_if(mGeometryInstances.begin(), mGeometryInstances.end(),
+                           [geometryInstance](auto &g) { return geometryInstance == g; }),
+                           mGeometryInstances.end());
 
     markGeometryInstancesChanged();
+}
+
+void Scene::removeGeometryInstances(const std::vector<std::shared_ptr<GeometryInstance>>& geometryInstances) {
+    for (auto& ins: geometryInstances)
+        removeGeometryInstance(ins);
 }
 
 void Scene::clearGeometryInstances() {
     // Only allow clearing the scene if there is no dummy element.
     if (!mDummy) {
         mGeometryInstances.clear();
-        markGeometryInstancesChanged();
-    }
-}
-
-void Scene::popGeometryInstance() {
-    // Only allow clearing the scene if the scene is not empty and does not contain a dummy element.
-    if (!mGeometryInstances.empty() && !mDummy) {
-        mGeometryInstances.erase(mGeometryInstances.end() - 1);
         markGeometryInstancesChanged();
     }
 }
@@ -257,7 +241,7 @@ void Scene::removeGeometry(uint32_t geometryIndex) {
 }
 
 void Scene::clearGeometries() {
-//        KF_INFO( "Clearing geometry." );
+    KF_INFO( "Clearing geometry." );
 
     mGeometries.clear();
     mGeometryInstances.clear();
@@ -270,12 +254,6 @@ void Scene::clearGeometries() {
 
     markGeometriesChanged();
     markGeometryInstancesChanged();
-}
-
-void Scene::popGeometry() {
-    if (!mGeometries.empty()) {
-        removeGeometry(*(mGeometries.end() - 1));
-    }
 }
 
 auto Scene::findGeometry(std::string_view path) const -> std::shared_ptr<Geometry> {
@@ -293,10 +271,14 @@ void Scene::setEnvironmentMap(std::string_view path) {
   mUploadEnvironmentMap = true;
 }
 
-void Scene::removeEnvironmentMap() { mUseEnvironmentMap = false;
-}
+void Scene::removeEnvironmentMap() { mUseEnvironmentMap = false; }
 
-void Scene::setCamera(std::shared_ptr<Camera> camera) {
+void Scene::setCamera(Camera* camera) {
+    KF_ASSERT(camera, "Trying to set an invalid camera!");
+    auto ret = std::find_if(mRegisteredCameras.begin(), mRegisteredCameras.end(),
+                         [camera](auto& c) { return camera == c.get(); });
+    KF_ASSERT(ret != mRegisteredCameras.end(), "Trying to set a camera that does not belong to the scene!");
+
     mCurrentCamera = camera;
     pConfig->triggerSwapchainRefresh();
 }
@@ -357,12 +339,13 @@ void Scene::uploadLightBuffers(uint32_t imageIndex) {
     if (pDirectionalLight) {
         directionalLightUBO.direction = {glm::normalize(pDirectionalLight->direction), pDirectionalLight->softness};
         directionalLightUBO.rgbs = {pDirectionalLight->color, pDirectionalLight->strength};
-    }
+    } else
+        directionalLightUBO.rgbs[3] = 0.0;
     mDirectionalLightUniformBuffer.upload(imageIndex, directionalLightUBO);
 
     for (size_t i = 0; i < global::maxPointLights; i++) {
         if (i < pPointLights.size()) {
-            KF_ASSERT(pPointLights[i] != nullptr, "Invalid point light!");
+            KF_ASSERT(pPointLights[i], "Invalid point light!");
             pointLightsUBO.posr[i] = {pPointLights[i]->position, pPointLights[i]->radius};
             pointLightsUBO.rgbs[i] = {pPointLights[i]->color, pPointLights[i]->strength};
         } else
@@ -372,7 +355,7 @@ void Scene::uploadLightBuffers(uint32_t imageIndex) {
 
     for (size_t i = 0; i < global::maxActiveLights; i++) {
         if (i < pActiveLights.size()) {
-            KF_ASSERT(pActiveLights[i] != nullptr, "Invalid point light!");
+            KF_ASSERT(pActiveLights[i], "Invalid active light!");
 
             auto& viewMat = pActiveLights[i]->viewMat;
             auto viewMatInv = glm::inverse(viewMat);

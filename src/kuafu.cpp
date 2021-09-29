@@ -24,51 +24,31 @@
 #include "core/context/global.hpp"
 
 namespace kuafu {
-Kuafu::Kuafu(std::shared_ptr<Config> config,
-             std::shared_ptr<Window> window,
-             std::shared_ptr<Camera> camera,
-             std::shared_ptr<Gui> gui) {
+Kuafu::Kuafu(std::shared_ptr<Config> config) {
     mContext.pConfig = std::make_shared<Config>(*config);           // TODO: make config a value member instead
     mContext.mScene.pConfig = mContext.pConfig;
 
+    std::shared_ptr<Window> window;
+
     if (mContext.pConfig->mPresent) {
+
         KF_INFO("Present mode enabled.");
 
-        if (!window) {
-            KF_WARN("No window specified, creating a default window.");
-            if (camera)
-                window = std::make_shared<Window>(camera->getWidth(), camera->getHeight());
-            else {
-                KF_WARN("Adding a default camera for the viewer.");
-                window = std::make_shared<Window>();
-                camera = std::make_shared<Camera>(window->getWidth(), window->getHeight());
-            }
-        } else {
-            if (!camera) {
-                KF_WARN("Adding a default camera for the viewer.");
-                camera = std::make_shared<Camera>(window->getWidth(), window->getHeight());
-            }
-        }
+        auto cam = mContext.mScene.createCamera(mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight);
+        window = std::make_shared<Window>(
+                mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight,
+                "Viewer", SDL_WINDOW_RESIZABLE, cam);
+        mContext.mScene.setCamera(cam);
 
     } else {
+
         KF_INFO("Offscreen mode enabled.");
 
-        if (window) {
-            KF_WARN("Specified window will be ignored.");
-            window = nullptr;
-        }
-
-        if (!camera) {
-            KF_INFO("Adding a dummy 1x1 camera.");
-            camera = std::make_shared<Camera>(1, 1);
-        }
-
+        mContext.mScene.setCamera(mContext.mScene.createCamera(1, 1));
     }
 
     pWindow = window;
     mContext.pWindow = window;
-
-    mContext.mScene.mCurrentCamera = camera;
 
     if (mContext.pConfig->getAssetsPath().empty())
         mContext.pConfig->setAssetsPath(mContext.pConfig->sDefaultAssetsPath);

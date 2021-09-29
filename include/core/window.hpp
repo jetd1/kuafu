@@ -21,6 +21,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 #pragma once
+#include "camera.hpp"
 
 namespace kuafu {
 
@@ -34,8 +35,11 @@ protected:
     std::string mTitle = "Kuafu App";
     bool mCalledResize = false;
 
+    Camera* pCamera = nullptr;
+    bool _mouseVisible = true;
+
 public:
-    explicit Window(int width = 800, int height = 600, const std::string &title = "Kuafu App", uint32_t flags = {});
+    explicit Window(int width = 800, int height = 600, const std::string &title = "Kuafu App", uint32_t flags = {}, Camera* camera = nullptr);
 
     virtual ~Window();
 
@@ -47,9 +51,9 @@ public:
 
     Window &operator=(const Window &&) = delete;
 
-    virtual bool init();
+    bool init();
 
-    virtual bool update();
+    bool update();
 
     virtual void resize(int, int);
 
