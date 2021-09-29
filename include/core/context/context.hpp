@@ -103,18 +103,18 @@ namespace kuafu {
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         std::vector<uint8_t> downloadLatestFrame();
 
-        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : mCurrentScene->mCurrentCamera->mFrames->getCurrentImageIndex(); }
-        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : mCurrentScene->mCurrentCamera->mFrames->getImage(idx); }
+        [[nodiscard]] inline auto  getCamera() const { return mCurrentScene->mCurrentCamera; }
+        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : getCamera()->mFrames->getCurrentImageIndex(); }
+        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : getCamera()->mFrames->getImage(idx); }
         inline auto& getFramebuffer(size_t idx) { return pConfig->mPresent ?
-                 mSwapchain.getFramebuffer(idx) : mCurrentScene->mCurrentCamera->mFrames->getFramebuffer(idx).get(); }
+                 mSwapchain.getFramebuffer(idx) : getCamera()->mFrames->getFramebuffer(idx).get(); }
         inline auto  getFormat() { return pConfig->mPresent ? mSurface.getFormat() : pConfig->mFormat; }
         inline auto  getColorSpace() { return pConfig->mPresent ? mSurface.getColorSpace() : pConfig->mColorSpace; }
         inline auto  getExtent() { return pConfig->mPresent ?
-                     mSwapchain.getExtent() : mCurrentScene->mCurrentCamera ?
-                     vk::Extent2D{ static_cast<uint32_t>(mCurrentScene->mCurrentCamera->getWidth()),
-                                   static_cast<uint32_t>(mCurrentScene->mCurrentCamera->getHeight())} : vk::Extent2D{1, 1}; }
+                     mSwapchain.getExtent() : getCamera() ?
+                     vk::Extent2D{ static_cast<uint32_t>(getCamera()->getWidth()),
+                                   static_cast<uint32_t>(getCamera()->getHeight())} : vk::Extent2D{1, 1}; }
         inline auto getCmdSemaphore() { return pConfig->mUseDenoiser ? mDenoiser.getTLSemaphore() : mCmdSemaphore.get(); };
-
 
     public:
         friend Kuafu;

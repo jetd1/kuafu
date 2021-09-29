@@ -82,6 +82,9 @@ void Camera::setUp(const glm::vec3 &up) {
 }
 
 void Camera::setSize(int width, int height) {
+    KF_WARN("Resize by dragging not recommended and will be deprecated! "
+            "Hint: use offscreen mode for production.");
+
     mWidth = width;
     mHeight = height;
 

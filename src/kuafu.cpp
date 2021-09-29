@@ -79,7 +79,7 @@ void Kuafu::run() {
         mContext.mSurface.setExtent(pWindow->getSize());
     }
 
-    mContext.mCurrentScene->mCurrentCamera->update();
+    mContext.getCamera()->update();
     mContext.render();
 }
 

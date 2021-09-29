@@ -61,8 +61,12 @@ size_t currentFrame = 0;
 size_t prevFrame = 0;
 
 Context::~Context() {
-//    vkCore::global::device.waitIdle();
-    mScenes.clear();    // not necessary
+    try {                                             // FIXME
+        vkCore::global::device.waitIdle();
+    } catch (const vk::DeviceLostError& e) {
+        KF_WARN("Device lost while quitting. Longer wait time is expected.");
+    }
+    mScenes.clear();    // maybe not necessary
 
     // Gui needs to be destroyed manually, as RAII destruction will not be possible.
     if (pGui != nullptr)
@@ -231,7 +235,7 @@ void Context::init() {
         KF_DEBUG("Swapchain initialized!");
         pConfig->mSwapchainNeedsRefresh = false;
     } else {
-        mCurrentScene->mCurrentCamera->mFrames->init(
+        getCamera()->mFrames->init(
                 pConfig->mMaxImagesInFlight,
                 getExtent(), getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
@@ -259,7 +263,7 @@ void Context::init() {
     initPipelines();
     KF_DEBUG("Pipelines initialized!");
 
-    mRayTracer.setRenderTargets(mCurrentScene->mCurrentCamera->getRenderTargets());
+    mRayTracer.setRenderTargets(getCamera()->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
     KF_DEBUG("Images initialized!");
 
@@ -354,7 +358,7 @@ void Context::prepareFrame() {
         mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
     } else {
 //        mFrames.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame));
-        mCurrentScene->mCurrentCamera->mFrames->acquireNextImage();            // FIXME
+        getCamera()->mFrames->acquireNextImage();            // FIXME
     }
 }
 
@@ -519,7 +523,7 @@ void Context::render() {
 
         if (pWindow->changed()) {
             KF_INFO("Window size changed!");
-            mCurrentScene->mCurrentCamera->mProjNeedsUpdate = true;
+            getCamera()->mProjNeedsUpdate = true;
             return;
         }
     }
@@ -543,18 +547,21 @@ void Context::recreateSwapchain() {
         mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
 
         // Update the camera screen size to avoid image stretching.
-        mCurrentScene->mCurrentCamera->setSize(getExtent().width, getExtent().height);
+        auto width = static_cast<int>(getExtent().width);
+        auto height = static_cast<int>(getExtent().height);
+        if (width != getCamera()->getWidth() || height != getCamera()->getHeight())
+          getCamera()->setSize(width, height);
     } else {
         KF_DEBUG("Switching Framebuffer...");
 
-        mCurrentScene->mCurrentCamera->mFrames->init(
+        getCamera()->mFrames->init(
                 pConfig->mMaxImagesInFlight, getExtent(),
                 getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
     }
 
     // Recreate storage image with the new swapchain image size and update the path tracing descriptor set to use the new storage image view.
-    mRayTracer.setRenderTargets(mCurrentScene->mCurrentCamera->getRenderTargets());
+    mRayTracer.setRenderTargets(getCamera()->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
 
     if (pConfig->mUseDenoiser)

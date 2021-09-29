@@ -1,7 +1,6 @@
 //#include "CustomCamera.hpp"
 #include "Example.hpp"
 #include "core/context/global.hpp"
-#include <spdlog/spdlog.h>
 
 int main() {
     const int width = 800;
