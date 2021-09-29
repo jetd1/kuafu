@@ -39,26 +39,17 @@ namespace kuafu {
 /// @ingroup BASE
 class Camera {
 public:
-    /// @param width The width of the viewport.
-    /// @param height The height of the viewport.
-    /// @param position The position of your camera.
-    Camera(void*, int width, int height, const glm::vec3 &position = {0.0F, 0.0F, 3.0F});
-
-    virtual ~Camera() = default;
-
     Camera(const Camera &) = delete;
-
     Camera(const Camera &&) = delete;
-
-    auto operator=(const Camera &) -> Camera & = default;
-
-    auto operator=(const Camera &&) -> Camera & = delete;
+    Camera & operator=(Camera) = delete;
+    Camera & operator=(const Camera &) = delete;
+    Camera & operator=(const Camera &&) = delete;
 
     /// Is used to update camera vectors etc.
     ///
     /// The user has to override this function for the camera to work like intended.
     /// @note The function will be called every tick.
-    virtual void update();
+    void update();
 
     void resetView();
 
@@ -144,7 +135,15 @@ public:
 
     std::shared_ptr<Frames> mFrames;
 
-protected:
+private:
+    friend class Scene;
+
+    /// @param width The width of the viewport.
+    /// @param height The height of the viewport.
+    /// @param position The position of your camera.
+    Camera(int width, int height, const glm::vec3 &position = {0.0F, 0.0F, 3.0F});
+
+
     int mWidth;  ///< The width of the viewport.
     int mHeight; ///< The height of the viewport.
 
@@ -163,7 +162,7 @@ protected:
     glm::vec3 mDirRight = {0.0F, -1.0F, 0.0F};                  ///< The local right vector.
     glm::vec3 mDirFront = {1.0F, 0.0F, 0.0F};                   ///< The viewing direction.
 
-    float mAperture = 0.0F;   // DOF disabled by default
+    float mAperture = 0.0F;   // DOF disabled by default   // FIXME: modernize this
     float mFocalLength = 5.0F;
 
     const float mFar = 100.F;

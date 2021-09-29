@@ -61,8 +61,7 @@ size_t currentFrame = 0;
 size_t prevFrame = 0;
 
 Context::~Context() {
-    try { vkCore::global::device.waitIdle(); }
-    catch (vk::DeviceLostError& e) {}
+    vkCore::global::device.waitIdle();
 
     // Gui needs to be destroyed manually, as RAII destruction will not be possible.
     if (pGui != nullptr)
@@ -306,7 +305,7 @@ void Context::init() {
                          vk::CommandBufferUsageFlagBits::eRenderPassContinue);
     mCommandBuffers2.init(mGraphicsCmdPool.get(), vkCore::global::swapchainImageCount,
                           vk::CommandBufferUsageFlagBits::eRenderPassContinue);
-    KF_DEBUG("commandBuffers initialized!");
+    KF_DEBUG("CommandBuffers initialized!");
 }
 
 void Context::update() {

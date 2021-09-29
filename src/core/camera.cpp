@@ -5,9 +5,9 @@
 #include "core/context/global.hpp"
 
 namespace kuafu {
-Camera::Camera(void*, int width, int height, const glm::vec3 &position)
+Camera::Camera(int width, int height, const glm::vec3 &position)
               : mWidth(width), mHeight(height), mPosition(position) {
-    mRenderTargets = std::make_shared<RenderTargets>();
+    mRenderTargets = std::make_unique<RenderTargets>();
     mFrames = std::make_shared<Frames>();
 
     mCx = mWidth * 0.5;

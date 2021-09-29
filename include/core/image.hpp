@@ -11,8 +11,8 @@ namespace kuafu {
 class Frames {
     size_t mN;
 
-    std::vector<vk::Image> mImages;
-    std::vector<vk::DeviceMemory> mImagesMemory;
+    std::vector<vk::UniqueImage> mImages;
+    std::vector<vk::UniqueDeviceMemory> mImagesMemory;
 
     std::vector<vk::UniqueImageView> mImageViews;
     std::vector<vk::UniqueFramebuffer> mFramebuffers;
@@ -50,9 +50,9 @@ public:
         createInfo.sharingMode = vk::SharingMode::eExclusive;
 
         for (size_t i = 0; i < n; ++i) {
-            mImages[i] = vkCore::global::device.createImage(createInfo);
+            mImages[i] = vkCore::global::device.createImageUnique(createInfo);
 
-            auto memRequirements = vkCore::global::device.getImageMemoryRequirements(mImages[i]);
+            auto memRequirements = vkCore::global::device.getImageMemoryRequirements(mImages[i].get());
 
             vk::MemoryAllocateInfo allocInfo;
             allocInfo.allocationSize = memRequirements.size;
@@ -61,13 +61,13 @@ public:
                     memRequirements.memoryTypeBits,
                     vk::MemoryPropertyFlagBits::eDeviceLocal);
 
-            mImagesMemory[i] = vkCore::global::device.allocateMemory(allocInfo);
-            vkCore::global::device.bindImageMemory(mImages[i], mImagesMemory[i], 0);
+            mImagesMemory[i] = vkCore::global::device.allocateMemoryUnique(allocInfo);
+            vkCore::global::device.bindImageMemory(mImages[i].get(), mImagesMemory[i].get(), 0);
         }
 
         for (size_t i = 0; i < mImageViews.size(); ++i)
             mImageViews[i] = vkCore::initImageViewUnique(vkCore::getImageViewCreateInfo(
-                    mImages[i], format, vk::ImageViewType::e2D, vk::ImageAspectFlagBits::eColor));
+                    mImages[i].get(), format, vk::ImageViewType::e2D, vk::ImageAspectFlagBits::eColor));
 
         for (size_t i = 0; i < mFramebuffers.size(); ++i)
             mFramebuffers[i] = vkCore::initFramebufferUnique(
@@ -82,17 +82,13 @@ public:
 
         mFramebuffers.clear();
         mImageViews.clear();
-        for (size_t i = 0; i < mN; i++) {
-            vkCore::global::device.destroy(mImages[i]);
-            vkCore::global::device.freeMemory(mImagesMemory[i]);
-        }
         mImages.clear();
         mImagesMemory.clear();
 
         mInitialized = false;
     }
 
-    inline auto getImage(size_t n) { KF_ASSERT(mInitialized, ""); return mImages[n]; }
+    inline auto getImage(size_t n) { KF_ASSERT(mInitialized, ""); return mImages[n].get(); }
     inline auto& getFramebuffer(size_t n) { KF_ASSERT(mInitialized, ""); return mFramebuffers[n]; }
 
     [[nodiscard]] inline size_t getCurrentImageIndex() const { KF_ASSERT(mInitialized, ""); return mCurrentImageIdx; }
@@ -128,12 +124,12 @@ public:
         mStorageImageInfo.imageLayout = mStorageImage.getLayout();
     }
 
-    inline auto get() const { return mStorageImage.get(); }
-    inline auto getExtent() const { return mStorageImage.getExtent(); }
-    inline auto getFormat() const { return mStorageImage.getFormat(); }
-    inline auto getView() const { return mStorageImageView.get(); };
-    inline auto getSampler() const { return mStorageImageSampler.get(); };
-    inline const auto& getInfo() const { return mStorageImageInfo; };
+    [[nodiscard]] inline auto get() const { return mStorageImage.get(); }
+    [[nodiscard]] inline auto getExtent() const { return mStorageImage.getExtent(); }
+    [[nodiscard]] inline auto getFormat() const { return mStorageImage.getFormat(); }
+    [[nodiscard]] inline auto getView() const { return mStorageImageView.get(); };
+    [[nodiscard]] inline auto getSampler() const { return mStorageImageSampler.get(); };
+    [[nodiscard]] inline const auto& getInfo() const { return mStorageImageInfo; };
 
     inline void setLayout(vk::ImageLayout layout) { mStorageImage.transitionToLayout(layout); }
 };

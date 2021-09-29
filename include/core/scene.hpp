@@ -107,8 +107,8 @@ public:
     void removeEnvironmentMap();
 
     inline Camera* createCamera(int width, int height) {
-        auto cam = std::make_unique<Camera>(nullptr, width, height, glm::vec3(0.f, 0.f, 0.f));
-        mRegisteredCameras.push_back(std::move(cam));
+        mRegisteredCameras.emplace_back(
+                new Camera(width, height, glm::vec3(0.f, 0.f, 0.f)));
         return mRegisteredCameras.back().get();
     };
 

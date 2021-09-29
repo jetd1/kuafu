@@ -25,15 +25,9 @@ int main() {
     kuafu::Kuafu renderer(config);
 
     loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell, eGLTF
-//
-//    window->resize(1920, 1080);
-//    camera->setFullPerspective(
-//            1920, 1080,
-//            1.387511840820312500e+03, 1.386223266601562500e+03,
-//            9.825937500000000000e+02, 5.653156127929687500e+02, 0);
 
-//    auto camera1 = std::make_shared<CustomCamera>(
-//            width * 2, height * 2, glm::vec3(0.f, 0.f, 3.f));
+//    auto& scene = renderer.getScene();
+//    scene.setCamera(scene.createCamera(800, 600));
 
     size_t counter = 0;
     while (renderer.isRunning()) {

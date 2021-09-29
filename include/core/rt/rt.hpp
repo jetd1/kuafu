@@ -69,9 +69,9 @@ public:
     void destroy();
 
     /// @return Returns the top level acceleration structure.
-    const auto& getTlas() const { return mTlas; }
+    [[nodiscard]] const auto& getTlas() const { return mTlas; }
 
-    const auto& getCapabilities() { return mCapabilities; }
+    [[nodiscard]] const auto& getCapabilities() { return mCapabilities; }
 
     inline void setRenderTargets(std::shared_ptr<RenderTargets> renderTargets) { mRenderTargets = renderTargets; }
 
