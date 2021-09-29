@@ -24,19 +24,24 @@ int main() {
 
     kuafu::Kuafu renderer(config);
 
-    loadScene(&renderer, Level::eSpheres);     // eSpheres, eActive, eCornell, eGLTF
-
     auto scene = renderer.getScene();
+    loadScene(scene, Level::eTexture);     // eSpheres, eActive, eCornell, eGLTF
+
     auto scene1 = renderer.createScene();
     scene1->setCamera(scene1->createCamera(width, height));
-    auto scene2 = renderer.createScene();
-    scene2->setCamera(scene2->createCamera(width, height));
-    auto scene3 = renderer.createScene();
-    scene3->setCamera(scene3->createCamera(width, height));
+    loadScene(scene1, Level::eGround);
 
     size_t counter = 0;
     while (renderer.isRunning()) {
-        updateScene(renderer);
+
+        if (counter % 400 == 0)
+            renderer.setScene(scene);
+
+        if (counter % 400 == 200)
+            renderer.setScene(scene1);
+
+
+//        updateScene(scene);
         renderer.run();
 
 //        auto ret = renderer.downloadLatestFrame();
@@ -51,30 +56,6 @@ int main() {
 //        if (counter == 200) {
 //            renderer.getScene().setCamera(camera1);
 //        }
-
-        if (counter == 0) {
-            renderer.setScene(scene1);
-            loadScene(&renderer, Level::eTexture);
-            renderer.setScene(scene2);
-            loadScene(&renderer, Level::eActive);
-            renderer.setScene(scene3);
-            loadScene(&renderer, Level::eNew);
-            renderer.setScene(scene);
-        }
-
-        if (counter > 100) {
-            if (counter % 400 == 0)
-                renderer.setScene(scene);
-
-            if (counter % 400 == 100)
-                renderer.setScene(scene1);
-
-            if (counter % 400 == 200)
-                renderer.setScene(scene2);
-
-            if (counter % 400 == 300)
-                renderer.setScene(scene3);
-        }
 
         counter++;
     }

@@ -13,7 +13,8 @@ enum class Level {
     eGLTF,
     eHide,
     eTexture,
-    eFanbo
+    eFanbo,
+    eGround
 };
 
 inline Level currentLevel;
@@ -75,72 +76,29 @@ inline void addScene(
     }
 }
 
-inline void addBox(kuafu::Kuafu *renderer) {
-    std::string_view path = "models/cube.obj";
-    auto cube = renderer->getScene()->findGeometry(path);
-    if (cube == nullptr) {
-        cube = kuafu::loadObj(path);
-        renderer->getScene()->submitGeometry(cube);
-    }
+inline void loadScene(kuafu::Scene *scene, Level level) {
+    scene->getCamera()->resetView();
 
-    auto transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.3F, 0.3F, 0.3F));
-    transform = glm::rotate(transform, getRandomFloat(0.0F, 360.0F), glm::vec3(0.0F, 1.0F, 0.0F));
-    transform = glm::translate(transform, getRandomUniquePosition(-25.0F, 25.0F));
-
-    auto cubeInstance = kuafu::instance(cube, transform);
-    renderer->getScene()->submitGeometryInstance(cubeInstance);
-}
-
-inline void addSphere(kuafu::Kuafu *renderer) {
-    std::string_view path = "models/sphere.obj";
-    auto sphere = renderer->getScene()->findGeometry(path);
-    if (sphere == nullptr) {
-        sphere = kuafu::loadObj(path);
-        renderer->getScene()->submitGeometry(sphere);
-    }
-
-    auto transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.1F, 0.1F, 0.1F));
-    transform = glm::rotate(transform, getRandomFloat(0.0F, 360.0F), glm::vec3(0.0F, 1.0F, 0.0F));
-    transform = glm::translate(transform, getRandomUniquePosition(-70.0F, 70.0F));
-
-    auto sphereInstance = kuafu::instance(sphere, transform);
-    renderer->getScene()->submitGeometryInstance(sphereInstance);
-}
-
-inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
-    currentLevel = scene;
-
-    renderer->getScene()->getCamera()->resetView();
-
-    if (scene == Level::eCornell) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(1000); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(10000);
-        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.2F));
-        renderer->getScene()->getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
-        renderer->getScene()->getCamera( )->setFront( glm::vec3( 0.0F, 0.0F, -1.F ) );
-        renderer->getScene()->getCamera( )->setUp( glm::vec3( 0.0F, 1.0F, 0.F ) );
+    if (level == Level::eCornell) {
+        scene->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 0.2F));
+        scene->getCamera( )->setPosition( glm::vec3( 0.0F, 0.0F, -0.6F ) );
+        scene->getCamera( )->setFront( glm::vec3( 0.0F, 0.0F, -1.F ) );
+        scene->getCamera( )->setUp( glm::vec3( 0.0F, 1.0F, 0.F ) );
 
         auto cornell = kuafu::loadScene("models/CornellBox.obj", false);
 
         for (auto& c: cornell)
-            renderer->getScene()->submitGeometry(c);
+            scene->submitGeometry(c);
 
         for (auto& c: cornell) {
             auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, -1.0F, -1.0F));
             auto cornellInstance = kuafu::instance(c, transform);
-            renderer->getScene()->submitGeometryInstance(cornellInstance);
+            scene->submitGeometryInstance(cornellInstance);
         }
 
-        renderer->getScene()->removeEnvironmentMap();
-    } else if (scene == Level::eAnimations) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(5);
-        renderer->getConfig().setGeometryInstanceLimit(4000);
-        renderer->getConfig().setTextureLimit(4);
-        renderer->getConfig().setAccumulatingFrames(false);
-        renderer->getScene()->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+        scene->removeEnvironmentMap();
+    } else if (level == Level::eAnimations) {
+        scene->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
 
         // Load geometries.
         auto plane = kuafu::loadObj("models/plane.obj");
@@ -151,32 +109,28 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         plane->setMaterial(customMaterial);
 
         // Submit geometries.
-        renderer->getScene()->setGeometries({plane});
+        scene->setGeometries({plane});
 
         // Create instances of the geometries.
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 80.0F, 0.0F));
         auto planeInstance = kuafu::instance(plane, transform);
 
         // Submit instances for drawing.
-        renderer->getScene()->setGeometryInstances({planeInstance});
+        scene->setGeometryInstances({planeInstance});
 
         transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.25F));
         transform = glm::rotate(transform, glm::radians(45.0F), glm::vec3(0.0F, 1.0F, 0.0F));
         transform = glm::translate(transform, glm::vec3(0.0F, -2.0F, 1.0F));
 
-        addScene(renderer->getScene(), "models/scene.obj", transform);
+        addScene(scene, "models/scene.obj", transform);
 
-        renderer->getScene()->removeEnvironmentMap();
-    } else if (scene == Level::eSpheres) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(15000);
-        renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.3));
-//        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
+        scene->removeEnvironmentMap();
+    } else if (level == Level::eSpheres) {
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.3));
+//        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(-12.6F, 0.0F, 15.4F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+        scene->getCamera()->setPosition(glm::vec3(-12.6F, 0.0F, 15.4F));
+        scene->getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
 //        auto dLight = std::make_shared<kuafu::DirectionalLight>();
         dLight->direction ={-2, -1, -1};
@@ -184,28 +138,28 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         dLight->color = {1., 0.9, 0.7};
         dLight->strength = 8;
         dLight->softness = 0.5;
-        renderer->getScene()->setDirectionalLight(dLight);
+        scene->setDirectionalLight(dLight);
 
 //        auto pLight = std::make_shared<kuafu::PointLight>();
 //        pLight->position ={0, 0, 4};
 //        pLight->color = {1., 0.5, 0.5};
 //        pLight->strength = 100;
 //        pLight->radius = 0.5;
-//        renderer->getScene()->addPointLight(pLight);
+//        scene->addPointLight(pLight);
 
 //        pLight = std::make_shared<kuafu::PointLight>();
 //        pLight->position ={-6, 0, 3};
 //        pLight->color = {0.5, 0.5, 1.0};
 //        pLight->strength = 100;
 //        pLight->radius = 0.5;
-//        renderer->getScene()->addPointLight(pLight);
+//        scene->addPointLight(pLight);
 //
 //        pLight = std::make_shared<kuafu::PointLight>();
 //        pLight->position ={2, 5, 5};
 //        pLight->color = {0.5, 1.0, 0.0};
 //        pLight->strength = 100;
 //        pLight->radius = 0.5;
-//        renderer->getScene()->addPointLight(pLight);
+//        scene->addPointLight(pLight);
 
 //        auto aLight = std::make_shared<kuafu::ActiveLight>();
 ////        aLight->position ={0, 0, 7};
@@ -220,7 +174,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 //        aLight->texPath = "../resources/d415-pattern-sq.png";
 ////        aLight->texPath = "../resources/py2.png";
 ////        aLight->texPath = "";
-//        renderer->getScene()->addActiveLight(aLight);
+//        scene->addActiveLight(aLight);
 
         kuafu::NiceMaterial floorMaterial;
 //        floorMaterial.emission = glm::vec3(1.0, 0.2, 0.2);
@@ -296,7 +250,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
 
 
-        renderer->getScene()->setGeometries(
+        scene->setGeometries(
                 {
                     floor,
                     sphere0,
@@ -343,7 +297,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto cubeInstance = kuafu::instance(cube, transform);
 
 
-        renderer->getScene()->setGeometryInstances(
+        scene->setGeometryInstances(
                 {
                     floorInstance,
                     sphereInstance0,
@@ -369,21 +323,16 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::rotate(transform, glm::radians(-20.f), glm::vec3{1, 0, 0});
         transform = glm::scale(transform, glm::vec3(3));
 
-        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, &mat);
+        addScene(scene, "../resources/models/suzanne.dae", transform, &mat);
 
 
-    } else if (scene == Level::eMirrors) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(3); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(50000);
-        renderer->getConfig().setTextureLimit(2); // Will give a warning.
+    } else if (level == Level::eMirrors) {
+        scene->setClearColor(glm::vec4(0.5F, 0.5F, 0.7F, 1.0F));
 
-        renderer->getScene()->setClearColor(glm::vec4(0.5F, 0.5F, 0.7F, 1.0F));
-
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(9.8F, 0.3F, 7.7F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(-0.5F, 0.0F, -0.8F));
-        //renderer->getScene()->getCamera( )->setFront( glm::vec3( -0.5F, 0.0F, -0.8F ) );
-        renderer->getScene()->removeEnvironmentMap();
+        scene->getCamera()->setPosition(glm::vec3(9.8F, 0.3F, 7.7F));
+        scene->getCamera()->setFront(glm::vec3(-0.5F, 0.0F, -0.8F));
+        //scene->getCamera( )->setFront( glm::vec3( -0.5F, 0.0F, -0.8F ) );
+        scene->removeEnvironmentMap();
 
         auto lightPlane = kuafu::loadObj("models/plane.obj");
         kuafu::NiceMaterial lightMaterial;
@@ -396,7 +345,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         mirrorMaterial.diffuseColor = glm::vec3(0.95F);
         mirrorPlane->setMaterial(mirrorMaterial);
 
-        renderer->getScene()->setGeometries({lightPlane, mirrorPlane});
+        scene->setGeometries({lightPlane, mirrorPlane});
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 45.0F, 0.0F));
         auto lightPlaneInstance = kuafu::instance(lightPlane, transform);
@@ -412,21 +361,14 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::translate(transform, glm::vec3(0.0F, -100.0F, 0.0F));
         auto mirrorPlaneInstance2 = kuafu::instance(mirrorPlane, transform);
 
-        renderer->getScene()->setGeometryInstances({mirrorPlaneInstance1, mirrorPlaneInstance2, lightPlaneInstance});
+        scene->setGeometryInstances({mirrorPlaneInstance1, mirrorPlaneInstance2, lightPlaneInstance});
 
-        for (int i = 1; i < 25000; ++i) {
-            addSphere(renderer);
-        }
-    } else if (scene == Level::eSponza) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(1000);
-        renderer->getConfig().setTextureLimit(50); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(1.0F));
+    } else if (level == Level::eSponza) {
+        scene->setClearColor(glm::vec4(1.0F));
 
-        renderer->getScene()->removeEnvironmentMap();
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(-11.6F, 2.4F, -0.73F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(0.98F, 0.19F, 0.0F));
+        scene->removeEnvironmentMap();
+        scene->getCamera()->setPosition(glm::vec3(-11.6F, 2.4F, -0.73F));
+        scene->getCamera()->setFront(glm::vec3(0.98F, 0.19F, 0.0F));
 
         auto lightPlane = kuafu::loadObj("models/plane.obj");
         kuafu::NiceMaterial lightMaterial;
@@ -435,7 +377,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 
         auto sponza = kuafu::loadObj("models/sponza/sponza.obj");
 
-        renderer->getScene()->setGeometries({lightPlane, sponza});
+        scene->setGeometries({lightPlane, sponza});
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 30.0F, 0.0F));
         auto lightPlaneInstance = kuafu::instance(lightPlane, transform);
@@ -443,18 +385,13 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::scale(glm::mat4(1.0F), glm::vec3(0.01F));
         auto sponzaInstance = kuafu::instance(sponza, transform);
 
-        renderer->getScene()->setGeometryInstances({lightPlaneInstance, sponzaInstance});
-    } else if (scene == Level::eNew) {
+        scene->setGeometryInstances({lightPlaneInstance, sponzaInstance});
+    } else if (level == Level::eNew) {
+//        scene->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.1F));
 
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(15000);
-        renderer->getConfig().setTextureLimit(100); // Will give a warning.
-//        renderer->getScene()->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.1F));
-
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
+        scene->getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
+        scene->getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
 
         auto dLight = std::make_shared<kuafu::DirectionalLight>();
         dLight->direction ={1, 1, -1};
@@ -462,7 +399,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         dLight->color = {1., 1., 1.};
         dLight->strength = 20;
         dLight->softness = 0.1;
-        renderer->getScene()->setDirectionalLight(dLight);
+        scene->setDirectionalLight(dLight);
 
         kuafu::NiceMaterial floorMaterial;
         floorMaterial.diffuseColor = glm::vec3(1, 1, 1);
@@ -481,7 +418,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto cap3 = kuafu::createCapsule(0.3, 0.3, true, mat);
         auto cap4 = kuafu::createCapsule(0.4, 0.4, true, mat);
 
-        renderer->getScene()->setGeometries({floor, cap0, cap1, cap2, cap3, cap4});
+        scene->setGeometries({floor, cap0, cap1, cap2, cap3, cap4});
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
         transform = glm::scale(transform, glm::vec3(5.0F, 5.0F, 5.0F));
@@ -503,18 +440,14 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 2.0F, 0.4F));
         auto cap4Instance = kuafu::instance(cap4, transform);
 
-        renderer->getScene()->setGeometryInstances({
+        scene->setGeometryInstances({
             floorInstance, cap0Instance, cap1Instance, cap2Instance, cap3Instance, cap4Instance});
-    } else if (scene == Level::eObj) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(15000);
-        renderer->getConfig().setTextureLimit(100); // Will give a warning.
-//        renderer->getScene()->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
+    } else if (level == Level::eObj) {
+//        scene->setClearColor(glm::vec4(0.0F, 0.0F, 0.0F, 1.0F));
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0F));
 
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
+        scene->getCamera()->setPosition(glm::vec3(-6.F, 0.F, 0.2F));
+        scene->getCamera()->setFront(glm::vec3(1.F, 0.0F, 0.F));
 
         kuafu::NiceMaterial floorMaterial;
         floorMaterial.diffuseColor = glm::vec3(1.0, 0.3, 0.3);
@@ -527,32 +460,27 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         mat.ior = 10.0F;
         mat.alpha = 1.0;
 
-        auto scene = kuafu::loadScene(
+        auto objs = kuafu::loadScene(
                 "/zdata/ssource/ICCV2021_Diagnosis/description/xarm_description/meshes/optical_table/visual/optical_table.dae", true);
-        KF_INFO(scene.size());
 
-        renderer->getScene()->setGeometries({floor});
-        for (auto& g: scene)
-            renderer->getScene()->submitGeometry(g);
+        scene->setGeometries({floor});
+        for (auto& g: objs)
+            scene->submitGeometry(g);
 
         auto transform = glm::translate(glm::mat4(1.0F), glm::vec3(0.0F, 0.0F, 0.0F));
         transform = glm::scale(transform, glm::vec3(5.0F, 5.0F, 5.0F));
         transform = glm::rotate(transform, glm::radians(90.F), {0., 1., 0.});
         auto floorInstance = kuafu::instance(floor, transform);
 
-        renderer->getScene()->setGeometryInstances({floorInstance});
-        for (auto& g: scene)
-            renderer->getScene()->submitGeometryInstance(instance(g, glm::mat4(1.0F)));
+        scene->setGeometryInstances({floorInstance});
+        for (auto& g: objs)
+            scene->submitGeometryInstance(instance(g, glm::mat4(1.0F)));
 
-    } else if (scene == Level::eActive) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(100); // Will give a warning.
-        renderer->getConfig().setGeometryInstanceLimit(15000);
-        renderer->getConfig().setTextureLimit(100); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
+    } else if (level == Level::eActive) {
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.0));
 
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
+        scene->getCamera()->setPosition(glm::vec3(-12.6F, 1.1F, 15.4F));
+        scene->getCamera()->setFront(glm::vec3(0.67F, 0.0F, -0.8F));
 
 
         auto aLight = std::make_shared<kuafu::ActiveLight>();
@@ -568,7 +496,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         aLight->texPath = "../resources/d415-pattern-sq.png";
 //        aLight->texPath = "../resources/py2.png";
 //        aLight->texPath = "";
-        renderer->getScene()->addActiveLight(aLight);
+        scene->addActiveLight(aLight);
 
         kuafu::NiceMaterial floorMaterial;
 //        floorMaterial->emission = glm::vec3(1.0, 0.2, 0.2);
@@ -640,7 +568,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
 //        auto cube = kuafu::createCube(true, mat);
         auto cube = kuafu::createCapsule(2, 1, true, mat);
 
-        renderer->getScene()->setGeometries(
+        scene->setGeometries(
                 {
                         floor,
 //                    sphere0,
@@ -687,7 +615,7 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         auto cubeInstance = kuafu::instance(cube, transform);
 
 
-        renderer->getScene()->setGeometryInstances(
+        scene->setGeometryInstances(
                 {
                         floorInstance,
 //                    sphereInstance0,
@@ -713,39 +641,31 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::rotate(transform, glm::radians(-20.f), glm::vec3{1, 0, 0});
         transform = glm::scale(transform, glm::vec3(3));
 
-        addScene(renderer->getScene(), "../resources/models/suzanne.dae", transform, &mat);
+        addScene(scene, "../resources/models/suzanne.dae", transform, &mat);
 
 
-    } else if (scene == Level::eGLTF) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(1000);
-        renderer->getConfig().setGeometryInstanceLimit(1000);
-        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0));
+    } else if (level == Level::eGLTF) {
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 1.0));
 
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(0.5F, 0.5F, 0.5F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
+        scene->getCamera()->setPosition(glm::vec3(0.5F, 0.5F, 0.5F));
+        scene->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
 
-        addScene(renderer->getScene(), "/home/jet/Downloads/toc.glb");
-//        addScene(renderer->getScene(), "/home/jet/Downloads/test.glb");
-//        addScene(renderer->getScene(), "/home/jet/Downloads/model.blend");
+        addScene(scene, "/home/jet/Downloads/toc.glb");
+//        addScene(scene, "/home/jet/Downloads/test.glb");
+//        addScene(scene, "/home/jet/Downloads/model.blend");
 
-    } else if (scene == Level::eHide) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(1000);
-        renderer->getConfig().setGeometryInstanceLimit(1000);
-        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
+    } else if (level == Level::eHide) {
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
 
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
+        scene->getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
+        scene->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
 
         auto dLight = std::make_shared<kuafu::DirectionalLight>();
         dLight->direction ={-1, 1, -1};
         dLight->color = {1., 1., 1.};
         dLight->strength = 3;
         dLight->softness = 0.1;
-        renderer->getScene()->setDirectionalLight(dLight);
+        scene->setDirectionalLight(dLight);
 
         auto floor = kuafu::createYZPlane(false);
         auto transform = glm::translate(glm::mat4(1.0F), {0, 0, -0.1});
@@ -753,26 +673,22 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::scale(transform, glm::vec3(1.0F, 1.0F, 1.0F));
         auto floorInstance = kuafu::instance(floor, transform);
 
-        renderer->getScene()->setGeometries({floor});
-        renderer->getScene()->setGeometryInstances({floorInstance});
-        addScene(renderer->getScene(),
+        scene->setGeometries({floor});
+        scene->setGeometryInstances({floorInstance});
+        addScene(scene,
                  "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/tennis_ball/visual_mesh.obj");
-    } else if (scene == Level::eTexture) {
-        renderer->reset();
-        renderer->getConfig().setGeometryLimit(1000);
-        renderer->getConfig().setGeometryInstanceLimit(1000);
-        renderer->getConfig().setTextureLimit(1000); // Will give a warning.
-        renderer->getScene()->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
+    } else if (level == Level::eTexture) {
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
 
-        renderer->getScene()->getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
-        renderer->getScene()->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
+        scene->getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
+        scene->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
 
         auto dLight = std::make_shared<kuafu::DirectionalLight>();
         dLight->direction ={-1, 1, -1};
         dLight->color = {1., 1., 1.};
         dLight->strength = 3;
         dLight->softness = 0.1;
-        renderer->getScene()->setDirectionalLight(dLight);
+        scene->setDirectionalLight(dLight);
 
         auto floor = kuafu::createYZPlane(false);
         auto transform = glm::translate(glm::mat4(1.0F), {0, 0, -0.1});
@@ -780,8 +696,8 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
         transform = glm::scale(transform, glm::vec3(1.0F, 1.0F, 1.0F));
         auto floorInstance = kuafu::instance(floor, transform);
 
-        renderer->getScene()->setGeometries({floor});
-        renderer->getScene()->setGeometryInstances({floorInstance});
+        scene->setGeometries({floor});
+        scene->setGeometryInstances({floorInstance});
 
         kuafu::NiceMaterial mat {
             .diffuseTexPath = "/home/jet/Downloads/textures/diffuse.jpg",
@@ -794,27 +710,44 @@ inline void loadScene(kuafu::Kuafu *renderer, Level scene) {
             .transmission = 1.0
         };
 
-
-        addScene(renderer->getScene(),
+        addScene(scene,
                  "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/spellegrino/visual_mesh.obj",
                  glm::mat4(1.0), &mat);
 
-//        addScene(renderer->getScene(),
+//        addScene(scene,
 //                 "/zdata/ssource/ICCV2021_Diagnosis/ocrtoc_materials/models/rubik/visual_mesh.obj",
 //                 glm::mat4(1.0));
-    }  else if (scene == Level::eFanbo) {
-        auto scene = renderer->getScene();
-
+    } else if (level == Level::eFanbo) {
         for (int i = 0; i < 2000; i++) {
             auto sp = kuafu::createSphere();
             scene->submitGeometry(sp);
             scene->submitGeometryInstance(instance(sp, glm::mat4(1.0F)));
         }
+    } else if (level == Level::eGround) {
+        scene->setClearColor(glm::vec4(0.64F, 0.60F, 0.52F, 0.5));
 
+        scene->getCamera()->setPosition(glm::vec3(0.3F, 0.3F, 0.3F));
+        scene->getCamera()->setFront(glm::vec3(-1.F, -1.F, -1.F));
+
+        auto floor = kuafu::createYZPlane(false);
+        auto transform = glm::translate(glm::mat4(1.0F), {0, 0, -0.1});
+        transform = glm::rotate(transform, glm::radians(90.F), {0., -1., 0.});
+        transform = glm::scale(transform, glm::vec3(1.0F, 1.0F, 1.0F));
+        auto floorInstance = kuafu::instance(floor, transform);
+
+        auto dLight = std::make_shared<kuafu::DirectionalLight>();
+        dLight->direction ={-1, 1, -1};
+        dLight->color = {1., 1., 1.};
+        dLight->strength = 3;
+        dLight->softness = 0.1;
+        scene->setDirectionalLight(dLight);
+
+        scene->setGeometries({floor});
+        scene->setGeometryInstances({floorInstance});
     }
 }
 
-void updateScene(kuafu::Kuafu& renderer) {
+void updateScene(kuafu::Scene* scene) {
 //    if (currentLevel == Level::eAnimations) {
 //        auto instance = renderer.getScene()->getGeometryInstance(0);
 //
@@ -834,23 +767,21 @@ void updateScene(kuafu::Kuafu& renderer) {
 //        dLight->direction += glm::vec3{0.01, 0, 0};
 //        kuafu::global::frameCount = -1;
 //    }
-    static int cnt = 0;
-    cnt++;
-
-    if (currentLevel == Level::eHide) {
-        if (cnt % 10 == 5) {
-            auto geometry = renderer.getScene()->getGeometryByGlobalIndex(1);
-            geometry->hideRender = true;
-            renderer.getScene()->markGeometriesChanged();
-            renderer.getScene()->markGeometryInstancesChanged();
-            kuafu::global::frameCount = -1;
-        }
-        if (cnt % 10 == 0) {
-            auto geometry = renderer.getScene()->getGeometryByGlobalIndex(1);
-            geometry->hideRender = false;
-            renderer.getScene()->markGeometriesChanged();
-            renderer.getScene()->markGeometryInstancesChanged();
-            kuafu::global::frameCount = -1;
-        }
-    }
+//    static int cnt = 0;
+//    cnt++;
+//
+//    if (cnt % 10 == 5) {
+//        auto geometry = scene->getGeometryByGlobalIndex(1);
+//        geometry->hideRender = true;
+//        scene->markGeometriesChanged();
+//        scene->markGeometryInstancesChanged();
+//        kuafu::global::frameCount = -1;
+//    }
+//    if (cnt % 10 == 0) {
+//        auto geometry = scene->getGeometryByGlobalIndex(1);
+//        geometry->hideRender = false;
+//        scene->markGeometriesChanged();
+//        scene->markGeometryInstancesChanged();
+//        kuafu::global::frameCount = -1;
+//    }
 }

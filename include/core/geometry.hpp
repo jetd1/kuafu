@@ -37,7 +37,6 @@ struct Geometry {
     std::vector<Vertex> vertices;   ///< Contains all vertices of the geometry.
     std::vector<uint32_t> indices;  ///< Contains all indices of the geometry.
     std::vector<uint32_t> matIndex; ///< Contains all sub-meshes and their respective materials.
-    uint32_t geometryIndex = 0;     ///< A unique index required by the acceleration structures.
     std::string path;         ///< The model's path, relative to the path to assets.
     bool initialized = false; ///< Keeps track of whether or not the geometry was initialized.
 
@@ -50,8 +49,8 @@ struct GeometryInstance {
     void setTransform(const glm::mat4 &transform);
 
     glm::mat4 transform = glm::mat4(1.0F); ///< The instance's world transform matrix.
-    uint32_t geometryIndex = 0; ///< Used to assign this instance a model.
-    int geometryLocalIndex = -1; ///< Used to assign this instance a model. (within the scene)
+    int geometryIndex = -1; ///< Used to assign this instance a model.
+    std::shared_ptr<Geometry> geometry = nullptr;
 };
 
 std::vector<std::shared_ptr<Geometry>> loadScene(std::string_view fname, bool dynamic);

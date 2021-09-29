@@ -103,7 +103,6 @@ void Kuafu::setGui(std::shared_ptr<Gui> gui) {
 
 void Kuafu::reset() {
     // Reset indices
-    kuafu::global::geometryIndex = 0;
 //    kuafu::global::textureIndex = 0;
 //    kuafu::global::materialIndex = 0;
 

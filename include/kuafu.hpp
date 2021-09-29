@@ -35,6 +35,8 @@ class Kuafu {
 
     bool mRunning = true;
 
+    void reset();
+
 public:
     explicit Kuafu(std::shared_ptr<Config> config = nullptr);
 
@@ -71,6 +73,7 @@ public:
         mContext.mCurrentScene = scene;
         mContext.pConfig->triggerSwapchainRefresh();
         mContext.pConfig->triggerPipelineRefresh();
+        global::frameCount = -1;
     }
 
     inline Scene* createScene() {
@@ -87,8 +90,6 @@ public:
         mContext.mScenes.erase(std::remove_if(mContext.mScenes.begin(), mContext.mScenes.end(),
                                      [scene](auto &s) { return scene == s.get(); }), mContext.mScenes.end());
     }
-
-    void reset();
 };
 
 }

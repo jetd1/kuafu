@@ -46,8 +46,6 @@ public:
 
     auto getGeometries() const -> const std::vector<std::shared_ptr<Geometry>> &;
 
-    auto getGeometryByGlobalIndex(size_t index) const -> std::shared_ptr<Geometry>;
-
     /// @return Returns all geometry instances in the scene.
     auto getGeometryInstances() const -> const std::vector<std::shared_ptr<GeometryInstance>> &;
 

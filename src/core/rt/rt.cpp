@@ -39,7 +39,7 @@ void RayTracer::init() {
 }
 
 void RayTracer::destroy() {
-    vkCore::global::device.waitIdle();
+//    vkCore::global::device.waitIdle();
 
     for (Blas &blas : mBlas)
         blas.as.destroy();
@@ -115,11 +115,11 @@ auto RayTracer::modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
 
 auto RayTracer::geometryInstanceToAccelerationStructureInstance(
         std::shared_ptr<GeometryInstance> &geometryInstance) {
-    KF_ASSERT(geometryInstance->geometryLocalIndex >= 0, "Invalid geometry instance!");
-    KF_ASSERT(static_cast<int>(mBlas.size()) > geometryInstance->geometryLocalIndex,
+    KF_ASSERT(geometryInstance->geometryIndex >= 0, "Invalid geometry instance!");
+    KF_ASSERT(static_cast<int>(mBlas.size()) > geometryInstance->geometryIndex,
               "Geometry index is out of bounds. "
               "Hint for SAPIEN users: Are you creating two active renders?");
-    Blas &blas{mBlas[geometryInstance->geometryLocalIndex]};
+    Blas &blas{mBlas[geometryInstance->geometryIndex]};
 
     vk::AccelerationStructureDeviceAddressInfoKHR addressInfo(blas.as.as);
     vk::DeviceAddress blasAddress = vkCore::global::device.getAccelerationStructureAddressKHR(addressInfo);

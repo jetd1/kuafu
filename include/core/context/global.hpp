@@ -30,7 +30,6 @@ extern std::shared_ptr<spdlog::logger> logger;
 extern int frameCount;
 
 extern std::string assetsPath;
-extern uint32_t geometryIndex;
 extern uint32_t materialIndex;
 extern uint32_t textureIndex;
 extern std::vector<NiceMaterial> materials;

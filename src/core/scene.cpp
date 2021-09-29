@@ -43,15 +43,6 @@ auto Scene::getGeometries() const -> const std::vector<std::shared_ptr<Geometry>
     return mGeometries;
 }
 
-auto Scene::getGeometryByGlobalIndex(size_t index) const -> std::shared_ptr<Geometry> {
-    for (auto p: mGeometries)
-        if (index == p->geometryIndex)
-            return p;
-
-    KF_WARN("Geometry not found");
-    return nullptr;
-}
-
 auto Scene::getGeometryInstances() const -> const std::vector<std::shared_ptr<GeometryInstance>> & {
     return mGeometryInstances;
 }
@@ -75,10 +66,10 @@ void Scene::submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryIns
 
     // mark local geometry index                                    // FIXME: make_instance as scene function
     for (size_t i = 0; i < mGeometries.size(); i++)
-        if (mGeometries[i]->geometryIndex == geometryInstance->geometryIndex)
-            geometryInstance->geometryLocalIndex = i;
+        if (mGeometries[i] == geometryInstance->geometry)
+            geometryInstance->geometryIndex = i;
 
-    KF_ASSERT(geometryInstance->geometryLocalIndex >= 0, "Geometry not submitted!");
+    KF_ASSERT(geometryInstance->geometryIndex >= 0, "Geometry not submitted!");
 
     mGeometryInstances.push_back(geometryInstance);
     markGeometryInstancesChanged();
@@ -159,77 +150,11 @@ void Scene::setGeometries(const std::vector<std::shared_ptr<Geometry>> &geometri
 }
 
 void Scene::removeGeometry(std::shared_ptr<Geometry> geometry) {
-    if (geometry == nullptr) {
-        throw std::runtime_error("An invalid geometry can not be removed.");
-        return;
-    }
-
-    // Removing a geometry also means removing all its instances.
-    std::vector<std::shared_ptr<GeometryInstance>> instancesToDelete;
-    for (auto it : mGeometryInstances) {
-        if (it->geometryIndex == geometry->geometryIndex) {
-            instancesToDelete.push_back(it);
-        }
-    }
-
-    // Remove all instances of that geometry index
-    // Create a copy of all geometry instances
-    std::vector<std::shared_ptr<GeometryInstance>> temp3(mGeometryInstances);
-
-    // Clear the original container
-    mGeometryInstances.clear();
-    mGeometryInstances.reserve(temp3.size());
-
-    // Iterate over the container with the copies
-    for (auto it : temp3) {
-        // Delete the given geometry instance if it matches
-        if (it->geometryIndex != geometry->geometryIndex) {
-            mGeometryInstances.push_back(it);
-        }
-    }
-
-    markGeometryInstancesChanged();
-
-    std::vector<std::shared_ptr<Geometry>> temp(mGeometries);
-    mGeometries.clear();
-    mGeometries.reserve(temp.size());
-
-    uint32_t geometryIndex = 0;
-    for (auto it : temp) {
-        if (it != geometry) {
-            it->geometryIndex = geometryIndex++;
-            mGeometries.push_back(it);
-        }
-    }
-
-    --global::geometryIndex;
-    markGeometriesChanged(); // @todo Might not be necessary.
-
-    // Update geometry indices for geometry instances.
-    std::vector<std::shared_ptr<GeometryInstance>> temp2(mGeometryInstances);
-    mGeometryInstances.clear();
-    mGeometries.reserve(temp2.size());
-
-    geometryIndex = 0;
-    for (auto it : temp2) {
-        if (it->geometryIndex > geometry->geometryIndex) {
-            --it->geometryIndex;
-            mGeometryInstances.push_back(it);
-        } else {
-            mGeometryInstances.push_back(it);
-        }
-    }
-
-    markGeometryInstancesChanged();
+    throw std::runtime_error("Not implemented!");
 }
 
 void Scene::removeGeometry(uint32_t geometryIndex) {
-    for (auto it : mGeometries) {
-        if (it->geometryIndex == geometryIndex) {
-            removeGeometry(it);
-            break;
-        }
-    }
+    throw std::runtime_error("Not implemented!");
 }
 
 void Scene::clearGeometries() {
@@ -237,9 +162,6 @@ void Scene::clearGeometries() {
 
     mGeometries.clear();
     mGeometryInstances.clear();
-
-    // Reset index counter.
-    global::geometryIndex = 0;
 
     // Reset texture counter.
     global::textureIndex = 0;
@@ -534,8 +456,9 @@ void Scene::uploadGeometryInstances() {
     memAlignedGeometryInstances.resize(mGeometryInstances.size());
     std::transform(mGeometryInstances.begin(), mGeometryInstances.end(), memAlignedGeometryInstances.begin(),
                    [](std::shared_ptr<GeometryInstance> instance) {
+                       auto idx = static_cast<uint32_t>(instance->geometryIndex);
                        return GeometryInstanceSSBO{instance->transform,
-                                                   instance->geometryIndex};
+                                                   idx};
                    });
 
     mGeometryInstancesBuffer.upload(memAlignedGeometryInstances);
@@ -544,7 +467,7 @@ void Scene::uploadGeometryInstances() {
 }
 
 void Scene::translateDummy() {
-    auto dummyInstance = getGeometryInstance(triangle->geometryIndex);
+    auto dummyInstance = getGeometryInstance(0);
     auto camPos = mCurrentCamera->getPosition();
     dummyInstance->setTransform(glm::translate(glm::mat4(1.0F), glm::vec3(camPos.x, camPos.y, camPos.z + 2.0F)));
 }
@@ -567,7 +490,6 @@ void Scene::addDummy() {
     triangle = std::make_shared<Geometry>();
     triangle->vertices = {v1, v2, v3};
     triangle->indices = {0, 1, 2};
-    triangle->geometryIndex = global::geometryIndex++;
     triangle->matIndex = {0}; // a single triangle for the material buffer
     triangle->path = "Custom Dummy Triangle";
     triangle->dynamic = true;

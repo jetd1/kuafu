@@ -218,7 +218,6 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
         // Create Geometry
         std::shared_ptr<Geometry> geometry = std::make_shared<Geometry>();
         geometry->path = path;
-        geometry->geometryIndex = global::geometryIndex++;
         geometry->dynamic = dynamic;
         geometry->vertices = vertices;
         geometry->indices = indices;
@@ -256,7 +255,8 @@ std::shared_ptr<GeometryInstance> instance(
     assert(geometry != nullptr);
 
     std::shared_ptr<GeometryInstance> result = std::make_shared<GeometryInstance>();
-    result->geometryIndex = geometry->geometryIndex;
+//    result->geometryIndex = geometry->geometryIndex;
+    result->geometry = geometry;
     result->transform = transform;
 
     return result;
@@ -313,7 +313,6 @@ std::shared_ptr<Geometry> createYZPlane(bool dynamic, NiceMaterial mat) {
     ret->initialized = false;
     ret->dynamic = dynamic;
     ret->isOpaque = (mat.alpha >= 1.0F);
-    ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex++);
     kuafu::global::materials.push_back(std::move(mat));      // TODO: check existing dup mat
 
@@ -364,7 +363,6 @@ std::shared_ptr<Geometry> createCube(bool dynamic, NiceMaterial mat) {
             15, 23, 16
     };
 
-    ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
@@ -424,7 +422,6 @@ std::shared_ptr<Geometry> createSphere(bool dynamic, NiceMaterial mat) {
         ret->indices.push_back(right);
     }
 
-    ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->path = "";
     ret->initialized = false;
     ret->dynamic = dynamic;
@@ -535,7 +532,6 @@ std::shared_ptr<Geometry> createCapsule(
     ret->initialized = false;
     ret->dynamic = dynamic;
     ret->isOpaque = (mat.alpha >= 1.0F);
-    ret->geometryIndex = kuafu::global::geometryIndex++;
     ret->matIndex = std::vector<uint32_t>(ret->indices.size(), kuafu::global::materialIndex++);
     kuafu::global::materials.push_back(std::move(mat));          // TODO: check existing dup mat
 

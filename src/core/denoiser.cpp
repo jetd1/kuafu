@@ -14,8 +14,10 @@ namespace kuafu {
 OptixDeviceContext gOptixDevice;
 
 static void _log_cb(unsigned int level, const char* tag, const char* message, void*) {
+#ifdef _DEBUG
     std::cerr << "[" << std::setw(2) << level << "]" \
               << "[" << std::setw(12) << tag << "]: " << message << "\n";
+#endif
 }
 
 
