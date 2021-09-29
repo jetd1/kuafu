@@ -61,6 +61,7 @@ namespace kuafu {
 
         std::shared_ptr<Gui> pGui = nullptr;
 
+        std::vector<std::unique_ptr<Scene>> mScenes;
         Scene* mCurrentScene;
         std::shared_ptr<Config> pConfig;
 

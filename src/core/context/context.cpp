@@ -62,6 +62,7 @@ size_t prevFrame = 0;
 
 Context::~Context() {
     vkCore::global::device.waitIdle();
+    mScenes.clear();    // not necessary
 
     // Gui needs to be destroyed manually, as RAII destruction will not be possible.
     if (pGui != nullptr)

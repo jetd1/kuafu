@@ -32,7 +32,6 @@ class Kuafu {
     std::shared_ptr<Window> pWindow = nullptr;
     std::shared_ptr<Gui> pGUI = nullptr;
     kuafu::Context mContext;
-    std::vector<std::unique_ptr<Scene>> mScenes;
 
     bool mRunning = true;
 
@@ -58,10 +57,15 @@ public:
     inline Scene* getScene() { return mContext.mCurrentScene; }
 
     inline void setScene(Scene* scene) {
-        KF_ASSERT(scene, "Trying to set an invalid camera!");
-        auto ret = std::find_if(mScenes.begin(), mScenes.end(),
+        if (mContext.mCurrentScene == scene)
+            return;
+
+        KF_INFO("Switching scene, this is heavy...");
+
+        KF_ASSERT(scene, "Trying to set an invalid scene!");
+        auto ret = std::find_if(mContext.mScenes.begin(), mContext.mScenes.end(),
                                 [scene](auto& s) { return scene == s.get(); });
-        KF_ASSERT(ret != mScenes.end(), "???");
+        KF_ASSERT(ret != mContext.mScenes.end(), "???");
 
         scene->init();
         mContext.mCurrentScene = scene;
@@ -70,18 +74,18 @@ public:
     }
 
     inline Scene* createScene() {
-        mScenes.emplace_back(new Scene(mContext.pConfig));
-        return mScenes.back().get();
+        mContext.mScenes.emplace_back(new Scene(mContext.pConfig));
+        return mContext.mScenes.back().get();
     };
 
     inline void removeScene(Scene* scene) {
         KF_ASSERT(scene, "Trying to remove an invalid scene!");
-        auto ret = std::find_if(mScenes.begin(), mScenes.end(),
+        auto ret = std::find_if(mContext.mScenes.begin(), mContext.mScenes.end(),
                                 [scene](auto& s) { return scene == s.get(); });
-        KF_ASSERT(ret != mScenes.end(), "???");
+        KF_ASSERT(ret != mContext.mScenes.end(), "???");
 
-        mScenes.erase(std::remove_if(mScenes.begin(), mScenes.end(),
-                                     [scene](auto &s) { return scene == s.get(); }), mScenes.end());
+        mContext.mScenes.erase(std::remove_if(mContext.mScenes.begin(), mContext.mScenes.end(),
+                                     [scene](auto &s) { return scene == s.get(); }), mContext.mScenes.end());
     }
 
     void reset();

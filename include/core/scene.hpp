@@ -106,7 +106,7 @@ public:
         global::frameCount = -1;
     };
 
-    inline auto getClearColor() { return mClearColor; };
+    inline auto getClearColor() const { return mClearColor; };
 
     /// Used to retrieve a geoemtry based on its path.
     /// @param path The geometry's model's path, relative to the path to assets.
