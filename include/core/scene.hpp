@@ -42,6 +42,8 @@ public:
     friend Context;
     friend Kuafu;
 
+    Scene() = delete;
+
     auto getGeometries() const -> const std::vector<std::shared_ptr<Geometry>> &;
 
     auto getGeometryByGlobalIndex(size_t index) const -> std::shared_ptr<Geometry>;
@@ -97,6 +99,14 @@ public:
 
     /// Used to remove all geometries
     void clearGeometries();
+
+    inline void setClearColor(const glm::vec4 &clearColor) {
+        mClearColor = clearColor;
+        pConfig->triggerSwapchainRefresh();
+        global::frameCount = -1;
+    };
+
+    inline auto getClearColor() { return mClearColor; };
 
     /// Used to retrieve a geoemtry based on its path.
     /// @param path The geometry's model's path, relative to the path to assets.
@@ -171,8 +181,27 @@ public:
                 pActiveLights.end());
     };
 
+    inline void init() {               // TODO: This can be optimized
+        prepareBuffers();
+        initSceneDescriptorSets();
+        initGeometryDescriptorSets();
+
+        setEnvironmentMap("");
+        uploadEnvironmentMap();
+        removeEnvironmentMap();
+
+        updateSceneDescriptors();
+
+        markGeometriesChanged();
+        markGeometryInstancesChanged();
+    }
+
 
 private:
+    explicit Scene(std::shared_ptr<Config> pConfig): pConfig(pConfig) {
+        setCamera(createCamera(1, 1));
+    };
+
     void initSceneDescriptorSets();
 
     void initGeometryDescriptorSets();
@@ -199,9 +228,13 @@ private:
 
     void updateSceneDescriptors();
 
-    void updateGeoemtryDescriptors();
+    void updateGeometryDescriptors();
 
     void upload(vk::Fence fence, uint32_t imageIndex);
+
+    bool initialized = false;
+
+    glm::vec4 mClearColor = glm::vec4(0.F, 0.F, 0.F, 1.F);
 
     vkCore::Descriptors mSceneDescriptors;
     vkCore::Descriptors mGeometryDescriptors;

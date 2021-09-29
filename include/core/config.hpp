@@ -69,15 +69,6 @@ public:
     /// @return Returns the maximum path depth on the GPU.
     auto getMaxPathDepth() const -> uint32_t { return mMaxPathDepth; }
 
-    /// @return Returns the clear color.
-    auto getClearColor() const -> const glm::vec4 & { return mClearColor; }
-
-    /// Used to changed the clear color.
-    ///
-    /// The function will trigger a swapchain recreation as soon as possible unless it was explicitely disabled using setAutomaticPipelineRefresh(bool).
-    /// @param clearColor The new value for the clear color.
-    void setClearColor(const glm::vec4 &clearColor);
-
     /// This function will be called by Kuafu::init() in case the path was not set manually.
     /// @warning This function might file in setting the correct path. That is why it is recommended to set it automatically using setAssetsPath(std::string).
     static std::string sDefaultAssetsPath;
@@ -169,7 +160,6 @@ private:
 
     std::string mAssetsPath; ///< Where all assets like ~~~models, textures and~~~ shaders are stored.
 
-    glm::vec4 mClearColor = glm::vec4(0.F, 0.F, 0.F, 1.F); ///< Stores the clear color.
     uint32_t mMaxPathDepth = 12;                                     ///< The maximum path depth.
     uint32_t mPathDepth = 8;                                         ///< The current path depth.
     uint32_t mPerPixelSampleRate = 32;                                      ///< Stores the total amount of samples that will be taken and averaged per pixel.

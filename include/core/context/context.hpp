@@ -61,7 +61,7 @@ namespace kuafu {
 
         std::shared_ptr<Gui> pGui = nullptr;
 
-        Scene mScene;
+        Scene* mCurrentScene;
         std::shared_ptr<Config> pConfig;
 
         /// Used to set the GUI that will be used.
@@ -96,27 +96,23 @@ namespace kuafu {
         /// Acquires the next image from the swapchain.
         void prepareFrame();
 
-        /// Submits the swapchain command buffers to a queue and presents an image on the screen.
-        void submitFrame();
-
         void submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf);
         void submitFrame(const vk::CommandBuffer& cmdBuf);
 
         /// Submits the swapchain command buffers to a queue and presents an image on the screen.
         std::vector<uint8_t> downloadLatestFrame();
 
-        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : mScene.mCurrentCamera->mFrames->getCurrentImageIndex(); }
-        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : mScene.mCurrentCamera->mFrames->getImage(idx); }
+        inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : mCurrentScene->mCurrentCamera->mFrames->getCurrentImageIndex(); }
+        inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : mCurrentScene->mCurrentCamera->mFrames->getImage(idx); }
         inline auto& getFramebuffer(size_t idx) { return pConfig->mPresent ?
-                 mSwapchain.getFramebuffer(idx) : mScene.mCurrentCamera->mFrames->getFramebuffer(idx).get(); }
+                 mSwapchain.getFramebuffer(idx) : mCurrentScene->mCurrentCamera->mFrames->getFramebuffer(idx).get(); }
         inline auto  getFormat() { return pConfig->mPresent ? mSurface.getFormat() : pConfig->mFormat; }
         inline auto  getColorSpace() { return pConfig->mPresent ? mSurface.getColorSpace() : pConfig->mColorSpace; }
         inline auto  getExtent() { return pConfig->mPresent ?
-                     mSwapchain.getExtent() : mScene.mCurrentCamera ?
-                     vk::Extent2D{ static_cast<uint32_t>(mScene.mCurrentCamera->getWidth()),
-                                   static_cast<uint32_t>(mScene.mCurrentCamera->getHeight())} : vk::Extent2D{1, 1}; }
+                     mSwapchain.getExtent() : mCurrentScene->mCurrentCamera ?
+                     vk::Extent2D{ static_cast<uint32_t>(mCurrentScene->mCurrentCamera->getWidth()),
+                                   static_cast<uint32_t>(mCurrentScene->mCurrentCamera->getHeight())} : vk::Extent2D{1, 1}; }
         inline auto getCmdSemaphore() { return pConfig->mUseDenoiser ? mDenoiser.getTLSemaphore() : mCmdSemaphore.get(); };
-//        inline auto getCmdSemaphore() { return mDenoiser.getTLSemaphore(); };
 
 
     public:

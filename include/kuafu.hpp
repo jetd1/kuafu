@@ -32,6 +32,7 @@ class Kuafu {
     std::shared_ptr<Window> pWindow = nullptr;
     std::shared_ptr<Gui> pGUI = nullptr;
     kuafu::Context mContext;
+    std::vector<std::unique_ptr<Scene>> mScenes;
 
     bool mRunning = true;
 
@@ -54,7 +55,34 @@ public:
 
     inline auto& getConfig() { return *mContext.pConfig; }
 
-    inline kuafu::Scene &getScene() { return mContext.mScene; }
+    inline Scene* getScene() { return mContext.mCurrentScene; }
+
+    inline void setScene(Scene* scene) {
+        KF_ASSERT(scene, "Trying to set an invalid camera!");
+        auto ret = std::find_if(mScenes.begin(), mScenes.end(),
+                                [scene](auto& s) { return scene == s.get(); });
+        KF_ASSERT(ret != mScenes.end(), "???");
+
+        scene->init();
+        mContext.mCurrentScene = scene;
+        mContext.pConfig->triggerSwapchainRefresh();
+        mContext.pConfig->triggerPipelineRefresh();
+    }
+
+    inline Scene* createScene() {
+        mScenes.emplace_back(new Scene(mContext.pConfig));
+        return mScenes.back().get();
+    };
+
+    inline void removeScene(Scene* scene) {
+        KF_ASSERT(scene, "Trying to remove an invalid scene!");
+        auto ret = std::find_if(mScenes.begin(), mScenes.end(),
+                                [scene](auto& s) { return scene == s.get(); });
+        KF_ASSERT(ret != mScenes.end(), "???");
+
+        mScenes.erase(std::remove_if(mScenes.begin(), mScenes.end(),
+                                     [scene](auto &s) { return scene == s.get(); }), mScenes.end());
+    }
 
     void reset();
 };

@@ -115,10 +115,11 @@ auto RayTracer::modelToBlas(const vkCore::StorageBuffer<Vertex> &vertexBuffer,
 
 auto RayTracer::geometryInstanceToAccelerationStructureInstance(
         std::shared_ptr<GeometryInstance> &geometryInstance) {
-    KF_ASSERT(mBlas.size() > geometryInstance->geometryIndex,
+    KF_ASSERT(geometryInstance->geometryLocalIndex >= 0, "Invalid geometry instance!");
+    KF_ASSERT(static_cast<int>(mBlas.size()) > geometryInstance->geometryLocalIndex,
               "Geometry index is out of bounds. "
               "Hint for SAPIEN users: Are you creating two active renders?");
-    Blas &blas{mBlas[geometryInstance->geometryIndex]};
+    Blas &blas{mBlas[geometryInstance->geometryLocalIndex]};
 
     vk::AccelerationStructureDeviceAddressInfoKHR addressInfo(blas.as.as);
     vk::DeviceAddress blasAddress = vkCore::global::device.getAccelerationStructureAddressKHR(addressInfo);
@@ -141,7 +142,8 @@ auto RayTracer::geometryInstanceToAccelerationStructureInstance(
 void RayTracer::createBottomLevelAS(std::vector<vkCore::StorageBuffer<Vertex>> &vertexBuffers,
                                     const std::vector<vkCore::StorageBuffer<uint32_t>> &indexBuffers,
                                     const std::vector<std::shared_ptr<Geometry>> &geometries) {
-//        KF_ASSERT(!vertexBuffers.empty(), "Failed to build bottom level acceleration structures because no geometry was provided.");
+    KF_ASSERT(!vertexBuffers.empty(),
+              "Failed to build bottom level acceleration structures because no geometry was provided.");
 
     // Clean up previous acceleration structures and free all memory.
     destroy();
@@ -149,7 +151,7 @@ void RayTracer::createBottomLevelAS(std::vector<vkCore::StorageBuffer<Vertex>> &
     mBlas.reserve(vertexBuffers.size());
 
     for (size_t i = 0; i < vertexBuffers.size(); ++i)
-        if (geometries.size() > i)
+        if (i < geometries.size())
             if (geometries[i])
                 mBlas.push_back(geometries[i]->hideRender ? createDummyBlas()
                                 : modelToBlas(vertexBuffers[i], indexBuffers[i], geometries[i]->isOpaque));

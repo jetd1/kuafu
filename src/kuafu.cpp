@@ -26,7 +26,7 @@
 namespace kuafu {
 Kuafu::Kuafu(std::shared_ptr<Config> config) {
     mContext.pConfig = std::make_shared<Config>(*config);           // TODO: make config a value member instead
-    mContext.mScene.pConfig = mContext.pConfig;
+    mContext.mCurrentScene = createScene();
 
     std::shared_ptr<Window> window;
 
@@ -34,18 +34,16 @@ Kuafu::Kuafu(std::shared_ptr<Config> config) {
 
         KF_INFO("Present mode enabled.");
 
-        auto cam = mContext.mScene.createCamera(mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight);
+        auto cam = mContext.mCurrentScene->createCamera(
+                mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight);
+        mContext.mCurrentScene->setCamera(cam);
+
         window = std::make_shared<Window>(
                 mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight,
                 "Viewer", SDL_WINDOW_RESIZABLE, cam);
-        mContext.mScene.setCamera(cam);
 
-    } else {
-
+    } else
         KF_INFO("Offscreen mode enabled.");
-
-        mContext.mScene.setCamera(mContext.mScene.createCamera(1, 1));
-    }
 
     pWindow = window;
     mContext.pWindow = window;
@@ -81,7 +79,7 @@ void Kuafu::run() {
         mContext.mSurface.setExtent(pWindow->getSize());
     }
 
-    mContext.mScene.mCurrentCamera->update();
+    mContext.mCurrentScene->mCurrentCamera->update();
     mContext.render();
 }
 
@@ -106,20 +104,20 @@ void Kuafu::setGui(std::shared_ptr<Gui> gui) {
 void Kuafu::reset() {
     // Reset indices
     kuafu::global::geometryIndex = 0;
-    kuafu::global::textureIndex = 0;
-    kuafu::global::materialIndex = 0;
+//    kuafu::global::textureIndex = 0;
+//    kuafu::global::materialIndex = 0;
 
     // Reset frame counter
     kuafu::global::frameCount = -1;
 
-    mContext.mScene.getCamera()->resetView();
+//    mContext.mCurrentScene->getCamera()->resetView();
 
-    // Delete all textures
-    global::materials.clear();
-    global::materials.reserve(mContext.mScene.pConfig->mMaxMaterials);
+//    // Delete all textures
+//    global::materials.clear();
+//    global::materials.reserve(mContext.pConfig->mMaxMaterials);
 
-    mContext.mScene.mTextures.clear();
-    mContext.mScene.mTextures.resize(static_cast<size_t>( mContext.mScene.pConfig->mMaxTextures));
-    mContext.mScene.updateGeoemtryDescriptors();
+//    mContext.mCurrentScene->mTextures.clear();
+//    mContext.mCurrentScene->mTextures.resize(static_cast<size_t>(mContext.pConfig->mMaxTextures));
+//    mContext.mCurrentScene->updateGeometryDescriptors();
 }
 }

@@ -73,22 +73,14 @@ void Scene::submitGeometryInstance(std::shared_ptr<GeometryInstance> geometryIns
         }
     }
 
+    // mark local geometry index                                    // FIXME: make_instance as scene function
+    for (size_t i = 0; i < mGeometries.size(); i++)
+        if (mGeometries[i]->geometryIndex == geometryInstance->geometryIndex)
+            geometryInstance->geometryLocalIndex = i;
+
+    KF_ASSERT(geometryInstance->geometryLocalIndex >= 0, "Geometry not submitted!");
+
     mGeometryInstances.push_back(geometryInstance);
-    markGeometryInstancesChanged();
-}
-
-void Scene::submitGeometryInstance(const GeometryInstance& geometryInstance) {
-    if (!mDummy) {
-        if (mGeometryInstances.size() > pConfig->mMaxGeometryInstances) {
-            throw std::runtime_error(
-                    "Failed to submit geometry instance because instance buffer size has been exceeded.");
-            return;
-        }
-    }
-
-    auto g = std::make_shared<GeometryInstance>();
-    *g = geometryInstance;
-    mGeometryInstances.push_back(g);
     markGeometryInstancesChanged();
 }
 
@@ -709,11 +701,11 @@ void Scene::updateSceneDescriptors() {
     mSceneDescriptors.bindings.update();
 }
 
-void Scene::updateGeoemtryDescriptors() {
-//        KF_ASSERT( mGeometries.size( ) <= pConfig->mMaxGeometry, "Can not bind more than ", pConfig->mMaxGeometry, " geometries." );
-//        KF_ASSERT( mVertexBuffers.size( ) == pConfig->mMaxGeometry, "Vertex buffers container size and geometry limit must be identical." );
-//        KF_ASSERT( mIndexBuffers.size( ) == pConfig->mMaxGeometry, "Index buffers container size and geometry limit must be identical." );
-//        KF_ASSERT( mTextures.size( ) == pConfig->mMaxTextures, "Texture container size and texture limit must be identical." );
+void Scene::updateGeometryDescriptors() {
+    KF_ASSERT( mGeometries.size( ) <= pConfig->mMaxGeometry, "Can not bind more than ", pConfig->mMaxGeometry, " geometries." );
+    KF_ASSERT( mVertexBuffers.size( ) == pConfig->mMaxGeometry, "Vertex buffers container size and geometry limit must be identical." );
+    KF_ASSERT( mIndexBuffers.size( ) == pConfig->mMaxGeometry, "Index buffers container size and geometry limit must be identical." );
+    KF_ASSERT( mTextures.size( ) == pConfig->mMaxTextures, "Texture container size and texture limit must be identical." );
 
     // Vertex buffers infos
     std::vector<vk::DescriptorBufferInfo> vertexBufferInfos;

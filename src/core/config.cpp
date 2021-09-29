@@ -40,20 +40,6 @@ void Config::setPathDepth(uint32_t recursionDepth) {
     //triggerPipelineRefresh( );
 }
 
-void Config::setClearColor(const glm::vec4 &clearColor) {
-    static bool firstRun = true;
-
-    if (firstRun) {
-        firstRun = false;
-    } else {
-        triggerSwapchainRefresh();
-    }
-
-    mClearColor = clearColor;
-
-    global::frameCount = -1;
-}
-
 void Config::setNextEventEstimation(bool flag) { mNextEventEstimation = flag;
 }
 

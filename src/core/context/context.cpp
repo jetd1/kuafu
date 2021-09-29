@@ -230,7 +230,7 @@ void Context::init() {
         KF_DEBUG("Swapchain initialized!");
         pConfig->mSwapchainNeedsRefresh = false;
     } else {
-        mScene.mCurrentCamera->mFrames->init(
+        mCurrentScene->mCurrentCamera->mFrames->init(
                 pConfig->mMaxImagesInFlight,
                 getExtent(), getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
@@ -249,30 +249,16 @@ void Context::init() {
     KF_DEBUG("RayTracer initialized!");
     pConfig->mMaxPathDepth = mRayTracer.getCapabilities().pipelineProperties.maxRayRecursionDepth;
 
-    mScene.prepareBuffers();
-    KF_DEBUG("Buffers initialized!");
-
     // Descriptor sets and layouts
     mRayTracer.initDescriptorSet();
-    mScene.initSceneDescriptorSets();
-    mScene.initGeometryDescriptorSets();
-    KF_DEBUG("DescriptorSets initialized!");
-
-    // Default environment map to assure start up.
-    mScene.setEnvironmentMap("");
-    mScene.uploadEnvironmentMap();
-    mScene.removeEnvironmentMap();
-    KF_DEBUG("EnvironmentMap initialized!");
-
-    // Update scene descriptor sets.
-    mScene.updateSceneDescriptors();
+    mCurrentScene->init();
     KF_DEBUG("Descriptors initialized!");
 
     // Initialize the path tracing pipeline.
     initPipelines();
     KF_DEBUG("Pipelines initialized!");
 
-    mRayTracer.setRenderTargets(mScene.mCurrentCamera->getRenderTargets());
+    mRayTracer.setRenderTargets(mCurrentScene->mCurrentCamera->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
     KF_DEBUG("Images initialized!");
 
@@ -317,43 +303,43 @@ void Context::update() {
     // If the scene is empty add a dummy triangle so that the acceleration structures can be built successfully.
 
     // Move dummy behind camera
-    if (mScene.mDummy) {
-        mScene.translateDummy();
+    if (mCurrentScene->mDummy) {
+        mCurrentScene->translateDummy();
     }
 
-    if (mScene.mGeometryInstances.empty()) {
-        mScene.addDummy();
-    } else if (mScene.mDummy) {
-        mScene.removeDummy();
+    if (mCurrentScene->mGeometryInstances.empty()) {
+        mCurrentScene->addDummy();
+    } else if (mCurrentScene->mDummy) {
+        mCurrentScene->removeDummy();
     }
 
-    if (mScene.mUploadEnvironmentMap) {
+    if (mCurrentScene->mUploadEnvironmentMap) {
         mSync.waitForFrame(prevFrame);
-        mScene.uploadEnvironmentMap();
-        mScene.updateSceneDescriptors();
+        mCurrentScene->uploadEnvironmentMap();
+        mCurrentScene->updateSceneDescriptors();
     }
 
-    if (mScene.mUploadGeometries) {                // will upload active light tex in this step
-        mScene.uploadGeometries();
-        mScene.updateGeoemtryDescriptors();
+    if (mCurrentScene->mUploadGeometries) {                // will upload active light tex in this step
+        mCurrentScene->uploadGeometries();
+        mCurrentScene->updateGeometryDescriptors();
     }
 
-    if (mScene.mUploadGeometryInstancesToBuffer) {
-        mScene.uploadGeometryInstances();
+    if (mCurrentScene->mUploadGeometryInstancesToBuffer) {
+        mCurrentScene->uploadGeometryInstances();
 
         // @TODO Try to call this as few times as possible.
-        mRayTracer.createBottomLevelAS(mScene.mVertexBuffers, mScene.mIndexBuffers, mScene.mGeometries);
-        mRayTracer.buildTlas(mScene.mGeometryInstances,
+        mRayTracer.createBottomLevelAS(mCurrentScene->mVertexBuffers, mCurrentScene->mIndexBuffers, mCurrentScene->mGeometries);
+        mRayTracer.buildTlas(mCurrentScene->mGeometryInstances,
                              vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
                              vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate);
         mRayTracer.updateDescriptors();
     } else {
-        mRayTracer.updateTlas(mScene.mGeometryInstances,
+        mRayTracer.updateTlas(mCurrentScene->mGeometryInstances,
                               vk::BuildAccelerationStructureFlagBitsKHR::ePreferFastTrace |
                               vk::BuildAccelerationStructureFlagBitsKHR::eAllowUpdate);
     }
 
-    mScene.uploadUniformBuffers(imageIndex % maxFramesInFlight);
+    mCurrentScene->uploadUniformBuffers(imageIndex % maxFramesInFlight);
 
     // Increment frame counter for jitter cam.
     if (pConfig->mAccumulateFrames)
@@ -367,7 +353,7 @@ void Context::prepareFrame() {
         mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
     } else {
 //        mFrames.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame));
-        mScene.mCurrentCamera->mFrames->acquireNextImage();            // FIXME
+        mCurrentScene->mCurrentCamera->mFrames->acquireNextImage();            // FIXME
     }
 }
 
@@ -492,12 +478,12 @@ void Context::updateSettings() {
         pConfig->mMaxGeometryChanged = false;
         pConfig->mMaxTexturesChanged = false;
 
-        mScene.mVertexBuffers.resize(pConfig->mMaxGeometry);
-        mScene.mIndexBuffers.resize(pConfig->mMaxGeometry);
-        mScene.mMaterialIndexBuffers.resize(pConfig->mMaxGeometry);
-        mScene.mTextures.resize(pConfig->mMaxTextures);
+        mCurrentScene->mVertexBuffers.resize(pConfig->mMaxGeometry);
+        mCurrentScene->mIndexBuffers.resize(pConfig->mMaxGeometry);
+        mCurrentScene->mMaterialIndexBuffers.resize(pConfig->mMaxGeometry);
+        mCurrentScene->mTextures.resize(pConfig->mMaxTextures);
 
-        mScene.initGeometryDescriptorSets();
+        mCurrentScene->initGeometryDescriptorSets();
 
         pConfig->triggerPipelineRefresh();
     }
@@ -532,7 +518,7 @@ void Context::render() {
 
         if (pWindow->changed()) {
             KF_INFO("Window size changed!");
-            mScene.mCurrentCamera->mProjNeedsUpdate = true;
+            mCurrentScene->mCurrentCamera->mProjNeedsUpdate = true;
             return;
         }
     }
@@ -556,18 +542,18 @@ void Context::recreateSwapchain() {
         mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
 
         // Update the camera screen size to avoid image stretching.
-        mScene.mCurrentCamera->setSize(getExtent().width, getExtent().height);
+        mCurrentScene->mCurrentCamera->setSize(getExtent().width, getExtent().height);
     } else {
         KF_DEBUG("Switching Framebuffer...");
 
-        mScene.mCurrentCamera->mFrames->init(
+        mCurrentScene->mCurrentCamera->mFrames->init(
                 pConfig->mMaxImagesInFlight, getExtent(),
                 getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
     }
 
     // Recreate storage image with the new swapchain image size and update the path tracing descriptor set to use the new storage image view.
-    mRayTracer.setRenderTargets(mScene.mCurrentCamera->getRenderTargets());
+    mRayTracer.setRenderTargets(mCurrentScene->mCurrentCamera->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
 
     if (pConfig->mUseDenoiser)
@@ -586,8 +572,8 @@ void Context::initPipelines() {
     KF_DEBUG("Recreating Pipeline...");
     // path tracing pipeline
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts = {mRayTracer.getDescriptorSetLayout(),
-                                                                 mScene.mSceneDescriptors.layout.get(),
-                                                                 mScene.mGeometryDescriptors.layout.get()};
+                                                                 mCurrentScene->mSceneDescriptors.layout.get(),
+                                                                 mCurrentScene->mGeometryDescriptors.layout.get()};
 
     mRayTracer.createPipeline(descriptorSetLayouts);
     pConfig->mPipelineNeedsRefresh = false;
@@ -603,11 +589,11 @@ void Context::recordSwapchainCommandBuffers() {
     mSync.waitForFrame(prevFrame);
 
     RtPushConstants pushConstants = {
-            pConfig->mClearColor,
+            mCurrentScene->getClearColor(),
             global::frameCount,
             pConfig->mPerPixelSampleRate,
             pConfig->mPathDepth,
-            static_cast<uint32_t>(mScene.mUseEnvironmentMap),
+            static_cast<uint32_t>(mCurrentScene->mUseEnvironmentMap),
             static_cast<uint32_t>(pConfig->mRussianRoulette),
             pConfig->mRussianRouletteMinBounces,
             pConfig->mNextEventEstimation,
@@ -633,8 +619,8 @@ void Context::recordSwapchainCommandBuffers() {
         cmdBuf.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, mRayTracer.getPipeline());
 
         std::vector<vk::DescriptorSet> descriptorSets = {mRayTracer.getDescriptorSet(index),
-                                                         mScene.mSceneDescriptorSets[index],
-                                                         mScene.mGeometryDescriptorSets[index]};
+                                                         mCurrentScene->mSceneDescriptorSets[index],
+                                                         mCurrentScene->mGeometryDescriptorSets[index]};
 
         cmdBuf.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR,
                                   mRayTracer.getPipelineLayout(),

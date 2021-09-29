@@ -51,6 +51,7 @@ struct GeometryInstance {
 
     glm::mat4 transform = glm::mat4(1.0F); ///< The instance's world transform matrix.
     uint32_t geometryIndex = 0; ///< Used to assign this instance a model.
+    int geometryLocalIndex = -1; ///< Used to assign this instance a model. (within the scene)
 };
 
 std::vector<std::shared_ptr<Geometry>> loadScene(std::string_view fname, bool dynamic);
