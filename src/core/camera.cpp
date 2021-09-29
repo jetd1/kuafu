@@ -7,7 +7,7 @@
 namespace kuafu {
 Camera::Camera(int width, int height, const glm::vec3 &position)
               : mWidth(width), mHeight(height), mPosition(position) {
-    mRenderTargets = std::make_unique<RenderTargets>();
+    mRenderTargets = std::make_shared<RenderTargets>();
     mFrames = std::make_shared<Frames>();
 
     mCx = mWidth * 0.5;
