@@ -111,7 +111,10 @@ void Time::update() {
     if (current_time - prevTime2 >= 1.0F) {
         fps = frames;
 
-        KF_INFO("Current FPS: {}", frames);
+        if (frames == 1 && current_time - prevTime2 > 1.05F)
+            KF_WARN("Current FPS < 1");
+        else
+            KF_INFO("Current FPS = {}", frames);
         allFrames.push_back(frames);
 
         frames = 0;

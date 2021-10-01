@@ -2960,6 +2960,9 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
 
     void init( size_t n = 2 )
     {
+      if (_initialized)
+        return;
+
       _maxFramesInFlight = n;
       _imageAvailableSemaphores.resize( _maxFramesInFlight );
       _finishedRenderSemaphores.resize( _maxFramesInFlight );
@@ -2972,6 +2975,8 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
         _finishedRenderSemaphores[i] = vkCore::initSemaphoreUnique( );
         _inFlightFences[i]           = vkCore::initFenceUnique( vk::FenceCreateFlagBits::eSignaled );
       }
+
+      _initialized = true;
     }
 
     void waitForFrame( size_t frame )
@@ -2987,6 +2992,7 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
     std::vector<vk::UniqueSemaphore> _finishedRenderSemaphores;
 
     size_t _maxFramesInFlight = 2;
+    bool _initialized = false;
   };
 
 

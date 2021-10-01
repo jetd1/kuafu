@@ -119,9 +119,6 @@ public:
     /// @note Implementation of this function should be inside a user-defined inherited class.
     void processKeyboard();
 
-    bool mViewNeedsUpdate = true; ///< Keeps track of whether or not to udpate the view matrix.
-    bool mProjNeedsUpdate = true; ///< Keeps track of whether or not to udpate the projection matrix.
-
     inline void clearRenderTargets() { mRenderTargets->clear(); }
     inline auto getRenderTargets() { return mRenderTargets; }
 
@@ -134,6 +131,11 @@ public:
     [[nodiscard]] inline float getSkew() const { return mSkew; }
 
     std::shared_ptr<Frames> mFrames;
+    vkCore::Sync mSync;
+
+    std::vector<uint8_t> downloadLatestFrame();
+
+    bool mFirst = true;
 
 private:
     friend class Scene;

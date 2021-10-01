@@ -57,12 +57,9 @@ std::vector<const char *> deviceExtensions = {VK_KHR_DEFERRED_HOST_OPERATIONS_EX
                                               VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME
                                               };
 
-size_t currentFrame = 0;
-size_t prevFrame = 0;
-
 Context::~Context() {
     try {                                             // FIXME
-        vkCore::global::device.waitIdle();
+        mDevice->waitIdle();
     } catch (const vk::DeviceLostError& e) {
         KF_WARN("Device lost while quitting. Longer wait time is expected.");
     }
@@ -99,8 +96,8 @@ void Context::init() {
 //        vkCore::global::dataCopies = 1U;
 //        vkCore::global::swapchainImageCount = 1U;
 
-        vkCore::global::dataCopies = pConfig->mMaxImagesInFlight;
-        vkCore::global::swapchainImageCount = pConfig->mMaxImagesInFlight;
+        vkCore::global::dataCopies = 2U;
+        vkCore::global::swapchainImageCount = 2U;
     }
 
     if (pConfig->mUseDenoiser) {
@@ -232,22 +229,19 @@ void Context::init() {
     // Swapchain
     if (pConfig->mPresent) {
         mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
-        KF_DEBUG("Swapchain initialized!");
         pConfig->mSwapchainNeedsRefresh = false;
-    } else {
+        KF_DEBUG("Swapchain initialized!");
+    } else
         getCamera()->mFrames->init(
-                pConfig->mMaxImagesInFlight,
-                getExtent(), getFormat(), getColorSpace(),
+                2, getExtent(), getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
-    }
+
+    getSync().init(2);
+    KF_DEBUG("Sync initialized!");
 
     // GUI
     initGui();
     KF_DEBUG("Gui initialized!");
-
-    // Create fences and semaphores.
-    mSync.init(pConfig->mPresent ? 2 : pConfig->mMaxImagesInFlight);
-    KF_DEBUG("Sync initialized!");
 
     // Path tracer
     mRayTracer.init();
@@ -303,7 +297,7 @@ void Context::update() {
     updateSettings();
 
     auto imageIndex = getCurrentImageIndex();
-    auto maxFramesInFlight = static_cast<uint32_t>(mSync.getMaxFramesInFlight());
+    auto maxFramesInFlight = static_cast<uint32_t>(getSync().getMaxFramesInFlight());
 
     // If the scene is empty add a dummy triangle so that the acceleration structures can be built successfully.
 
@@ -319,7 +313,7 @@ void Context::update() {
     }
 
     if (mCurrentScene->mUploadEnvironmentMap) {
-        mSync.waitForFrame(prevFrame);
+        getSync().waitForFrame(getPrevFrameIndex());
         mCurrentScene->uploadEnvironmentMap();
         mCurrentScene->updateSceneDescriptors();
     }
@@ -355,9 +349,9 @@ void Context::update() {
 
 void Context::prepareFrame() {
     if (pConfig->mPresent) {
-        mSwapchain.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame), nullptr);
+        mSwapchain.acquireNextImage(getSync().getImageAvailableSemaphore(getCurrentFrameIndex()), nullptr);
     } else {
-//        mFrames.acquireNextImage(mSync.getImageAvailableSemaphore(currentFrame));
+//        mFrames.acquireNextImage(getSync().getImageAvailableSemaphore(currentFrame));
         getCamera()->mFrames->acquireNextImage();            // FIXME
     }
 }
@@ -365,11 +359,11 @@ void Context::prepareFrame() {
 void Context::submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf)
 {
     auto imageIndex = static_cast<size_t>(getCurrentImageIndex());
-    if (mSync.getImageInFlight(imageIndex))
-        mSync.waitForFrame(currentFrame);
+    if (getSync().getImageInFlight(imageIndex))
+        getSync().waitForFrame(getCurrentFrameIndex());
 
-    mSync.getImageInFlight(imageIndex) = mSync.getInFlightFence(currentFrame);
-    auto currentInFlightFence = mSync.getInFlightFence(currentFrame);
+    getSync().getImageInFlight(imageIndex) = getSync().getInFlightFence(getCurrentFrameIndex());
+    auto currentInFlightFence = getSync().getInFlightFence(getCurrentFrameIndex());
     auto result = vkCore::global::device.resetFences(1, &currentInFlightFence);
     KF_ASSERT(result == vk::Result::eSuccess, "Failed to reset fences");
 
@@ -380,7 +374,7 @@ void Context::submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf)
     cmdBufInfo.setCommandBuffer(cmdBuf);
 
     vk::SemaphoreSubmitInfoKHR waitSemaphore;
-    waitSemaphore.setSemaphore(mSync.getImageAvailableSemaphore(currentFrame));
+    waitSemaphore.setSemaphore(getSync().getImageAvailableSemaphore(getCurrentFrameIndex()));
     waitSemaphore.setStageMask(vk::PipelineStageFlagBits2KHR::eColorAttachmentOutput);
 
     vk::SemaphoreSubmitInfoKHR signalSemaphore;
@@ -403,8 +397,8 @@ void Context::submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf)
 //
 void Context::submitFrame(const vk::CommandBuffer& cmdBuf)
 {
-    auto currentInFlightFence = mSync.getInFlightFence(currentFrame);
-    auto currentFinishedSemaphore = mSync.getFinishedRenderSemaphore(currentFrame);
+    auto currentInFlightFence = getSync().getInFlightFence(getCurrentFrameIndex());
+    auto currentFinishedSemaphore = getSync().getFinishedRenderSemaphore(getCurrentFrameIndex());
 
     vk::CommandBufferSubmitInfoKHR cmdBufInfo;
     cmdBufInfo.setCommandBuffer(cmdBuf);
@@ -460,17 +454,28 @@ void Context::submitFrame(const vk::CommandBuffer& cmdBuf)
         vkCore::global::graphicsQueue.submit(submitInfo, nullptr);
     }
 
-    prevFrame = currentFrame;
-    currentFrame = (currentFrame + 1) % mSync.getMaxFramesInFlight();
+    incFrameIdx();
 }
 
 
-std::vector<uint8_t> Context::downloadLatestFrame() {
-    mSync.waitForFrame(prevFrame);
-    vk::Image image = getImage(prevFrame);
+std::vector<uint8_t> Context::downloadLatestFrameFromSwapchain() {
+    KF_ASSERT(pConfig->mPresent, "Invalid call to downloadLatestFrameFromSwapchain");
+
+    mDevice->waitIdle();
+
+    auto prevFrame = getPrevFrameIndex();
+    auto currentFrame = getCurrentFrameIndex();
+
+    auto downloadTarget = prevFrame;
+
+    getSync().waitForFrame(downloadTarget);
+
+    vk::Image image = getImage(downloadTarget);
     vk::Format format = getFormat();
     vk::Extent3D extent {getExtent(), 1};
     vk::ImageLayout layout = vk::ImageLayout::ePresentSrcKHR;
+
+//    KF_DEBUG("DOWNLOADING, PREV={}, CUR={}, DOWNLOAD={}", prevFrame, currentFrame, downloadTarget);
 
     return vkCore::download<uint8_t>(image, format, layout, extent);
 }
@@ -478,7 +483,7 @@ std::vector<uint8_t> Context::downloadLatestFrame() {
 
 void Context::updateSettings() {
     if (pConfig->mMaxGeometryChanged || pConfig->mMaxTexturesChanged) {
-        mSync.waitForFrame(prevFrame);
+        getSync().waitForFrame(getPrevFrameIndex());
 
         pConfig->mMaxGeometryChanged = false;
         pConfig->mMaxTexturesChanged = false;
@@ -498,7 +503,7 @@ void Context::updateSettings() {
         pConfig->mPipelineNeedsRefresh = false;
 
         // Calling wait idle, because pipeline recreation is assumed to be a very rare event to happen.
-        vkCore::global::device.waitIdle();
+        mDevice->waitIdle();
 
         initPipelines();
         mRayTracer.createShaderBindingTable();
@@ -523,7 +528,6 @@ void Context::render() {
 
         if (pWindow->changed()) {
             KF_INFO("Window size changed!");
-            getCamera()->mProjNeedsUpdate = true;
             return;
         }
     }
@@ -535,7 +539,7 @@ void Context::render() {
 
 void Context::recreateSwapchain() {
     // Waiting idle because this event is considered to be very rare.
-    vkCore::global::device.waitIdle();
+    mDevice->waitIdle();
 
     if (pConfig->mPresent) {
         KF_DEBUG("Recreating Swapchain...");
@@ -555,7 +559,7 @@ void Context::recreateSwapchain() {
         KF_DEBUG("Switching Framebuffer...");
 
         getCamera()->mFrames->init(
-                pConfig->mMaxImagesInFlight, getExtent(),
+                2, getExtent(),
                 getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
     }
@@ -594,7 +598,7 @@ void Context::initGui() {
 }
 
 void Context::recordSwapchainCommandBuffers() {
-    mSync.waitForFrame(prevFrame);
+    getSync().waitForFrame(getPrevFrameIndex());
 
     RtPushConstants pushConstants = {
             mCurrentScene->getClearColor(),
@@ -612,7 +616,7 @@ void Context::recordSwapchainCommandBuffers() {
     vk::CommandBuffer cmdBuf = mCommandBuffers.get(imageIndex);
     vk::CommandBuffer cmdBuf2 = mCommandBuffers2.get(imageIndex);
 
-    size_t index = imageIndex % mSync.getMaxFramesInFlight();
+    size_t index = imageIndex % getSync().getMaxFramesInFlight();
 
     mCommandBuffers.begin(imageIndex);
     {

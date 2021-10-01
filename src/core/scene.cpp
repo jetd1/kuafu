@@ -191,10 +191,18 @@ void Scene::setCamera(Camera* camera) {
     KF_ASSERT(camera, "Trying to set an invalid camera!");
     auto ret = std::find_if(mRegisteredCameras.begin(), mRegisteredCameras.end(),
                          [camera](auto& c) { return camera == c.get(); });
-    KF_ASSERT(ret != mRegisteredCameras.end(), "Trying to set a camera that does not belong to the scene!");
+    KF_ASSERT(ret != mRegisteredCameras.end(),
+              "Trying to set a camera that does not belong to the scene!");
 
+    if (vkCore::global::device)
+        vkCore::global::device.waitIdle();
     mCurrentCamera = camera;
     pConfig->triggerSwapchainRefresh();
+
+    if (vkCore::global::device)
+        mCurrentCamera->mSync.init();
+    else
+        KF_WARN("Camera set without mSync.init()");
 }
 
 void Scene::prepareBuffers() {
@@ -227,24 +235,16 @@ void Scene::uploadUniformBuffers(uint32_t imageIndex) {
 
 void Scene::uploadCameraBuffer(uint32_t imageIndex) {
     // Upload camera.
-    if (mCurrentCamera != nullptr) {
-        if (mCurrentCamera->mViewNeedsUpdate) {
-            cameraUBO.view = mCurrentCamera->getViewMatrix();
-            cameraUBO.viewInverse = mCurrentCamera->getViewInverseMatrix();
+    KF_ASSERT(mCurrentCamera, "Trying to render with an invalid camera!");
 
-            mCurrentCamera->mViewNeedsUpdate = false;
-        }
+    cameraUBO.view = mCurrentCamera->getViewMatrix();
+    cameraUBO.viewInverse = mCurrentCamera->getViewInverseMatrix();
 
-        if (mCurrentCamera->mProjNeedsUpdate) {
-            cameraUBO.projection = mCurrentCamera->getProjectionMatrix();
-            cameraUBO.projectionInverse = mCurrentCamera->getProjectionInverseMatrix();
+    cameraUBO.projection = mCurrentCamera->getProjectionMatrix();
+    cameraUBO.projectionInverse = mCurrentCamera->getProjectionInverseMatrix();
 
-            mCurrentCamera->mProjNeedsUpdate = false;
-        }
-
-        cameraUBO.position = glm::vec4(mCurrentCamera->getPosition(), mCurrentCamera->getAperture());
-        cameraUBO.front = glm::vec4(mCurrentCamera->getFront(), mCurrentCamera->getFocalLength());
-    }
+    cameraUBO.position = glm::vec4(mCurrentCamera->getPosition(), mCurrentCamera->getAperture());
+    cameraUBO.front = glm::vec4(mCurrentCamera->getFront(), mCurrentCamera->getFocalLength());
 
     mCameraUniformBuffer.upload(imageIndex, cameraUBO);
 }

@@ -55,8 +55,12 @@ namespace kuafu {
         vkCore::CommandBuffer mCommandBuffers2;
         vk::UniqueSemaphore mCmdSemaphore;
 
-        vkCore::Sync mSync;
+        // on screen use only
+        size_t mCurrentFrame = 0;
+        size_t mPrevFrame = 0;
         vkCore::Swapchain mSwapchain;
+        vkCore::Sync mSwapchainSync;
+
         vkCore::CommandBuffer mCommandBuffers;
 
         std::shared_ptr<Gui> pGui = nullptr;
@@ -100,10 +104,11 @@ namespace kuafu {
         void submitWithTLSemaphore(const vk::CommandBuffer& cmdBuf);
         void submitFrame(const vk::CommandBuffer& cmdBuf);
 
-        /// Submits the swapchain command buffers to a queue and presents an image on the screen.
-        std::vector<uint8_t> downloadLatestFrame();
+        std::vector<uint8_t> downloadLatestFrameFromSwapchain();
 
         [[nodiscard]] inline auto  getCamera() const { return mCurrentScene->mCurrentCamera; }
+
+        inline auto& getSync() { return pConfig->mPresent ? mSwapchainSync : getCamera()->mSync; }
         inline auto  getCurrentImageIndex() { return pConfig->mPresent ? mSwapchain.getCurrentImageIndex() : getCamera()->mFrames->getCurrentImageIndex(); }
         inline auto  getImage(size_t idx) { return pConfig->mPresent ? mSwapchain.getImage(idx) : getCamera()->mFrames->getImage(idx); }
         inline auto& getFramebuffer(size_t idx) { return pConfig->mPresent ?
@@ -115,6 +120,25 @@ namespace kuafu {
                      vk::Extent2D{ static_cast<uint32_t>(getCamera()->getWidth()),
                                    static_cast<uint32_t>(getCamera()->getHeight())} : vk::Extent2D{1, 1}; }
         inline auto getCmdSemaphore() { return pConfig->mUseDenoiser ? mDenoiser.getTLSemaphore() : mCmdSemaphore.get(); };
+
+        inline auto getCurrentFrameIndex() { return pConfig->mPresent ? mCurrentFrame : getCamera()->mFrames->mCurrentFrame; }
+        inline auto getPrevFrameIndex() { return pConfig->mPresent ? mPrevFrame : getCamera()->mFrames->mPrevFrame; }
+        inline void incFrameIdx() {
+//            KF_DEBUG("IDX: PREV={}, CUR={}", getPrevFrameIndex(), getCurrentFrameIndex());
+            if (pConfig->mPresent) {
+                mPrevFrame = mCurrentFrame;
+                mCurrentFrame = (mCurrentFrame + 1) % getSync().getMaxFramesInFlight();
+//                KF_DEBUG("IDX UPDATED: PREV={}, CUR={}", mPrevFrame, mCurrentFrame);
+            } else {
+                if (getCamera()->mFirst)
+                    getCamera()->mFirst = false;
+                auto currentFrame = getCamera()->mFrames->mCurrentFrame;
+                getCamera()->mFrames->mPrevFrame = currentFrame;
+                getCamera()->mFrames->mCurrentFrame = (currentFrame + 1) % getSync().getMaxFramesInFlight();
+//                KF_DEBUG("IDX UPDATED: PREV={}, CUR={}",
+//                         getCamera()->mFrames->mPrevFrame, getCamera()->mFrames->mCurrentFrame);
+            }
+        }
 
     public:
         friend Kuafu;

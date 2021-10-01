@@ -36,7 +36,7 @@ Kuafu::Kuafu(std::shared_ptr<Config> config) {
 
         auto cam = mContext.mCurrentScene->createCamera(
                 mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight);
-        mContext.mCurrentScene->setCamera(cam);
+        mContext.mCurrentScene->mCurrentCamera = cam;
 
         window = std::make_shared<Window>(
                 mContext.pConfig->mInitialWidth, mContext.pConfig->mInitialHeight,
@@ -83,8 +83,11 @@ void Kuafu::run() {
     mContext.render();
 }
 
-std::vector<uint8_t> Kuafu::downloadLatestFrame() {
-    return mContext.downloadLatestFrame();
+std::vector<uint8_t> Kuafu::downloadLatestFrame(Camera* cam) {
+    if (mContext.pConfig->mPresent)
+        return mContext.downloadLatestFrameFromSwapchain();
+    else
+        return cam->downloadLatestFrame();
 }
 
 void Kuafu::setWindow(std::shared_ptr<Window> window) {

@@ -11,6 +11,8 @@ namespace kuafu {
 class Frames {
     size_t mN;
 
+    vk::Format mFormat;
+    vk::Extent2D mExtent;
     std::vector<vk::UniqueImage> mImages;
     std::vector<vk::UniqueDeviceMemory> mImagesMemory;
 
@@ -25,6 +27,9 @@ class Frames {
 
 public:
 
+    size_t mCurrentFrame = 0;
+    size_t mPrevFrame = 0;
+
     inline void init(
             size_t n,
             vk::Extent2D extent,
@@ -35,6 +40,8 @@ public:
             return;
 
         mN = n;
+        mFormat = format;
+        mExtent = extent;
         mImages.resize(n);
         mImagesMemory.resize(n);
         mImageViews.resize(n);
@@ -88,6 +95,8 @@ public:
         mInitialized = false;
     }
 
+    inline auto getFormat() { return mFormat; }
+    inline auto getExtent() { return mExtent; }
     inline auto getImage(size_t n) { KF_ASSERT(mInitialized, ""); return mImages[n].get(); }
     inline auto& getFramebuffer(size_t n) { KF_ASSERT(mInitialized, ""); return mFramebuffers[n]; }
 

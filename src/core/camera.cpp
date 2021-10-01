@@ -14,8 +14,6 @@ Camera::Camera(int width, int height, const glm::vec3 &position)
     mCy = mHeight * 0.5;
     mFx = mFy = mWidth * 0.5;   // Some reasonable initialization
     updateProjectionMatrix();
-    mProjNeedsUpdate = true;
-
     resetView();
 }
 
@@ -28,9 +26,6 @@ void Camera::resetView() {
     mDirFront = {1.0F, 0.0F, 0.0F};
 
     updateViewMatrix();
-
-    mViewNeedsUpdate = true;
-
     global::frameCount = -1;
 }
 
@@ -96,7 +91,6 @@ void Camera::setSize(int width, int height) {
 
 void Camera::updateViewMatrix() {
     mViewMatrix = glm::lookAt(mPosition, mPosition + mDirFront, mDirUp);
-    mViewNeedsUpdate = true;
 }
 
 void Camera::setFullPerspective(
@@ -129,7 +123,6 @@ void Camera::updateProjectionMatrix() {
     mProjMatrix[3][2] = -mFar * mNear / (mFar - mNear);
     mProjMatrix[3][3] = 0.f;
 
-    mProjNeedsUpdate = true;
     clearRenderTargets();
     mFrames->destroy();
 }
@@ -142,7 +135,6 @@ void Camera::setPose(glm::mat4 pose) {
     mDirFront = {-pose[2][0], -pose[2][1], -pose[2][2]};
     mDirUp = {pose[1][0], pose[1][1], pose[1][2]};
 
-    mViewNeedsUpdate = true;
     global::frameCount = -1;
 }
 
@@ -164,7 +156,6 @@ void Camera::processMouse(float xOffset, float yOffset) {
     tmp = rrot * glm::vec4(mDirUp, 0);
 //    mDirUp = {tmp[0], tmp[1],tmp[2]};
 
-    mViewNeedsUpdate = true;
     global::frameCount = -1;
 }
 
@@ -181,24 +172,37 @@ void Camera::processKeyboard() {
         currentSpeed = defaultSpeed;
     }
 
-    if (global::keys::eW) {
+    if (global::keys::eW)
         mPosition += mDirFront * finalSpeed;
-        mViewNeedsUpdate = true;
-    }
 
-    if (global::keys::eS) {
+    if (global::keys::eS)
         mPosition -= mDirFront * finalSpeed;
-        mViewNeedsUpdate = true;
-    }
 
-    if ( global::keys::eA ) {
+    if ( global::keys::eA )
         mPosition -= mDirRight * finalSpeed;
-        mViewNeedsUpdate = true;
-    }
 
-    if ( global::keys::eD ) {
+    if ( global::keys::eD )
         mPosition += mDirRight * finalSpeed;
-        mViewNeedsUpdate = true;
-    }
+}
+
+std::vector<uint8_t> Camera::downloadLatestFrame() {
+    KF_ASSERT(mFrames->initialized(), "Invalid call to Camera::downloadLatestFrame");
+
+    vkCore::global::device.waitIdle();
+    auto prevFrame = mFrames->mPrevFrame;
+    auto currentFrame = mFrames->mCurrentFrame;
+
+    auto downloadTarget = prevFrame;
+
+    mSync.waitForFrame(downloadTarget);
+
+    vk::Image image = mFrames->getImage(downloadTarget);
+    vk::Format format = mFrames->getFormat();
+    vk::Extent3D extent {mFrames->getExtent(), 1};
+    vk::ImageLayout layout = vk::ImageLayout::ePresentSrcKHR;
+
+//    KF_DEBUG("DOWNLOADING, PREV={}, CUR={}, DOWNLOAD={}", prevFrame, currentFrame, downloadTarget);
+
+    return vkCore::download<uint8_t>(image, format, layout, extent);
 }
 }
