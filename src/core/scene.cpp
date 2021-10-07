@@ -200,7 +200,7 @@ void Scene::setCamera(Camera* camera) {
     pConfig->triggerSwapchainRefresh();
 
     if (vkCore::global::device)
-        mCurrentCamera->mSync.init();
+        mCurrentCamera->mSync.init(1);
     else
         KF_WARN("Camera set without mSync.init()");
 }

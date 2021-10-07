@@ -84,8 +84,11 @@ void Kuafu::run() {
 }
 
 std::vector<uint8_t> Kuafu::downloadLatestFrame(Camera* cam) {
-    if (mContext.pConfig->mPresent)
+    if (mContext.pConfig->mPresent) {
+        global::logger->warn("Downloading images when using viewer is not recommended. "
+                             "Hint for SAPIEN users: set use_viewer=False in production.");
         return mContext.downloadLatestFrameFromSwapchain();
+    }
     else
         return cam->downloadLatestFrame();
 }

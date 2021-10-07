@@ -93,11 +93,11 @@ void Context::init() {
 
       deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     } else {
-//        vkCore::global::dataCopies = 1U;
-//        vkCore::global::swapchainImageCount = 1U;
+        vkCore::global::dataCopies = 1U;
+        vkCore::global::swapchainImageCount = 1U;
 
-        vkCore::global::dataCopies = 2U;
-        vkCore::global::swapchainImageCount = 2U;
+//        vkCore::global::dataCopies = 2U;
+//        vkCore::global::swapchainImageCount = 2U;
     }
 
     if (pConfig->mUseDenoiser) {
@@ -231,12 +231,14 @@ void Context::init() {
         mSwapchain.init(&mSurface, mPostProcessingRenderer.getRenderPass().get());
         pConfig->mSwapchainNeedsRefresh = false;
         KF_DEBUG("Swapchain initialized!");
-    } else
+        getSync().init(2);
+    } else {
         getCamera()->mFrames->init(
-                2, getExtent(), getFormat(), getColorSpace(),
+                1, getExtent(), getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
+        getSync().init(1);
+    }
 
-    getSync().init(2);
     KF_DEBUG("Sync initialized!");
 
     // GUI
@@ -559,7 +561,7 @@ void Context::recreateSwapchain() {
         KF_DEBUG("Switching Framebuffer...");
 
         getCamera()->mFrames->init(
-                2, getExtent(),
+                1, getExtent(),
                 getFormat(), getColorSpace(),
                 mPostProcessingRenderer.getRenderPass().get());
     }
