@@ -466,7 +466,7 @@ std::vector<uint8_t> Context::downloadLatestFrameFromSwapchain() {
     mDevice->waitIdle();
 
     auto prevFrame = getPrevFrameIndex();
-    auto currentFrame = getCurrentFrameIndex();
+//    auto currentFrame = getCurrentFrameIndex();
 
     auto downloadTarget = prevFrame;
 

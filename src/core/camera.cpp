@@ -190,7 +190,7 @@ std::vector<uint8_t> Camera::downloadLatestFrame() {
 
     vkCore::global::device.waitIdle();
     auto prevFrame = mFrames->mPrevFrame;
-    auto currentFrame = mFrames->mCurrentFrame;
+//    auto currentFrame = mFrames->mCurrentFrame;
 
     auto downloadTarget = prevFrame;
 

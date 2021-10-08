@@ -187,13 +187,20 @@ public:
     };
 
     inline void init() {               // TODO: This can be optimized
+        static bool first = true;
+
         prepareBuffers();
         initSceneDescriptorSets();
         initGeometryDescriptorSets();
 
-        setEnvironmentMap("");
-        uploadEnvironmentMap();
-        removeEnvironmentMap();
+        if (first) {
+            setEnvironmentMap("");
+            uploadEnvironmentMap();
+            removeEnvironmentMap();
+            first = false;
+        } else {
+            uploadEnvironmentMap();
+        }
 
         updateSceneDescriptors();
 

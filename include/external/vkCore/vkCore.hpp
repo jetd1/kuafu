@@ -1612,6 +1612,9 @@ inline vk::PipelineStageFlagBits pipelineStageForLayout(vk::ImageLayout layout)
     /// @param pNextMemory Attachment to the memory's pNext chain.
     void init( vk::DeviceSize size, vk::BufferUsageFlags usage, const std::vector<uint32_t>& queueFamilyIndices = { }, vk::MemoryPropertyFlags memoryPropertyFlags = vk::MemoryPropertyFlagBits::eDeviceLocal, void* pNextMemory = nullptr )
     {
+        if ( _memory && _mapped )
+            global::device.unmapMemory( _memory.get( ) );
+
       _mapped = false;
       _size   = size;
 

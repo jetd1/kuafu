@@ -202,7 +202,7 @@ void Scene::setCamera(Camera* camera) {
     if (vkCore::global::device)
         mCurrentCamera->mSync.init(1);
     else
-        KF_WARN("Camera set without mSync.init()");
+        KF_INFO("Camera is not yet usable due to uninitialized context!");
 }
 
 void Scene::prepareBuffers() {
