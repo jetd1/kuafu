@@ -97,12 +97,15 @@ public:
 
     inline auto getFormat() { return mFormat; }
     inline auto getExtent() { return mExtent; }
-    inline auto getImage(size_t n) { KF_ASSERT(mInitialized, ""); return mImages[n].get(); }
-    inline auto& getFramebuffer(size_t n) { KF_ASSERT(mInitialized, ""); return mFramebuffers[n]; }
+    inline auto getImage(size_t n) {
+        KF_ASSERT(mInitialized, "mInitialized: getImage"); return mImages[n].get(); }
+    inline auto& getFramebuffer(size_t n) {
+        KF_ASSERT(mInitialized, "mInitialized: getFramebuffer"); return mFramebuffers[n]; }
 
-    [[nodiscard]] inline size_t getCurrentImageIndex() const { KF_ASSERT(mInitialized, ""); return mCurrentImageIdx; }
+    [[nodiscard]] inline size_t getCurrentImageIndex() const {
+        KF_ASSERT(mInitialized, "mInitialized: getCurrentImageIndex"); return mCurrentImageIdx; }
     inline void acquireNextImage() {
-        KF_ASSERT(mInitialized, "");
+        KF_ASSERT(mInitialized, "acquireNextImage: acquireNextImage");
         mLock.lock();
         mCurrentImageIdx = (mCurrentImageIdx + 1) % mN;
         mLock.unlock();

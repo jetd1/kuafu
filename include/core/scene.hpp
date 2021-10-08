@@ -121,11 +121,18 @@ public:
     };
 
     inline void removeCamera(Camera* camera) {
+        vkCore::global::device.waitIdle();
+
         KF_ASSERT(camera, "Trying to remove an invalid camera!");
         auto ret = std::find_if(mRegisteredCameras.begin(), mRegisteredCameras.end(),
                                 [camera](auto& c) { return camera == c.get(); });
         KF_ASSERT(ret != mRegisteredCameras.end(),
-                  "Trying to remove an camera which does not belong to thre scene!");
+                  "Trying to remove an camera which does not belong to the scene!");
+
+        if (mCurrentCamera == camera) {
+            KF_INFO("Removing the active camera. This may cause problems.");
+            mCurrentCamera = nullptr;
+        }
 
         mRegisteredCameras.erase(
                 std::remove_if(mRegisteredCameras.begin(), mRegisteredCameras.end(),
