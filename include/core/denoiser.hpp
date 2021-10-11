@@ -58,9 +58,14 @@ class DenoiserOptix {
         // Extra for Cuda
         int handle = -1;
         void* cudaPtr = nullptr;
+        cudaExternalMemory_t mem {};
 
         void destroy() {
-            if(handle != -1) {
+            if (handle != -1) {
+                cudaDestroyExternalMemory(mem);
+                mem = {};
+                cudaFree(cudaPtr);
+                cudaPtr = nullptr;
                 close(handle);
                 handle = -1;
             }

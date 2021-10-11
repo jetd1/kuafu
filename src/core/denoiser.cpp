@@ -177,14 +177,13 @@ void DenoiserOptix::createBufferCuda(BufferCuda& buf) {
     cudaExtMemHandleDesc.type      = cudaExternalMemoryHandleTypeOpaqueFd;
     cudaExtMemHandleDesc.handle.fd = buf.handle;
 
-    cudaExternalMemory_t cudaExtMemVertexBuffer{};
-    CUDA_CHECK(cudaImportExternalMemory(&cudaExtMemVertexBuffer, &cudaExtMemHandleDesc));
+    CUDA_CHECK(cudaImportExternalMemory(&buf.mem, &cudaExtMemHandleDesc));
 
     cudaExternalMemoryBufferDesc cudaExtBufferDesc{};
     cudaExtBufferDesc.offset = 0;
     cudaExtBufferDesc.size   = req.size;
     cudaExtBufferDesc.flags  = 0;
-    CUDA_CHECK(cudaExternalMemoryGetMappedBuffer(&buf.cudaPtr, cudaExtMemVertexBuffer, &cudaExtBufferDesc));
+    CUDA_CHECK(cudaExternalMemoryGetMappedBuffer(&buf.cudaPtr, buf.mem, &cudaExtBufferDesc));
 }
 
 
