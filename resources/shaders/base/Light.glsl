@@ -1,5 +1,5 @@
-layout ( constant_id = 0 ) const uint MAX_POINT_LIGHTS = 4;
-layout ( constant_id = 1 ) const uint MAX_ACTIVE_LIGHTS = 4;
+layout ( constant_id = 0 ) const uint MAX_POINT_LIGHTS = 32;
+layout ( constant_id = 1 ) const uint MAX_ACTIVE_LIGHTS = 8;
 
 layout( binding = 3, set = 1 ) readonly uniform DirectionalLightProperties
 {

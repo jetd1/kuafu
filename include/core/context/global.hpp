@@ -35,8 +35,8 @@ extern uint32_t textureIndex;
 extern std::vector<NiceMaterial> materials;
 
 const size_t maxResources = 2;
-const size_t maxPointLights = 4;
-const size_t maxActiveLights = 4;
+const size_t maxPointLights = 32;
+const size_t maxActiveLights = 8;
 
 namespace keys {
 extern bool eW;
