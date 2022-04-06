@@ -5,7 +5,6 @@
 #include "core/geometry.hpp"
 #include "core/context/global.hpp"
 #include <assimp/Importer.hpp>
-#include <assimp/pbrmaterial.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 
@@ -52,7 +51,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
     uint32_t flags = aiProcess_CalcTangentSpace | aiProcess_Triangulate |
                      aiProcess_GenNormals | aiProcess_FlipUVs |
                      aiProcess_PreTransformVertices;
-    importer.SetPropertyInteger(AI_CONFIG_PP_PTV_ADD_ROOT_TRANSFORMATION, 1);
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_COLLADA_IGNORE_UP_DIRECTION, true);
     const aiScene *scene = importer.ReadFile(path, flags);
 
     if (!scene)
@@ -79,32 +78,33 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
     for (uint32_t mat_idx = 0; mat_idx < scene->mNumMaterials; ++mat_idx) {
         auto *m = scene->mMaterials[mat_idx];
         aiColor3D diffuseColor{0, 0, 0};
-        aiColor3D emissionColor{0, 0, 0};
+        aiColor3D emissionColor{0, 0, 0};  // CANNOT READ TODO: retest
         float alpha = 1.f;
         float ior = 1.4f;
-        float specular = .5f;                  // CANNOT READ
-        float transmission = 0.f;              // CANNOT READ
+        float specular = .5f;                  // CANNOT READ TODO: retest
+        float transmission = 0.f;              // CANNOT READ TODO: retest
         float metallic = 0.f;
         float roughness = 0.f;
-        float emissionStrength = 1.f;          // CANNOT READ
+        float emissionStrength = 1.f;          // CANNOT READ TODO: retest
 
         m->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
         m->Get(AI_MATKEY_COLOR_EMISSIVE, emissionColor);
-//        m->Get(AI_MATKEY_SPECULAR_FACTOR, specular);
-        m->Get(AI_MATKEY_OPACITY, alpha);
+        m->Get(AI_MATKEY_SPECULAR_FACTOR, specular);
         m->Get(AI_MATKEY_REFRACTI, ior);
-//        m->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission);
-//        m->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLIC_FACTOR, metallic);
-//        m->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
-        m->Get(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_ROUGHNESS_FACTOR, roughness);
-//        m->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissionStrength);
+        m->Get(AI_MATKEY_TRANSMISSION_FACTOR, transmission);
+        m->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+        m->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+        m->Get(AI_MATKEY_EMISSIVE_INTENSITY, emissionStrength);
 
-        if (alpha < 1e-5 && utils::hasExtension(fname, ".dae")) {
-            KF_WARN("The DAE file " + path.string() +
-                    " is fully transparent. This is probably "
-                    "due to modeling error. Setting opacity to 1 instead.");
-            alpha = 1.f;
+        if (m->Get(AI_MATKEY_OPACITY, alpha) == AI_SUCCESS) {
+            if (alpha < 1e-5 && utils::hasExtension(fname, ".dae")) {
+                KF_WARN("The DAE file " + path.string() +
+                        " is fully transparent. This is probably "
+                        "due to modeling error. Setting opacity to 1 instead.");
+                alpha = 1.f;
+            }
+        } else if (m->Get(AI_MATKEY_TRANSPARENCYFACTOR, alpha) == AI_SUCCESS) {
+            alpha = 1.f - alpha;
         }
 
         if (roughness == 0 && !utils::hasExtension(fname, std::vector<std::string_view>{".gltf", ".glb"})) {
@@ -116,7 +116,7 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
                     roughness = 1.f;
                 else
                     roughness = 1.f - (std::sqrt(shininess - 5.f) * 0.025f);
-                
+
                 if (roughness < 0.001f)
                     roughness = 0.001f;
             } else if (utils::hasExtension(fname, ".obj")) {
@@ -133,9 +133,6 @@ std::vector<std::shared_ptr<Geometry> > loadScene(
 
         if (m->GetTextureCount(aiTextureType_NORMALS) > 0)
             KF_WARN("normals texture not supported");
-
-        if (m->GetTexture(AI_MATKEY_GLTF_PBRMETALLICROUGHNESS_METALLICROUGHNESS_TEXTURE, &tpath) == AI_SUCCESS)
-            KF_WARN("roughness metallic texture not supported");
 
         materials.push_back({
                                     .diffuseColor = {diffuseColor.r, diffuseColor.g, diffuseColor.b},

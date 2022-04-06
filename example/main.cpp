@@ -15,7 +15,7 @@ int main() {
     config->setInitialHeight(height);
 
     config->setAssetsPath("../resources");
-    config->setPerPixelSampleRate(32);
+    config->setPerPixelSampleRate(1);
     config->setPathDepth(8);
     config->setRussianRoulette(false);
     config->setPresent(true);
