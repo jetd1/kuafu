@@ -206,6 +206,8 @@ public:
 
         markGeometriesChanged();
         markGeometryInstancesChanged();
+
+        initialized = true;
     }
 
 

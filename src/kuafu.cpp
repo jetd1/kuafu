@@ -27,6 +27,7 @@ namespace kuafu {
 Kuafu::Kuafu(std::shared_ptr<Config> config) {
     mContext.pConfig = std::make_shared<Config>(*config);           // TODO: make config a value member instead
     mContext.mCurrentScene = createScene();
+    mContext.mCurrentScene->initialized = true;      // TODO: not good, should always call Scene::init()
 
     std::shared_ptr<Window> window;
 

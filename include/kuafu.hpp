@@ -59,7 +59,7 @@ public:
     inline Scene* getScene() { return mContext.mCurrentScene; }
 
     inline void setScene(Scene* scene) {
-        if (mContext.mCurrentScene == scene)
+        if (mContext.mCurrentScene == scene and scene->initialized)
             return;
 
         KF_INFO("Switching scene, this is heavy...");
