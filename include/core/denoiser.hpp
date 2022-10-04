@@ -35,7 +35,6 @@
 namespace kuafu {
 
 class DenoiserOptix {
-    CUcontext              mCudaContext = nullptr;
     CUstream               mCudaStream = nullptr;
 
     OptixPixelFormat       mPixelFormat{};

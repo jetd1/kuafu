@@ -27,13 +27,13 @@ bool DenoiserOptix::initOptiX(
         bool hdr) {
     kfCuDlOpen();
     CUDA_CHECK0(kfCuInit(0));
+    CUDA_CHECK(cudaFree(0)); // Force initialization of cuda primary context
 
     CUdevice device = 0;    // TODO
-    CUDA_CHECK0(kfCuCtxCreate(&mCudaContext, CU_CTX_SCHED_SPIN, device));
     CUDA_CHECK0(kfCuStreamCreate(&mCudaStream, CU_STREAM_DEFAULT));
 
     OPTIX_CHECK(optixInit());
-    OPTIX_CHECK(optixDeviceContextCreate(mCudaContext, nullptr, &gOptixDevice));
+    OPTIX_CHECK(optixDeviceContextCreate(nullptr, nullptr, &gOptixDevice));
     OPTIX_CHECK(optixDeviceContextSetLogCallback(gOptixDevice, _log_cb, nullptr, 4));
 
     mPixelFormat = pixelFormat;
@@ -340,7 +340,6 @@ void DenoiserOptix::destroy() {
         freeResources();
     } catch(...) {}
 
-    kfCuCtxDestroy(mCudaContext);
     kfCuDlClose();
 }
 
