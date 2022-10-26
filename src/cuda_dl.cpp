@@ -1,6 +1,9 @@
 //
 // Created by jet on 9/17/21.
 //
+
+#ifdef KUAFU_OPTIX_DENOISER
+
 #include <cuda.h>
 #include <dlfcn.h>
 
@@ -71,3 +74,5 @@ void kfCuDlClose() {
 
 }
 
+
+#endif

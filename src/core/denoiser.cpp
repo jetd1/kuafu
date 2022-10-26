@@ -2,6 +2,8 @@
 // Created by jet on 9/16/21.
 //
 
+#ifdef KUAFU_OPTIX_DENOISER
+
 #include "core/denoiser.hpp"
 
 #include "optix.h"
@@ -346,3 +348,5 @@ void DenoiserOptix::destroy() {
 
 
 }
+
+#endif

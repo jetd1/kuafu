@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wnon-virtual-dtor -fsized-deallocation -Wno-deprecated-declarations")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g0 -Wall -Wnon-virtual-dtor  -fsized-deallocation -Wno-deprecated-declarations")
 
+option(KUAFU_OPTIX_DENOISER "Enable OptiX-7 denoiser, requires CUDA" ON)
+
 find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
 
 if (glslc_executable STREQUAL "glslc_executable-NOTFOUND")
@@ -34,7 +36,11 @@ find_package(SDL2 REQUIRED)
 include_directories(${Vulkan_INCLUDE_DIRS})
 include_directories(${SDL2_INCLUDE_DIRS})
 include_directories("3rd_party/OptiX7SDK/include")
-include_directories("$ENV{CUDA_PATH}/include")
+
+if (KUAFU_OPTIX_DENOISER)
+    add_definitions(-DKUAFU_OPTIX_DENOISER)
+    include_directories("$ENV{CUDA_PATH}/include")
+endif()
 
 #set(KTX_FEATURE_TESTS OFF)
 #set(KTX_FEATURE_TOOLS OFF)
@@ -62,7 +68,10 @@ include_directories("include")
 include_directories("include/external")
 add_library(kuafu SHARED ${RENDERER_SRC})
 add_dependencies(kuafu compile_kf_shaders)
-target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2 "$ENV{CUDA_PATH}/lib64/libcudart_static.a")
+target_link_libraries(kuafu Vulkan::Vulkan assimp ktx SDL2)
+if (KUAFU_OPTIX_DENOISER)
+    target_link_libraries(kuafu "$ENV{CUDA_PATH}/lib64/libcudart_static.a")
+endif()
 target_precompile_headers(kuafu PUBLIC "${PROJECT_SOURCE_DIR}/include/stdafx.hpp")
 set_target_properties(kuafu PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
