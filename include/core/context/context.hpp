@@ -27,9 +27,12 @@
 #include "core/gui.hpp"
 #include "core/scene.hpp"
 #include "core/postprocess.hpp"
-#include "core/denoiser.hpp"
 #include "core/rt/rt.hpp"
 #include "core/image.hpp"
+
+#ifdef KUAFU_OPTIX_DENOISER
+#include "core/denoiser.hpp"
+#endif
 
 namespace kuafu {
 
@@ -51,7 +54,11 @@ namespace kuafu {
 
         // Timeline semaphores
         uint64_t mFenceValue = 0;
+
+#ifdef KUAFU_OPTIX_DENOISER
         DenoiserOptix mDenoiser;
+#endif
+
         vkCore::CommandBuffer mCommandBuffers2;
         vk::UniqueSemaphore mCmdSemaphore;
 
@@ -119,7 +126,12 @@ namespace kuafu {
                      mSwapchain.getExtent() : getCamera() ?
                      vk::Extent2D{ static_cast<uint32_t>(getCamera()->getWidth()),
                                    static_cast<uint32_t>(getCamera()->getHeight())} : vk::Extent2D{1, 1}; }
+
+#ifdef KUAFU_OPTIX_DENOISER
         inline auto getCmdSemaphore() { return pConfig->mUseDenoiser ? mDenoiser.getTLSemaphore() : mCmdSemaphore.get(); };
+#else
+        inline auto getCmdSemaphore() { return mCmdSemaphore.get(); };
+#endif
 
         inline auto getCurrentFrameIndex() { return pConfig->mPresent ? mCurrentFrame : getCamera()->mFrames->mCurrentFrame; }
         inline auto getPrevFrameIndex() { return pConfig->mPresent ? mPrevFrame : getCamera()->mFrames->mPrevFrame; }

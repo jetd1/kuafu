@@ -69,8 +69,10 @@ Context::~Context() {
     if (pGui != nullptr)
       pGui->destroy();
 
+#ifdef KUAFU_OPTIX_DENOISER
     if (pConfig->mUseDenoiser)
         mDenoiser.destroy();
+#endif
 }
 
 void Context::setGui(const std::shared_ptr<Gui> &gui, bool initialize) {
@@ -100,6 +102,7 @@ void Context::init() {
 //        vkCore::global::swapchainImageCount = 2U;
     }
 
+#ifdef KUAFU_OPTIX_DENOISER
     if (pConfig->mUseDenoiser) {
         global::logger->warn("Denoiser ON! You must have an NVIDIA GPU with driver version > 470 installed.");
 
@@ -118,6 +121,7 @@ void Context::init() {
                 false);                                 // TODO
         KF_DEBUG("OptiX initialized!");
     }
+#endif
 
     // Instance
     mInstance = vkCore::initInstanceUnique(layers, extensions, VK_API_VERSION_1_2);
@@ -266,10 +270,13 @@ void Context::init() {
     mRayTracer.createShaderBindingTable();
     KF_DEBUG("ShaderBindingTable initialized!");
 
+#ifdef KUAFU_OPTIX_DENOISER
     // Denoiser
     if (pConfig->mUseDenoiser)
         mDenoiser.allocateBuffers(getExtent());
-    else {
+    else
+#endif
+    {
         vk::SemaphoreTypeCreateInfo timelineCreateInfo;
         timelineCreateInfo.semaphoreType = vk::SemaphoreType::eTimeline;
         timelineCreateInfo.initialValue  = 0;
@@ -570,8 +577,10 @@ void Context::recreateSwapchain() {
     mRayTracer.setRenderTargets(getCamera()->getRenderTargets());
     mRayTracer.createStorageImage(getExtent());
 
+#ifdef KUAFU_OPTIX_DENOISER
     if (pConfig->mUseDenoiser)
         mDenoiser.allocateBuffers(getExtent());
+#endif
 
     mPostProcessingRenderer.updateDescriptors(mRayTracer.getStorageImageInfo("rgba"));
     mRayTracer.updateDescriptors();
@@ -647,6 +656,7 @@ void Context::recordSwapchainCommandBuffers() {
         // rt
         mRayTracer.trace(cmdBuf, getImage(imageIndex), getExtent());
 
+#ifdef KUAFU_OPTIX_DENOISER
         // denoise
         if (pConfig->mUseDenoiser)
             mDenoiser.imageToBuffer(cmdBuf, {
@@ -654,20 +664,26 @@ void Context::recordSwapchainCommandBuffers() {
                 mRayTracer.getStorageImage("albedo"),
                 mRayTracer.getStorageImage("normal")
             });
+#endif
 
     }
     mCommandBuffers.end(imageIndex);
     submitWithTLSemaphore(cmdBuf);
 
 
+#ifdef KUAFU_OPTIX_DENOISER
     if(pConfig->mUseDenoiser)
         mDenoiser.denoiseImageBuffer(mFenceValue);
+#endif
 
 
     mCommandBuffers2.begin(imageIndex);
     {
+
+#ifdef KUAFU_OPTIX_DENOISER
         if(pConfig->mUseDenoiser)
             mDenoiser.bufferToImage(cmdBuf2, mRayTracer.getStorageImage("rgba"));
+#endif
 
         // pp
         mPostProcessingRenderer.beginRenderPass(cmdBuf2, getFramebuffer(imageIndex), getExtent());

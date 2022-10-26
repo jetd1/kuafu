@@ -16,9 +16,11 @@
 #include <glm/gtx/hash.hpp>
 #include <glm/glm.hpp>
 
+#ifdef KUAFU_OPTIX_DENOISER
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <driver_types.h>
+#endif
 
 #include <spdlog/spdlog.h>
 
