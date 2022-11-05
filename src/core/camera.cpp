@@ -31,9 +31,9 @@ void Camera::resetView() {
 
 glm::mat4 Camera::getPose() const {
     return {
-            {mDirFront[0],  mDirFront[1],  mDirFront[2],  0},
-            {-mDirRight[0], -mDirRight[1], -mDirRight[2], 0},
+            {mDirRight[0],  mDirRight[1],  mDirRight[2], 0},
             {mDirUp[0],     mDirUp[1],     mDirUp[2],     0},
+            {-mDirFront[0], -mDirFront[1], -mDirFront[2],  0},
             {mPosition[0],  mPosition[1],  mPosition[2],  1}
     };
 }
