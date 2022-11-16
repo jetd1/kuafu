@@ -193,11 +193,11 @@ void RayTracer::buildBlas(vk::BuildAccelerationStructureFlagsKHR flags) {
                 flags,                                            // flags
                 vk::BuildAccelerationStructureModeKHR::eBuild,    // mode
                 nullptr,                                          // srcAccelerationStructure
-                {},                                              // dstAccelerationStructure
+                vk::AccelerationStructureKHR{},                    // dstAccelerationStructure
                 static_cast<uint32_t>(blas.asGeometry.size()), // geometryCount
                 blas.asGeometry.data(),                          // pGeometries
-                {},                                              // ppGeometries
-                {});                                            // scratchData
+                nullptr,                                              // ppGeometries
+                vk::DeviceOrHostAddressKHR{});                         // scratchData
 
         std::vector<uint32_t> maxPrimitiveCount(blas.asBuildRangeInfo.size());
 
@@ -439,7 +439,7 @@ void RayTracer::buildTlas(const std::vector<std::shared_ptr<GeometryInstance>> &
                                                             1,                                           // geometryCount
                                                             &tlasGeometry,                               // pGeometries
                                                             {},                                         // ppGeometries
-                                                            {});                                       // scratchData
+                                                            vk::DeviceOrHostAddressKHR{});                                       // scratchData
 
     auto instancesCount = static_cast<uint32_t>(geometryInstances.size());
 
