@@ -1,6 +1,0 @@
-[submodule "3rd_party/KTX-Software"]
-	path = 3rd_party/KTX-Software
-	url = git@github.com:KhronosGroup/KTX-Software.git
-[submodule "3rd_party/SDL"]
-	path = 3rd_party/SDL
-	url = git@github.com:libsdl-org/SDL.git
